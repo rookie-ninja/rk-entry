@@ -1,0 +1,109 @@
+---
+rk: # NOT required
+  appName: rk-example-entry           # Optional, default: "rkapp"
+  version: v0.0.1                     # Optional, default: "v0.0.0"
+  description: "this is description"  # Optional, default: ""
+  keywords: ["rk", "golang"]          # Optional, default: []
+  homeURL: "http://example.com"       # Optional, default: ""
+  iconURL: "http://example.com"       # Optional, default: ""
+  docsURL: ["http://example.com"]     # Optional, default: []
+  maintainers: ["rk-dev"]             # Optional, default: []
+zapLogger:
+  - name: zap-logger                      # Required
+    zap:
+      level: info                         # Optional, default: info, options: [debug, DEBUG, info, INFO, warn, WARN, dpanic, DPANIC, panic, PANIC, fatal, FATAL]
+      development: true                   # Optional, default: true
+      disableCaller: false                # Optional, default: false
+      disableStacktrace: true             # Optional, default: true
+      sampling:                           # Optional, default: empty map
+        initial: 0
+        thereafter: 0
+      encoding: console                   # Optional, default: "console", options: [console, json]
+      encoderConfig:
+        messageKey: "msg"                 # Optional, default: "msg"
+        levelKey: "level"                 # Optional, default: "level"
+        timeKey: "ts"                     # Optional, default: "ts"
+        nameKey: "logger"                 # Optional, default: "logger"
+        callerKey: "caller"               # Optional, default: "caller"
+        functionKey: ""                   # Optional, default: ""
+        stacktraceKey: "msg"              # Optional, default: "msg"
+        lineEnding: "\n"                  # Optional, default: "\n"
+        levelEncoder: "capitalColor"      # Optional, default: "capitalColor", options: [capital, capitalColor, color, lowercase]
+        timeEncoder: "iso8601"            # Optional, default: "iso8601", options: [rfc3339nano, RFC3339Nano, rfc3339, RFC3339, iso8601, ISO8601, millis, nanos]
+        durationEncoder: "string"         # Optional, default: "string", options: [string, nanos, ms]
+        callerEncoder: ""                 # Optional, default: ""
+        nameEncoder: ""                   # Optional, default: ""
+        consoleSeparator: ""              # Optional, default: ""
+      outputPaths: [ "stdout" ]           # Optional, default: ["stdout"], stdout would be replaced if specified
+      errorOutputPaths: [ "stderr" ]      # Optional, default: ["stderr"], stderr would be replaced if specified
+      initialFields:                      # Optional, default: empty map
+        key: "value"
+    lumberjack:                           # Optional
+      filename: "rkapp-event.log"         # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
+      maxsize: 1024                       # Optional, default: 1024 (MB)
+      maxage: 7                           # Optional, default: 7 (days)
+      maxbackups: 3                       # Optional, default: 3 (days)
+      localtime: true                     # Optional, default: true
+      compress: true                      # Optional, default: true
+eventLogger:
+  - name: event-logger                    # Required
+    format: RK                            # Optional, default: RK, options: RK and JSON
+    outputPaths: ["stdout"]               # Optional
+    lumberjack:                           # Optional
+      filename: "rkapp-event.log"         # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
+      maxsize: 1024                       # Optional, default: 1024 (MB)
+      maxage: 7                           # Optional, default: 7 (days)
+      maxbackups: 3                       # Optional, default: 3 (days)
+      localtime: true                     # Optional, default: true
+      compress: true                      # Optional, default: true
+viper:
+  - name: my-viper                        # Required
+    path: example/my-config.yaml          # Required
+cert:
+#  etcd:
+#    - name: "etcd-test"                     # Required
+#      locale: "*::*::*::*"                  # Optional, default: *::*::*::*
+#      endpoint: "localhost:2379"            # Required, http://x.x.x.x or x.x.x.x both acceptable.
+#      basicAuth: "root:etcd"                # Optional, default: "", basic auth for Consul server, like <user:pass>
+#      serverCertPath: "serverCert"          # Optional, default: "", key of value in etcd
+#      serverKeyPath: "serverKey"            # Optional, default: "", key of value in etcd
+#      clientCertPath: "clientCert"          # Optional, default: "", key of value in etcd
+#      clientKeyPath: "clientKey"            # Optional, default: "", key of value in etcd
+  local:
+    - name: "local-test"                        # Required
+      locale: "*::*::*::*"                      # Optional, default: *::*::*::*
+      serverCertPath: "example/server.pem"      # Optional, default: "", path of certificate on local FS
+      serverKeyPath: "example/server-key.pem"   # Optional, default: "", path of certificate on local FS
+#      clientCertPath: "example/client.pem"     # Optional, default: "", path of certificate on local FS
+#      clientKeyPath: "example/client.pem"      # Optional, default: "", path of certificate on local FS
+#  consul:
+#    - name: "consul-test"                      # Required
+#      locale: "*::*::*::*"                     # Optional, default: *::*::*::*
+#      endpoint: "localhost:8500"               # Required, http://x.x.x.x or x.x.x.x both acceptable.
+#      basicAuth: "user:pass"                   # Optional, default: "", basic auth for consul server, like <user:pass>
+#      datacenter: "rk"                         # Optional, default: "", consul datacenter
+#      token: ""                                # Optional, default: "", token to access consul
+#      serverCertPath: "serverCert"             # Optional, default: "", key of value in consul
+#      serverKeyPath: "serverKey"               # Optional, default: "", key of value in consul
+#      clientCertPath: "clientCert"             # Optional, default: "", key of value in consul
+#      clientKeyPath: "clientKey"               # Optional, default: "", key of value in consul
+#  remoteFileStore:
+#    - name: "remote-file-store-test"           # Required
+#      locale: "*::*::*::*"                     # Optional, default: *::*::*::*
+#      endpoint: "localhost:8080"               # Required, http://x.x.x.x or x.x.x.x both acceptable.
+#      basicAuth: "user:pass"                   # Optional, default: "", basic auth for remote file store, like <user:pass>
+#      serverCertPath: "serverCert"             # Optional, default: "", path of file in remote file store
+#      serverKeyPath: "serverKey"               # Optional, default: "", path of file in remote file store
+#      clientCertPath: "clientCert"             # Optional, default: "", path of file in remote file store
+#      clientKeyPath: "clientKey"               # Optional, default: "", path of file in remote file store
+myEntry:
+  enabled: true
+  name: my-entry
+  key: value
+  tls:
+    enabled: true
+    ref: ""
+  appLogger:
+    ref: app-logger
+  eventLogger:
+    ref: event-logger
