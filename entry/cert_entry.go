@@ -9,7 +9,7 @@ import (
 	"github.com/grantae/certinfo"
 	"github.com/hashicorp/consul/api"
 	"github.com/rookie-ninja/rk-common/common"
-	"go.etcd.io/etcd/clientv3"
+	"go.etcd.io/etcd/client/v3"
 	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"

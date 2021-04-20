@@ -32,24 +32,24 @@ import (
 // 17: Realm - realm where process runs
 // 18: Domain - domain where process runs
 type ProcessInfo struct {
-	AppName         string   `json:"app_name"`
-	Version         string   `json:"version"`
-	Description     string   `json:"description"`
-	Keywords        []string `json:"keywords"`
-	HomeURL         string   `json:"home_url"`
-	IconURL         string   `json:"icon_url"`
-	DocsURL         []string `json:"docs_url"`
-	Maintainers     []string `json:"maintainers"`
-	UID             string   `json:"uid"`
-	GID             string   `json:"gid"`
-	Username        string   `json:"username"`
-	StartTime       string   `json:"start_time"`
-	UpTimeSec       int64    `json:"up_time_sec"`
-	UpTimeStr       string   `json:"up_time_str"`
-	Region          string   `json:"region"`
-	AZ              string   `json:"az"`
-	Realm           string   `json:"realm"`
-	Domain          string   `json:"domain"`
+	AppName     string   `json:"app_name"`
+	Version     string   `json:"version"`
+	Description string   `json:"description"`
+	Keywords    []string `json:"keywords"`
+	HomeURL     string   `json:"home_url"`
+	IconURL     string   `json:"icon_url"`
+	DocsURL     []string `json:"docs_url"`
+	Maintainers []string `json:"maintainers"`
+	UID         string   `json:"uid"`
+	GID         string   `json:"gid"`
+	Username    string   `json:"username"`
+	StartTime   string   `json:"start_time"`
+	UpTimeSec   int64    `json:"up_time_sec"`
+	UpTimeStr   string   `json:"up_time_str"`
+	Region      string   `json:"region"`
+	AZ          string   `json:"az"`
+	Realm       string   `json:"realm"`
+	Domain      string   `json:"domain"`
 }
 
 func NewProcessInfo() *ProcessInfo {
@@ -64,23 +64,23 @@ func NewProcessInfo() *ProcessInfo {
 	}
 
 	return &ProcessInfo{
-		AppName:         GlobalAppCtx.GetAppInfoEntry().AppName,
-		Version:         GlobalAppCtx.GetAppInfoEntry().Version,
-		Description:     GlobalAppCtx.GetAppInfoEntry().Description,
-		Keywords:        GlobalAppCtx.GetAppInfoEntry().Keywords,
-		HomeURL:         GlobalAppCtx.GetAppInfoEntry().HomeURL,
-		IconURL:         GlobalAppCtx.GetAppInfoEntry().IconURL,
-		DocsURL:         GlobalAppCtx.GetAppInfoEntry().DocsURL,
-		Maintainers:     GlobalAppCtx.GetAppInfoEntry().Maintainers,
-		Username:        u.Name,
-		UID:             u.Uid,
-		GID:             u.Gid,
-		StartTime:       GlobalAppCtx.StartTime.Format(time.RFC3339),
-		UpTimeSec:       int64(GlobalAppCtx.GetUpTime().Seconds()),
-		UpTimeStr:       durafmt.ParseShort(GlobalAppCtx.GetUpTime()).String(),
-		Realm:           rkcommon.GetDefaultIfEmptyString(os.Getenv("REALM"), "unknown"),
-		Region:          rkcommon.GetDefaultIfEmptyString(os.Getenv("REGION"), "unknown"),
-		AZ:              rkcommon.GetDefaultIfEmptyString(os.Getenv("AZ"), "unknown"),
-		Domain:          rkcommon.GetDefaultIfEmptyString(os.Getenv("DOMAIN"), "unknown"),
+		AppName:     GlobalAppCtx.GetAppInfoEntry().AppName,
+		Version:     GlobalAppCtx.GetAppInfoEntry().Version,
+		Description: GlobalAppCtx.GetAppInfoEntry().Description,
+		Keywords:    GlobalAppCtx.GetAppInfoEntry().Keywords,
+		HomeURL:     GlobalAppCtx.GetAppInfoEntry().HomeURL,
+		IconURL:     GlobalAppCtx.GetAppInfoEntry().IconURL,
+		DocsURL:     GlobalAppCtx.GetAppInfoEntry().DocsURL,
+		Maintainers: GlobalAppCtx.GetAppInfoEntry().Maintainers,
+		Username:    u.Name,
+		UID:         u.Uid,
+		GID:         u.Gid,
+		StartTime:   GlobalAppCtx.StartTime.Format(time.RFC3339),
+		UpTimeSec:   int64(GlobalAppCtx.GetUpTime().Seconds()),
+		UpTimeStr:   durafmt.ParseShort(GlobalAppCtx.GetUpTime()).String(),
+		Realm:       rkcommon.GetDefaultIfEmptyString(os.Getenv("REALM"), "unknown"),
+		Region:      rkcommon.GetDefaultIfEmptyString(os.Getenv("REGION"), "unknown"),
+		AZ:          rkcommon.GetDefaultIfEmptyString(os.Getenv("AZ"), "unknown"),
+		Domain:      rkcommon.GetDefaultIfEmptyString(os.Getenv("DOMAIN"), "unknown"),
 	}
 }

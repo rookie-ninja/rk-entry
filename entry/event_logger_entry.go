@@ -12,6 +12,8 @@ import (
 	"github.com/rookie-ninja/rk-query"
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"os"
+	"strings"
 )
 
 const (
@@ -45,6 +47,7 @@ func NoopEventLoggerEntry() *EventLoggerEntry {
 type BootConfigEventLogger struct {
 	RK struct {
 		AppName string `yaml:"appName"`
+		Version string `yaml:"version"`
 	} `yaml:"rk"`
 	EventLogger []struct {
 		Name        string             `yaml:"name"`
@@ -102,6 +105,10 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 		config.RK.AppName = AppNameDefault
 	}
 
+	if len(config.RK.Version) < 1 {
+		config.RK.Version = "unknown"
+	}
+
 	// 2: init event logger entries with boot config
 	for i := range config.EventLogger {
 		element := config.EventLogger[i]
@@ -120,9 +127,20 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 		if queryLogger, err := rklogger.NewZapLoggerWithConf(queryLoggerConfig, queryLoggerLumberjackConfig); err != nil {
 			rkcommon.ShutdownWithError(err)
 		} else {
+			elements := []string{
+				rkcommon.GetDefaultIfEmptyString(os.Getenv("REALM"), "unknown"),
+				rkcommon.GetDefaultIfEmptyString(os.Getenv("REGION"), "unknown"),
+				rkcommon.GetDefaultIfEmptyString(os.Getenv("AZ"), "unknown"),
+				rkcommon.GetDefaultIfEmptyString(os.Getenv("DOMAIN"), "unknown"),
+			}
+
+			locale := strings.Join(elements, "::")
+
 			eventFactory = rkquery.NewEventFactory(
 				rkquery.WithLogger(queryLogger),
 				rkquery.WithAppName(config.RK.AppName),
+				rkquery.WithAppVersion(config.RK.Version),
+				rkquery.WithLocale(locale),
 				rkquery.WithFormat(rkquery.ToFormat(element.Format)))
 		}
 
