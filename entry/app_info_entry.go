@@ -16,8 +16,8 @@ const (
 	VersionDefault     = "v0.0.0"
 	LangDefault        = "golang"
 	DescriptionDefault = "rk application"
-	AppInfoEntryName   = "rk-app-info-entry"
-	AppInfoEntryType   = "rk-app-info-entry"
+	AppInfoEntryName   = "app-info-entry"
+	AppInfoEntryType   = "app-info-entry"
 )
 
 // Bootstrap config of application's basic information.

@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	CertEntryName  = "rk-cert-entry"
-	CertEntryType  = "rk-cert-entry"
+	CertEntryName  = "cert-entry"
+	CertEntryType  = "cert-entry"
 	DefaultTimeout = 3 * time.Second
 )
 
