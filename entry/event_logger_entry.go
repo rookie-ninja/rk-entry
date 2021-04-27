@@ -25,7 +25,7 @@ const (
 // Since we don't need any log rotation in case of noop, lumberjack config will be nil.
 func NoopEventLoggerEntry() *EventLoggerEntry {
 	entry := &EventLoggerEntry{
-		entryName:    "rk-event-logger-noop",
+		entryName:    "event-logger-noop",
 		entryType:    EventLoggerEntryType,
 		eventFactory: rkquery.NewEventFactory(rkquery.WithLogger(rklogger.NoopLogger)),
 	}

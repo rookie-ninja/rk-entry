@@ -15,7 +15,7 @@ import (
 func TestNoopEventLoggerEntry_HappyCase(t *testing.T) {
 	entry := NoopEventLoggerEntry()
 	assert.NotNil(t, entry)
-	assert.Equal(t, "rk-event-logger-noop", entry.entryName)
+	assert.Equal(t, "event-logger-noop", entry.entryName)
 	assert.Equal(t, EventLoggerEntryType, entry.entryType)
 	assert.NotNil(t, entry.eventFactory)
 	assert.NotNil(t, entry.eventHelper)

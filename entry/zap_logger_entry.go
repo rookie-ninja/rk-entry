@@ -21,7 +21,7 @@ const (
 // Since we don't need any log rotation in case of noop, lumberjack config and logger config will be nil.
 func NoopZapLoggerEntry() *ZapLoggerEntry {
 	return &ZapLoggerEntry{
-		entryName:        "rk-zap-logger-noop",
+		entryName:        "zap-logger-noop",
 		entryType:        ZapLoggerEntryType,
 		logger:           rklogger.NoopLogger,
 		loggerConfig:     nil,

@@ -16,7 +16,7 @@ import (
 func TestNoopZapLoggerEntry_HappyCase(t *testing.T) {
 	entry := NoopZapLoggerEntry()
 	assert.NotNil(t, entry)
-	assert.Equal(t, "rk-zap-logger-noop", entry.entryName)
+	assert.Equal(t, "zap-logger-noop", entry.entryName)
 	assert.Equal(t, ZapLoggerEntryType, entry.entryType)
 	assert.NotNil(t, entry.logger)
 	assert.Nil(t, entry.loggerConfig)

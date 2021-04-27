@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	DefaultZapLoggerEntryName   = "rk-logger-entry-default"
-	DefaultEventLoggerEntryName = "rk-event-logger-entry-default"
+	DefaultZapLoggerEntryName   = "zap-logger-default"
+	DefaultEventLoggerEntryName = "event-logger-default"
 )
 
 var (
@@ -40,9 +40,9 @@ var (
 type ShutdownHook func()
 
 // init global app context with bellow fields.
-// 1: Default zap logger entry with name of "rk-logger-entry-default" whose output path is stdout.
+// 1: Default zap logger entry with name of "zap-logger-default" whose output path is stdout.
 //    Please refer to rklogger.NewZapStdoutConfig.
-// 2: Default event logger entry with name of "rk-event-logger-entry-default" whose output path is stdout with RK format.
+// 2: Default event logger entry with name of "event-logger-default" whose output path is stdout with RK format.
 //    Please refer to rkquery.NewZapEventConfig.
 // 3: RK Entry registration function would be registered.
 func init() {
