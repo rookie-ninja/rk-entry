@@ -369,7 +369,7 @@ func (ctx *appContext) addCertEntry(entry Entry) string {
 }
 
 // Get event logger entry from GlobalAppCtx with name.
-// If entry retrieved with provided name was not type of rkentry.EventLoggerEntry, we will just return nil.
+// If entry retrieved with provided name was not type of rkentry.CertEntry, we will just return nil.
 func (ctx *appContext) GetCertEntry() *CertEntry {
 	if val, ok := GlobalAppCtx.BasicEntries[CertEntryName]; ok {
 		if res, ok := val.(*CertEntry); ok {
