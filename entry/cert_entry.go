@@ -20,8 +20,8 @@ import (
 )
 
 const (
-	CertEntryName  = "cert-entry"
-	CertEntryType  = "cert-entry"
+	CertEntryName  = "cert-default"
+	CertEntryType  = "cert"
 	DefaultTimeout = 3 * time.Second
 )
 
@@ -276,6 +276,7 @@ func RegisterCertEntriesFromConfig(configFilePath string) map[string]Entry {
 
 		retriever := &CertRetrieverETCD{
 			Name:             element.Name,
+			Type:             "ETCD",
 			ZapLoggerEntry:   zapLoggerEntry,
 			EventLoggerEntry: eventLoggerEntry,
 			Locale:           element.Locale,
@@ -300,6 +301,7 @@ func RegisterCertEntriesFromConfig(configFilePath string) map[string]Entry {
 
 		retriever := &CertRetrieverLocal{
 			Name:             element.Name,
+			Type:             "LocalFS",
 			Locale:           element.Locale,
 			ZapLoggerEntry:   zapLoggerEntry,
 			EventLoggerEntry: eventLoggerEntry,
@@ -321,6 +323,7 @@ func RegisterCertEntriesFromConfig(configFilePath string) map[string]Entry {
 
 		retriever := &CertRetrieverConsul{
 			Name:             element.Name,
+			Type:             "Consul",
 			Locale:           element.Locale,
 			Endpoint:         element.Endpoint,
 			ZapLoggerEntry:   zapLoggerEntry,
@@ -346,6 +349,7 @@ func RegisterCertEntriesFromConfig(configFilePath string) map[string]Entry {
 
 		retriever := &CertRetrieverRemoteFileStore{
 			Name:             element.Name,
+			Type:             "RemoteFileStore",
 			ZapLoggerEntry:   zapLoggerEntry,
 			EventLoggerEntry: eventLoggerEntry,
 			Locale:           element.Locale,
@@ -466,15 +470,17 @@ func (entry *CertEntry) GetType() string {
 // ******************************
 
 // 1: Name: Name of section, required.
-// 2: Locale: <realm>::<region>::<az>::<domain>
-// 3: Endpoint: Endpoint of ETCD server, http://x.x.x.x or x.x.x.x both acceptable.
-// 4: BasicAuth: Basic auth for ETCD server, like <user:pass>.
-// 5: ServerCertPath: Key of server cert in ETCD server.
-// 6: ServerKeyPath: Key of server key in ETCD server.
-// 7: ClientCertPath: Key of client cert in ETCD server.
-// 8: ClientKeyPath: Key of client cert in ETCD server.
+// 2: Type: Type of retriever, required.
+// 3: Locale: <realm>::<region>::<az>::<domain>
+// 4: Endpoint: Endpoint of ETCD server, http://x.x.x.x or x.x.x.x both acceptable.
+// 5: BasicAuth: Basic auth for ETCD server, like <user:pass>.
+// 6: ServerCertPath: Key of server cert in ETCD server.
+// 7: ServerKeyPath: Key of server key in ETCD server.
+// 8: ClientCertPath: Key of client cert in ETCD server.
+// 9: ClientKeyPath: Key of client cert in ETCD server.
 type CertRetrieverETCD struct {
 	Name             string
+	Type             string
 	Locale           string
 	ZapLoggerEntry   *ZapLoggerEntry
 	EventLoggerEntry *EventLoggerEntry
@@ -542,18 +548,20 @@ func (retriever *CertRetrieverETCD) GetName() string {
 // ************ Consul ************
 // ********************************
 
-// 1: Name: Name of section, required.
-// 2: Locale: <realm>::<region>::<az>::<domain>
-// 3: Endpoint: Endpoint of Consul server, http://x.x.x.x or x.x.x.x both acceptable.
-// 4: Datacenter: Consul datacenter.
-// 5: Token: Token for access Consul.
-// 4: BasicAuth: Basic auth for Consul server, like <user:pass>.
-// 5: ServerCertPath: Key of server cert in Consul server.
-// 6: ServerKeyPath: Key of server key in Consul server.
-// 7: ClientCertPath: Key of client cert in Consul server.
-// 8: ClientKeyPath: Key of client cert in Consul server.
+// 1: Name: Name of retriever, required.
+// 2: Type: Type of retriever, required.
+// 3: Locale: <realm>::<region>::<az>::<domain>
+// 4: Endpoint: Endpoint of Consul server, http://x.x.x.x or x.x.x.x both acceptable.
+// 5: Datacenter: Consul datacenter.
+// 6: Token: Token for access Consul.
+// 7: BasicAuth: Basic auth for Consul server, like <user:pass>.
+// 8: ServerCertPath: Key of server cert in Consul server.
+// 9: ServerKeyPath: Key of server key in Consul server.
+// 10: ClientCertPath: Key of client cert in Consul server.
+// 11: ClientKeyPath: Key of client cert in Consul server.
 type CertRetrieverConsul struct {
 	Name             string
+	Type             string
 	ZapLoggerEntry   *ZapLoggerEntry
 	EventLoggerEntry *EventLoggerEntry
 	Locale           string
@@ -638,14 +646,16 @@ func (retriever *CertRetrieverConsul) getValueFromConsul(client *api.Client, key
 // ************ Local ************
 // *******************************
 
-// 1: Name: Name of section, required.
-// 2: Locale: <realm>::<region>::<az>::<domain>
-// 3: ServerCertPath: Key of server cert in local fs.
-// 4: ServerKeyPath: Key of server key in local fs.
-// 5: ClientCertPath: Key of client cert in local fs.
-// 6: ClientKeyPath: Key of client cert in local fs.
+// 1: Name: Name of retriever, required.
+// 2: Type: Type of retriever, required.
+// 3: Locale: <realm>::<region>::<az>::<domain>
+// 4: ServerCertPath: Key of server cert in local fs.
+// 5: ServerKeyPath: Key of server key in local fs.
+// 6: ClientCertPath: Key of client cert in local fs.
+// 7: ClientKeyPath: Key of client cert in local fs.
 type CertRetrieverLocal struct {
 	Name             string
+	Type             string
 	Locale           string
 	ZapLoggerEntry   *ZapLoggerEntry
 	EventLoggerEntry *EventLoggerEntry
@@ -739,16 +749,18 @@ func (retriever *CertRetrieverLocal) GetName() string {
 // ************ Remote File Store ************
 // *******************************************
 
-// 1: Name: Name of section, required.
-// 2: Locale: <realm>::<region>::<az>::<domain>
-// 3: Endpoint: Endpoint of RemoteFileStore server, http://x.x.x.x or x.x.x.x both acceptable.
-// 4: BasicAuth: Basic auth for RemoteFileStore server, like <user:pass>.
-// 5: ServerCertPath: Key of server cert in RemoteFileStore server.
-// 6: ServerKeyPath: Key of server key in RemoteFileStore server.
-// 7: ClientCertPath: Key of client cert in RemoteFileStore server.
-// 8: ClientKeyPath: Key of client cert in RemoteFileStore server.
+// 1: Name: Name of retriever, required.
+// 2: Type: Type of retriever, required.
+// 3: Locale: <realm>::<region>::<az>::<domain>
+// 4: Endpoint: Endpoint of RemoteFileStore server, http://x.x.x.x or x.x.x.x both acceptable.
+// 5: BasicAuth: Basic auth for RemoteFileStore server, like <user:pass>.
+// 6: ServerCertPath: Key of server cert in RemoteFileStore server.
+// 7: ServerKeyPath: Key of server key in RemoteFileStore server.
+// 8: ClientCertPath: Key of client cert in RemoteFileStore server.
+// 9: ClientKeyPath: Key of client cert in RemoteFileStore server.
 type CertRetrieverRemoteFileStore struct {
 	Name             string
+	Type             string
 	ZapLoggerEntry   *ZapLoggerEntry
 	EventLoggerEntry *EventLoggerEntry
 	Locale           string
