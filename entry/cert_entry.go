@@ -128,10 +128,11 @@ type BootConfigCert struct {
 // ClientCert: Client certificate.
 // ClientKey: Private key of client certificate.
 type CertStore struct {
-	ServerCert []byte // Server certificate
-	ServerKey  []byte // Server key
-	ClientCert []byte // Client certificate, useful while client authentication was enabled from server
-	ClientKey  []byte // Client key (private), useful while client authentication was enabled from server
+	RetrieverType string // Type of retriever
+	ServerCert    []byte // Server certificate
+	ServerKey     []byte // Server key
+	ClientCert    []byte // Client certificate, useful while client authentication was enabled from server
+	ClientKey     []byte // Client key (private), useful while client authentication was enabled from server
 }
 
 // Parse server certificate to human readable string.
@@ -511,10 +512,11 @@ func (retriever *CertRetrieverETCD) Retrieve(context.Context) *CertStore {
 	defer client.Close()
 
 	return &CertStore{
-		ServerCert: retriever.getValueFromETCD(client, retriever.ServerCertPath),
-		ServerKey:  retriever.getValueFromETCD(client, retriever.ServerKeyPath),
-		ClientCert: retriever.getValueFromETCD(client, retriever.ClientCertPath),
-		ClientKey:  retriever.getValueFromETCD(client, retriever.ClientKeyPath),
+		RetrieverType: "ETCD",
+		ServerCert:    retriever.getValueFromETCD(client, retriever.ServerCertPath),
+		ServerKey:     retriever.getValueFromETCD(client, retriever.ServerKeyPath),
+		ClientCert:    retriever.getValueFromETCD(client, retriever.ClientCertPath),
+		ClientKey:     retriever.getValueFromETCD(client, retriever.ClientKeyPath),
 	}
 }
 
@@ -611,10 +613,11 @@ func (retriever *CertRetrieverConsul) Retrieve(context.Context) *CertStore {
 	}
 
 	return &CertStore{
-		ServerCert: retriever.getValueFromConsul(client, retriever.ServerCertPath),
-		ServerKey:  retriever.getValueFromConsul(client, retriever.ServerKeyPath),
-		ClientCert: retriever.getValueFromConsul(client, retriever.ClientCertPath),
-		ClientKey:  retriever.getValueFromConsul(client, retriever.ClientKeyPath),
+		RetrieverType: "Consul",
+		ServerCert:    retriever.getValueFromConsul(client, retriever.ServerCertPath),
+		ServerKey:     retriever.getValueFromConsul(client, retriever.ServerKeyPath),
+		ClientCert:    retriever.getValueFromConsul(client, retriever.ClientCertPath),
+		ClientKey:     retriever.getValueFromConsul(client, retriever.ClientKeyPath),
 	}
 }
 
@@ -733,10 +736,11 @@ func (retriever *CertRetrieverLocal) Retrieve(context.Context) *CertStore {
 	}
 
 	return &CertStore{
-		ServerCert: serverCert,
-		ServerKey:  serverKey,
-		ClientCert: clientCert,
-		ClientKey:  clientKey,
+		RetrieverType: "LocalFS",
+		ServerCert:    serverCert,
+		ServerKey:     serverKey,
+		ClientCert:    clientCert,
+		ClientKey:     clientKey,
 	}
 }
 
@@ -779,10 +783,11 @@ func (retriever *CertRetrieverRemoteFileStore) Retrieve(context.Context) *CertSt
 	}
 
 	return &CertStore{
-		ServerCert: retriever.getValueFromRemoteFileStore(client, retriever.ServerCertPath),
-		ServerKey:  retriever.getValueFromRemoteFileStore(client, retriever.ServerKeyPath),
-		ClientCert: retriever.getValueFromRemoteFileStore(client, retriever.ClientCertPath),
-		ClientKey:  retriever.getValueFromRemoteFileStore(client, retriever.ClientKeyPath),
+		RetrieverType: "RemoteFileStore",
+		ServerCert:    retriever.getValueFromRemoteFileStore(client, retriever.ServerCertPath),
+		ServerKey:     retriever.getValueFromRemoteFileStore(client, retriever.ServerKeyPath),
+		ClientCert:    retriever.getValueFromRemoteFileStore(client, retriever.ClientCertPath),
+		ClientKey:     retriever.getValueFromRemoteFileStore(client, retriever.ClientKeyPath),
 	}
 }
 
