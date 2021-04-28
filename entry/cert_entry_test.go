@@ -417,3 +417,7 @@ func (retriever *FakeRetriever) Retrieve(context.Context) *CertStore {
 func (retriever *FakeRetriever) GetName() string {
 	return "fake-retriever"
 }
+
+func (retriever *FakeRetriever) GetType() string {
+	return "fake-retriever"
+}

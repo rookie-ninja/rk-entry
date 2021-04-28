@@ -195,6 +195,9 @@ type CertRetriever interface {
 
 	// Return name of the retriever.
 	GetName() string
+
+	// Return type of retriever.
+	GetType() string
 }
 
 // CertEntry contains bellow fields.
@@ -546,6 +549,11 @@ func (retriever *CertRetrieverETCD) GetName() string {
 	return retriever.Name
 }
 
+// Get type of retriever.
+func (retriever *CertRetrieverETCD) GetType() string {
+	return retriever.Type
+}
+
 // ********************************
 // ************ Consul ************
 // ********************************
@@ -624,6 +632,11 @@ func (retriever *CertRetrieverConsul) Retrieve(context.Context) *CertStore {
 // Get name of retriever.
 func (retriever *CertRetrieverConsul) GetName() string {
 	return retriever.Name
+}
+
+// Get type of retriever.
+func (retriever *CertRetrieverConsul) GetType() string {
+	return retriever.Type
 }
 
 // Inner utility function.
@@ -749,6 +762,11 @@ func (retriever *CertRetrieverLocal) GetName() string {
 	return retriever.Name
 }
 
+// Get type of retriever.
+func (retriever *CertRetrieverLocal) GetType() string {
+	return retriever.Type
+}
+
 // *******************************************
 // ************ Remote File Store ************
 // *******************************************
@@ -843,4 +861,9 @@ func (retriever *CertRetrieverRemoteFileStore) getValueFromRemoteFileStore(clien
 // Get name of retriever.
 func (retriever *CertRetrieverRemoteFileStore) GetName() string {
 	return retriever.Name
+}
+
+// Get type of retriever.
+func (retriever *CertRetrieverRemoteFileStore) GetType() string {
+	return retriever.Type
 }
