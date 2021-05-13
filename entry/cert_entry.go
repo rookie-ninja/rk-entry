@@ -20,106 +20,87 @@ import (
 )
 
 const (
-	CertEntryName  = "cert-default"
-	CertEntryType  = "cert"
-	DefaultTimeout = 3 * time.Second
+	CertEntryName        = "CertDefault"
+	CertEntryType        = "CertEntry"
+	CertEntryDescription = "Internal RK entry which retrieves certificates from localFs, remoteFs, etcd or consul."
+	DefaultTimeout       = 3 * time.Second
+	ProviderEtcd         = "etcd"
+	ProviderConsul       = "consul"
+	ProviderLocalFs      = "localFs"
+	ProviderRemoteFs     = "remoteFs"
 )
 
-// Bootstrap config of application's basic information.
-// ETCD:
-// 1: Cert.ETCD.Name: Name of section, required.
-// 2: Cert.ETCD.Locale: <realm>::<region>::<az>::<domain>
-// 3: Cert.ETCD.Endpoint: Endpoint of ETCD server, http://x.x.x.x or x.x.x.x both acceptable.
-// 4: Cert.ETCD.BasicAuth: Basic auth for ETCD server, like <user:pass>.
-// 5: Cert.ETCD.ServerCertPath: Key of server cert in ETCD server.
-// 6: Cert.ETCD.ServerKeyPath: Key of server key in ETCD server.
-// 7: Cert.ETCD.ClientCertPath: Key of client cert in ETCD server.
-// 8: Cert.ETCD.ClientKeyPath: Key of client cert in ETCD server.
+// Bootstrap config of CertEntry.
+// etcd:
+// 1: Cert.Name: Name of section, required.
+// 2: Cert.Provider: etcd.
+// 3: Cert.Locale: <realm>::<region>::<az>::<domain>
+// 4: Cert.Endpoint: Endpoint of etcd server, http://x.x.x.x or x.x.x.x both acceptable.
+// 5: Cert.BasicAuth: Basic auth for etcd server, like <user:pass>.
+// 6: Cert.ServerCertPath: Key of server cert in etcd server.
+// 7: Cert.ServerKeyPath: Key of server key in etcd server.
+// 8: Cert.ClientCertPath: Key of client cert in etcd server.
+// 9: Cert.ClientKeyPath: Key of client cert in etcd server.
 //
-// Local FS
+// localFs
 // 1: Cert.Local.Name: Name of section, required.
-// 2: Cert.Local.Locale: <realm>::<region>::<az>::<domain>
-// 3: Cert.Local.ServerCertPath: Key of server cert in local fs.
-// 4: Cert.Local.ServerKeyPath: Key of server key in local fs.
-// 5: Cert.Local.ClientCertPath: Key of client cert in local fs.
-// 6: Cert.Local.ClientKeyPath: Key of client cert in local fs.
+// 2: Cert.Provider: localFS.
+// 3: Cert.Locale: <realm>::<region>::<az>::<domain>
+// 4: Cert.ServerCertPath: Key of server cert in local fs.
+// 5: Cert.ServerKeyPath: Key of server key in local fs.
+// 6: Cert.ClientCertPath: Key of client cert in local fs.
+// 7: Cert.ClientKeyPath: Key of client cert in local fs.
 //
-// Consul
-// 1: Cert.Consul.Name: Name of section, required.
-// 2: Cert.Consul.Locale: <realm>::<region>::<az>::<domain>
-// 3: Cert.Consul.Endpoint: Endpoint of Consul server, http://x.x.x.x or x.x.x.x both acceptable.
-// 4: Cert.Consul.Datacenter: Consul datacenter.
-// 5: Cert.Consul.Token: Token for access Consul.
-// 6: Cert.Consul.BasicAuth: Basic auth for Consul server, like <user:pass>.
-// 7: Cert.Consul.ServerCertPath: Key of server cert in Consul server.
-// 8: Cert.Consul.ServerKeyPath: Key of server key in Consul server.
-// 9: Cert.Consul.ClientCertPath: Key of client cert in Consul server.
-// 10: Cert.Consul.ClientKeyPath: Key of client cert in Consul server.
+// consul
+// 1: Cert.Name: Name of section, required.
+// 2: Cert.Provider: consul.
+// 3: Cert.Locale: <realm>::<region>::<az>::<domain>
+// 4: Cert.Endpoint: Endpoint of consul server, http://x.x.x.x or x.x.x.x both acceptable.
+// 5: Cert.Datacenter: Consul datacenter.
+// 6: Cert.Token: Token for access consul.
+// 7: Cert.BasicAuth: Basic auth for consul server, like <user:pass>.
+// 8: Cert.ServerCertPath: Key of server cert in consul server.
+// 9: Cert.ServerKeyPath: Key of server key in consul server.
+// 10: Cert.ClientCertPath: Key of client cert in consul server.
+// 11: Cert.ClientKeyPath: Key of client cert in consul server.
 //
-// Remote File Store:
-// 1: Cert.RemoteFileStore.Name: Name of section, required.
-// 2: Cert.RemoteFileStore.Locale: <realm>::<region>::<az>::<domain>
-// 3: Cert.RemoteFileStore.Endpoint: Endpoint of RemoteFileStore server, http://x.x.x.x or x.x.x.x both acceptable.
-// 4: Cert.RemoteFileStore.BasicAuth: Basic auth for RemoteFileStore server, like <user:pass>.
-// 5: Cert.RemoteFileStore.ServerCertPath: Key of server cert in RemoteFileStore server.
-// 6: Cert.RemoteFileStore.ServerKeyPath: Key of server key in RemoteFileStore server.
-// 7: Cert.RemoteFileStore.ClientCertPath: Key of client cert in RemoteFileStore server.
-// 8: Cert.RemoteFileStore.ClientKeyPath: Key of client cert in RemoteFileStore server.
+// remoteFs:
+// 1: Cert.Name: Name of section, required.
+// 2: Cert.Provider: remoteFs.
+// 3: Cert.Locale: <realm>::<region>::<az>::<domain>
+// 4: Cert.Endpoint: Endpoint of remoteFs server, http://x.x.x.x or x.x.x.x both acceptable.
+// 5: Cert.BasicAuth: Basic auth for remoteFs server, like <user:pass>.
+// 6: Cert.ServerCertPath: Key of server cert in remoteFs server.
+// 7: Cert.ServerKeyPath: Key of server key in remoteFs server.
+// 8: Cert.ClientCertPath: Key of client cert in remoteFs server.
+// 9: Cert.ClientKeyPath: Key of client cert in remoteFs server.
 //
 // Logger:
 // 1: Cert.Logger.ZapLogger.Ref: Name of zap logger entry defined in ZapLoggerEntry.
 // 2: Cert.Logger.EventLogger.Ref: Name of event logger entry defined in EventLoggerEntry.
 type BootConfigCert struct {
-	Cert struct {
-		Consul []struct {
-			Name           string `yaml:"name"`
-			Locale         string `yaml:"locale"`
-			Endpoint       string `yaml:"endpoint"`
-			Datacenter     string `yaml:"datacenter"`
-			Token          string `yaml:"token"`
-			BasicAuth      string `yaml:"basicAuth"`
-			ServerCertPath string `yaml:"serverCertPath"`
-			ServerKeyPath  string `yaml:"serverKeyPath"`
-			ClientCertPath string `yaml:"clientCertPath"`
-			ClientKeyPath  string `yaml:"clientKeyPath"`
-		} `yaml:"consul"`
-		ETCD []struct {
-			Name           string `yaml:"name"`
-			Locale         string `yaml:"locale"`
-			Endpoint       string `yaml:"endpoint"`
-			BasicAuth      string `yaml:"basicAuth"`
-			ServerCertPath string `yaml:"serverCertPath"`
-			ServerKeyPath  string `yaml:"serverKeyPath"`
-			ClientCertPath string `yaml:"clientCertPath"`
-			ClientKeyPath  string `yaml:"clientKeyPath"`
-		} `yaml:"etcd"`
-		Local []struct {
-			Name           string `yaml:"name"`
-			Locale         string `yaml:"locale"`
-			ServerCertPath string `yaml:"serverCertPath"`
-			ServerKeyPath  string `yaml:"serverKeyPath"`
-			ClientCertPath string `yaml:"clientCertPath"`
-			ClientKeyPath  string `yaml:"clientKeyPath"`
-		} `yaml:"local"`
-		RemoteFileStore []struct {
-			Name           string `yaml:"name"`
-			Locale         string `yaml:"locale"`
-			Endpoint       string `yaml:"endpoint"`
-			BasicAuth      string `yaml:"basicAuth"`
-			ServerCertPath string `yaml:"serverCertPath"`
-			ServerKeyPath  string `yaml:"serverKeyPath"`
-			ClientCertPath string `yaml:"clientCertPath"`
-			ClientKeyPath  string `yaml:"clientKeyPath"`
-		} `yaml:"remoteFileStore"`
-		Logger struct {
+	Cert []struct {
+		Name           string `yaml:"name" json:"name"`
+		Description    string `yaml:"description" json:"description"`
+		Provider       string `yaml:"provider" json:"provider"`
+		Locale         string `yaml:"locale" json:"locale"`
+		Endpoint       string `yaml:"endpoint" json:"endpoint"`
+		Datacenter     string `yaml:"datacenter" json:"datacenter"`
+		Token          string `yaml:"token" json:"token"`
+		BasicAuth      string `yaml:"basicAuth" json:"basicAuth"`
+		ServerCertPath string `yaml:"serverCertPath" json:"serverCertPath"`
+		ServerKeyPath  string `yaml:"serverKeyPath" json:"serverKeyPath"`
+		ClientCertPath string `yaml:"clientCertPath" json:"clientCertPath"`
+		ClientKeyPath  string `yaml:"clientKeyPath" json:"clientKeyPath"`
+		Logger         struct {
 			ZapLogger struct {
-				Ref string `yaml:"ref"`
-			} `yaml:"zapLogger"`
+				Ref string `yaml:"ref" json:"ref"`
+			} `yaml:"zapLogger" json:"zapLogger"`
 			EventLogger struct {
-				Ref string `yaml:"ref"`
-			} `yaml:"eventLogger"`
-		} `yaml:"logger"`
-	} `yaml:"cert"`
+				Ref string `yaml:"ref" json:"ref"`
+			} `yaml:"eventLogger" json:"eventLogger"`
+		} `yaml:"logger" json:"logger"`
+	} `yaml:"cert" json:"cert"`
 }
 
 // Stores certificate as byte array.
@@ -128,11 +109,14 @@ type BootConfigCert struct {
 // ClientCert: Client certificate.
 // ClientKey: Private key of client certificate.
 type CertStore struct {
-	RetrieverType string // Type of retriever
-	ServerCert    []byte // Server certificate
-	ServerKey     []byte // Server key
-	ClientCert    []byte // Client certificate, useful while client authentication was enabled from server
-	ClientKey     []byte // Client key (private), useful while client authentication was enabled from server
+	// Server certificate
+	ServerCert []byte `json:"-" yaml:"-"`
+	// Server key
+	ServerKey []byte `json:"-" yaml:"-"`
+	// Client certificate, useful while client authentication was enabled from server
+	ClientCert []byte `json:"-" yaml:"-"`
+	// Client key (private), useful while client authentication was enabled from server
+	ClientKey []byte `json:"-" yaml:"-"`
 }
 
 // Parse server certificate to human readable string.
@@ -188,36 +172,55 @@ func (store *CertStore) parseCert(bytes []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-// Interface for retrieving certificates.
-type CertRetriever interface {
-	// Read certificate files into byte array and store it into CertStore.
-	Retrieve(context.Context) *CertStore
+// Marshal entry
+func (store *CertStore) MarshalJSON() ([]byte, error) {
+	m := map[string]interface{}{
+		"serverCert": store.SeverCertString(),
+		"clientCert": store.ClientCertString(),
+	}
 
-	// Return name of the retriever.
-	GetName() string
+	return json.Marshal(&m)
+}
 
-	// Return type of retriever.
-	GetType() string
+// Unmarshal entry
+func (store *CertStore) UnmarshalJSON([]byte) error {
+	return nil
 }
 
 // CertEntry contains bellow fields.
-// 1: entryName: Name of entry.
-// 2: entryType: Type of entry which is CertEntry.
-// 3: ZapLoggerEntry: ZapLoggerEntry was initialized at the beginning.
-// 4: EventLoggerEntry: EventLoggerEntry was initialized at the beginning.
-// 5: Stores: Map of certificate store.
-// 6: Retrievers: Map of certificate retriever.
+// 1: EntryName: Name of entry.
+// 2: EntryType: Type of entry which is CertEntry.
+// 3: EntryDescription: Description of entry.
+// 4: ZapLoggerEntry: ZapLoggerEntry was initialized at the beginning.
+// 5: EventLoggerEntry: EventLoggerEntry was initialized at the beginning.
+// 6: Store: Certificate store.
+// 7: Retriever: Certificate retriever.
 type CertEntry struct {
-	entryName        string
-	entryType        string
-	ZapLoggerEntry   *ZapLoggerEntry
-	EventLoggerEntry *EventLoggerEntry
-	Stores           map[string]*CertStore
-	Retrievers       map[string]CertRetriever
+	EntryName        string            `json:"entryName" yaml:"entryName"`
+	EntryType        string            `json:"entryType" yaml:"entryType"`
+	EntryDescription string            `json:"entryDescription" yaml:"entryDescription"`
+	ZapLoggerEntry   *ZapLoggerEntry   `json:"-" yaml:"-"`
+	EventLoggerEntry *EventLoggerEntry `json:"-" yaml:"-"`
+	Store            *CertStore        `json:"store" yaml:"store"`
+	Retriever        CertRetriever     `json:"retrievers" yaml:"retrievers"`
 }
 
 // CertEntryOption Option which used while registering entry from codes.
 type CertEntryOption func(entry *CertEntry)
+
+// Provide name.
+func WithNameCert(name string) CertEntryOption {
+	return func(entry *CertEntry) {
+		entry.EntryName = name
+	}
+}
+
+// Provide description.
+func WithDescriptionCert(description string) CertEntryOption {
+	return func(entry *CertEntry) {
+		entry.EntryDescription = description
+	}
+}
 
 // Provide ZapLoggerEntry.
 func WithZapLoggerEntryCert(logger *ZapLoggerEntry) CertEntryOption {
@@ -238,18 +241,13 @@ func WithEventLoggerEntryCert(logger *EventLoggerEntry) CertEntryOption {
 }
 
 // Provide list of CertRetriever.
-func WithCertRetrieverCert(retrievers ...CertRetriever) CertEntryOption {
+func WithCertRetrieverCert(retriever CertRetriever) CertEntryOption {
 	return func(entry *CertEntry) {
-		for i := range retrievers {
-			retriever := retrievers[i]
-			if retriever != nil {
-				entry.Retrievers[retriever.GetName()] = retriever
-			}
-		}
+		entry.Retriever = retriever
 	}
 }
 
-// Implements rkentry.EntryRegFunc which generate RKEntry based on boot configuration file.
+// Implements rkentry.EntryRegFunc which generate Entry based on boot configuration file.
 // Currently, only YAML file is supported.
 // File path could be either relative or absolute.
 func RegisterCertEntriesFromConfig(configFilePath string) map[string]Entry {
@@ -259,121 +257,89 @@ func RegisterCertEntriesFromConfig(configFilePath string) map[string]Entry {
 
 	res := make(map[string]Entry)
 
-	zapLoggerEntry := GlobalAppCtx.GetZapLoggerEntry(config.Cert.Logger.ZapLogger.Ref)
-	if zapLoggerEntry == nil {
-		zapLoggerEntry = GlobalAppCtx.GetZapLoggerEntryDefault()
-	}
-
-	eventLoggerEntry := GlobalAppCtx.GetEventLoggerEntry(config.Cert.Logger.EventLogger.Ref)
-	if eventLoggerEntry == nil {
-		eventLoggerEntry = GlobalAppCtx.GetEventLoggerEntryDefault()
-	}
-
-	retrievers := make([]CertRetriever, 0)
-
-	// deal with etcd
-	for i := range config.Cert.ETCD {
-		element := config.Cert.ETCD[i]
-		if len(element.Name) < 1 || !rkcommon.MatchLocaleWithEnv(element.Locale) {
-			continue
-		}
-
-		retriever := &CertRetrieverETCD{
-			Name:             element.Name,
-			Type:             "ETCD",
-			ZapLoggerEntry:   zapLoggerEntry,
-			EventLoggerEntry: eventLoggerEntry,
-			Locale:           element.Locale,
-			Endpoint:         element.Endpoint,
-			BasicAuth:        element.BasicAuth,
-			ServerCertPath:   element.ServerCertPath,
-			ServerKeyPath:    element.ServerKeyPath,
-			ClientCertPath:   element.ClientCertPath,
-			ClientKeyPath:    element.ClientKeyPath,
-		}
-
-		retrievers = append(retrievers, retriever)
-	}
-
-	// deal with local
-	for i := range config.Cert.Local {
-		element := config.Cert.Local[i]
+	for i := range config.Cert {
+		element := config.Cert[i]
 
 		if len(element.Name) < 1 || !rkcommon.MatchLocaleWithEnv(element.Locale) {
 			continue
 		}
 
-		retriever := &CertRetrieverLocal{
-			Name:             element.Name,
-			Type:             "LocalFS",
-			Locale:           element.Locale,
-			ZapLoggerEntry:   zapLoggerEntry,
-			EventLoggerEntry: eventLoggerEntry,
-			ServerCertPath:   element.ServerCertPath,
-			ServerKeyPath:    element.ServerKeyPath,
-			ClientCertPath:   element.ClientCertPath,
-			ClientKeyPath:    element.ClientKeyPath,
+		zapLoggerEntry := GlobalAppCtx.GetZapLoggerEntry(element.Logger.ZapLogger.Ref)
+		if zapLoggerEntry == nil {
+			zapLoggerEntry = GlobalAppCtx.GetZapLoggerEntryDefault()
 		}
 
-		retrievers = append(retrievers, retriever)
+		eventLoggerEntry := GlobalAppCtx.GetEventLoggerEntry(element.Logger.EventLogger.Ref)
+		if eventLoggerEntry == nil {
+			eventLoggerEntry = GlobalAppCtx.GetEventLoggerEntryDefault()
+		}
+
+		var retriever CertRetriever
+
+		switch element.Provider {
+		case ProviderConsul:
+			retriever = &CertRetrieverConsul{
+				Provider:         element.Provider,
+				Locale:           element.Locale,
+				Endpoint:         element.Endpoint,
+				ZapLoggerEntry:   zapLoggerEntry,
+				EventLoggerEntry: eventLoggerEntry,
+				Datacenter:       element.Datacenter,
+				Token:            element.Token,
+				BasicAuth:        element.BasicAuth,
+				ServerCertPath:   element.ServerCertPath,
+				ServerKeyPath:    element.ServerKeyPath,
+				ClientCertPath:   element.ClientCertPath,
+				ClientKeyPath:    element.ClientKeyPath,
+			}
+		case ProviderEtcd:
+			retriever = &CertRetrieverEtcd{
+				Provider:         element.Provider,
+				ZapLoggerEntry:   zapLoggerEntry,
+				EventLoggerEntry: eventLoggerEntry,
+				Locale:           element.Locale,
+				Endpoint:         element.Endpoint,
+				BasicAuth:        element.BasicAuth,
+				ServerCertPath:   element.ServerCertPath,
+				ServerKeyPath:    element.ServerKeyPath,
+				ClientCertPath:   element.ClientCertPath,
+				ClientKeyPath:    element.ClientKeyPath,
+			}
+		case ProviderLocalFs:
+			retriever = &CertRetrieverLocalFs{
+				Provider:         element.Provider,
+				Locale:           element.Locale,
+				ZapLoggerEntry:   zapLoggerEntry,
+				EventLoggerEntry: eventLoggerEntry,
+				ServerCertPath:   element.ServerCertPath,
+				ServerKeyPath:    element.ServerKeyPath,
+				ClientCertPath:   element.ClientCertPath,
+				ClientKeyPath:    element.ClientKeyPath,
+			}
+		case ProviderRemoteFs:
+			retriever = &CertRetrieverRemoteFs{
+				Provider:         element.Provider,
+				ZapLoggerEntry:   zapLoggerEntry,
+				EventLoggerEntry: eventLoggerEntry,
+				Locale:           element.Locale,
+				Endpoint:         element.Endpoint,
+				BasicAuth:        element.BasicAuth,
+				ServerCertPath:   element.ServerCertPath,
+				ServerKeyPath:    element.ServerKeyPath,
+				ClientCertPath:   element.ClientCertPath,
+				ClientKeyPath:    element.ClientKeyPath,
+			}
+		}
+
+		entry := RegisterCertEntry(
+			WithNameCert(element.Name),
+			WithDescriptionCert(element.Description),
+			WithZapLoggerEntryCert(zapLoggerEntry),
+			WithEventLoggerEntryCert(eventLoggerEntry),
+			WithCertRetrieverCert(retriever))
+
+		res[entry.GetName()] = entry
 	}
-
-	// deal with consul
-	for i := range config.Cert.Consul {
-		element := config.Cert.Consul[i]
-		if len(element.Name) < 1 || !rkcommon.MatchLocaleWithEnv(element.Locale) {
-			continue
-		}
-
-		retriever := &CertRetrieverConsul{
-			Name:             element.Name,
-			Type:             "Consul",
-			Locale:           element.Locale,
-			Endpoint:         element.Endpoint,
-			ZapLoggerEntry:   zapLoggerEntry,
-			EventLoggerEntry: eventLoggerEntry,
-			Datacenter:       element.Datacenter,
-			Token:            element.Token,
-			BasicAuth:        element.BasicAuth,
-			ServerCertPath:   element.ServerCertPath,
-			ServerKeyPath:    element.ServerKeyPath,
-			ClientCertPath:   element.ClientCertPath,
-			ClientKeyPath:    element.ClientKeyPath,
-		}
-
-		retrievers = append(retrievers, retriever)
-	}
-
-	// deal with remote file store
-	for i := range config.Cert.RemoteFileStore {
-		element := config.Cert.RemoteFileStore[i]
-		if len(element.Name) < 1 || !rkcommon.MatchLocaleWithEnv(element.Locale) {
-			continue
-		}
-
-		retriever := &CertRetrieverRemoteFileStore{
-			Name:             element.Name,
-			Type:             "RemoteFileStore",
-			ZapLoggerEntry:   zapLoggerEntry,
-			EventLoggerEntry: eventLoggerEntry,
-			Locale:           element.Locale,
-			Endpoint:         element.Endpoint,
-			BasicAuth:        element.BasicAuth,
-			ServerCertPath:   element.ServerCertPath,
-			ServerKeyPath:    element.ServerKeyPath,
-			ClientCertPath:   element.ClientCertPath,
-			ClientKeyPath:    element.ClientKeyPath,
-		}
-
-		retrievers = append(retrievers, retriever)
-	}
-
-	entry := RegisterCertEntry(
-		WithZapLoggerEntryCert(zapLoggerEntry),
-		WithEventLoggerEntryCert(eventLoggerEntry),
-		WithCertRetrieverCert(retrievers...))
-
-	res[entry.GetName()] = entry
 
 	return res
 }
@@ -383,28 +349,23 @@ func RegisterCertEntry(opts ...CertEntryOption) *CertEntry {
 	entry := &CertEntry{
 		EventLoggerEntry: GlobalAppCtx.GetEventLoggerEntryDefault(),
 		ZapLoggerEntry:   GlobalAppCtx.GetZapLoggerEntryDefault(),
-		entryName:        CertEntryName,
-		entryType:        CertEntryType,
-		Stores:           make(map[string]*CertStore),
-		Retrievers:       make(map[string]CertRetriever),
+		EntryName:        CertEntryName,
+		EntryType:        CertEntryType,
+		EntryDescription: CertEntryDescription,
 	}
 
 	for i := range opts {
 		opts[i](entry)
 	}
 
-	GlobalAppCtx.addCertEntry(entry)
+	GlobalAppCtx.AddCertEntry(entry)
 
 	return entry
 }
 
 // Iterate retrievers and call Retrieve() for each of them.
 func (entry *CertEntry) Bootstrap(ctx context.Context) {
-	for _, v := range entry.Retrievers {
-		store := v.Retrieve(ctx)
-
-		entry.Stores[v.GetName()] = store
-	}
+	entry.Store = entry.Retriever.Retrieve(ctx)
 }
 
 // Interrupt entry.
@@ -414,67 +375,78 @@ func (entry *CertEntry) Interrupt(context.Context) {
 
 // Return string of entry.
 func (entry *CertEntry) String() string {
-	m := map[string]interface{}{
-		"entry_name": entry.entryName,
-		"entry_type": entry.entryType,
-	}
-
-	retrievers := make([]string, 0)
-	for k := range entry.Retrievers {
-		retrievers = append(retrievers, k)
-	}
-
-	m["retrievers"] = retrievers
-
-	for k, v := range entry.Stores {
-		if v != nil {
-			if len(v.ServerCert) > 0 {
-				m[k+"_server_cert_exist"] = true
-			} else {
-				m[k+"_server_cert_exist"] = false
-			}
-
-			if len(v.ServerKey) > 0 {
-				m[k+"_server_key_exist"] = true
-			} else {
-				m[k+"_server_key_exist"] = false
-			}
-
-			if len(v.ClientCert) > 0 {
-				m[k+"_client_cert_exist"] = true
-			} else {
-				m[k+"_client_cert_exist"] = false
-			}
-
-			if len(v.ClientKey) > 0 {
-				m[k+"_client_key_exist"] = true
-			} else {
-				m[k+"_client_key_exist"] = false
-			}
-		}
-	}
-
-	bytes, _ := json.Marshal(m)
-
+	bytes, _ := json.Marshal(entry)
 	return string(bytes)
+}
+
+// Marshal entry
+func (entry *CertEntry) MarshalJSON() ([]byte, error) {
+	m := map[string]interface{}{
+		"entryName":        entry.EntryName,
+		"entryType":        entry.EntryType,
+		"entryDescription": entry.EntryDescription,
+		"eventLoggerEntry": entry.EventLoggerEntry.GetName(),
+		"zapLoggerEntry":   entry.ZapLoggerEntry.GetName(),
+		"store":            entry.Store,
+		"retriever":        entry.Retriever,
+	}
+
+	return json.Marshal(&m)
+}
+
+// Unmarshal entry
+func (entry *CertEntry) UnmarshalJSON([]byte) error {
+	return nil
 }
 
 // Get name of entry.
 func (entry *CertEntry) GetName() string {
-	return entry.entryName
+	return entry.EntryName
 }
 
 // Get type of entry.
 func (entry *CertEntry) GetType() string {
-	return entry.entryType
+	return entry.EntryType
+}
+
+// Return description of entry
+func (entry *CertEntry) GetDescription() string {
+	return entry.EntryDescription
+}
+
+// Interface for retrieving certificates.
+type CertRetriever interface {
+	// Read certificate files into byte array and store it into CertStore.
+	Retrieve(context.Context) *CertStore
+
+	// Return privider of retriever.
+	GetProvider() string
+
+	// Return server cert path.
+	GetServerCertPath() string
+
+	// Return server key path.
+	GetServerKeyPath() string
+
+	// Return client cert path.
+	GetClientCertPath() string
+
+	// Return client key path.
+	GetClientKeyPath() string
+
+	// Return endpoint.
+	GetEndpoint() string
+
+	// Return locale.
+	GetLocale() string
 }
 
 // ******************************
-// ************ ETCD ************
+// ************ etcd ************
 // ******************************
 
 // 1: Name: Name of section, required.
-// 2: Type: Type of retriever, required.
+// 2: Provider: Provider of retriever, required.
 // 3: Locale: <realm>::<region>::<az>::<domain>
 // 4: Endpoint: Endpoint of ETCD server, http://x.x.x.x or x.x.x.x both acceptable.
 // 5: BasicAuth: Basic auth for ETCD server, like <user:pass>.
@@ -482,22 +454,22 @@ func (entry *CertEntry) GetType() string {
 // 7: ServerKeyPath: Key of server key in ETCD server.
 // 8: ClientCertPath: Key of client cert in ETCD server.
 // 9: ClientKeyPath: Key of client cert in ETCD server.
-type CertRetrieverETCD struct {
-	Name             string
-	Type             string
-	Locale           string
-	ZapLoggerEntry   *ZapLoggerEntry
-	EventLoggerEntry *EventLoggerEntry
-	Endpoint         string
-	BasicAuth        string
-	ServerCertPath   string
-	ServerKeyPath    string
-	ClientCertPath   string
-	ClientKeyPath    string
+type CertRetrieverEtcd struct {
+	Name             string            `yaml:"name" json:"name"`
+	Provider         string            `yaml:"provider" json:"provider"`
+	Locale           string            `yaml:"locale" json:"locale"`
+	ZapLoggerEntry   *ZapLoggerEntry   `json:"-" yaml:"-"`
+	EventLoggerEntry *EventLoggerEntry `json:"-" yaml:"-"`
+	Endpoint         string            `yaml:"endpoint" json:"endpoint"`
+	BasicAuth        string            `json:"-" yaml:"-"`
+	ServerCertPath   string            `yaml:"serverCertPath" json:"serverCertPath"`
+	ServerKeyPath    string            `yaml:"serverKeyPath" json:"serverKeyPath"`
+	ClientCertPath   string            `yaml:"clientCertPath" json:"clientCertPath"`
+	ClientKeyPath    string            `yaml:"clientKeyPath" json:"clientKeyPath"`
 }
 
 // Call ETCD server and retrieve values based on keys.
-func (retriever *CertRetrieverETCD) Retrieve(context.Context) *CertStore {
+func (retriever *CertRetrieverEtcd) Retrieve(context.Context) *CertStore {
 	client, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{retriever.Endpoint},
 		DialTimeout: DefaultTimeout,
@@ -515,16 +487,15 @@ func (retriever *CertRetrieverETCD) Retrieve(context.Context) *CertStore {
 	defer client.Close()
 
 	return &CertStore{
-		RetrieverType: "ETCD",
-		ServerCert:    retriever.getValueFromETCD(client, retriever.ServerCertPath),
-		ServerKey:     retriever.getValueFromETCD(client, retriever.ServerKeyPath),
-		ClientCert:    retriever.getValueFromETCD(client, retriever.ClientCertPath),
-		ClientKey:     retriever.getValueFromETCD(client, retriever.ClientKeyPath),
+		ServerCert: retriever.getValueFromEtcd(client, retriever.ServerCertPath),
+		ServerKey:  retriever.getValueFromEtcd(client, retriever.ServerKeyPath),
+		ClientCert: retriever.getValueFromEtcd(client, retriever.ClientCertPath),
+		ClientKey:  retriever.getValueFromEtcd(client, retriever.ClientKeyPath),
 	}
 }
 
 // Inner utility function.
-func (retriever *CertRetrieverETCD) getValueFromETCD(client *clientv3.Client, key string) []byte {
+func (retriever *CertRetrieverEtcd) getValueFromEtcd(client *clientv3.Client, key string) []byte {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
 
@@ -544,45 +515,68 @@ func (retriever *CertRetrieverETCD) getValueFromETCD(client *clientv3.Client, ke
 	}
 }
 
-// Get name of retriever.
-func (retriever *CertRetrieverETCD) GetName() string {
-	return retriever.Name
+// Get provider of retriever.
+func (retriever *CertRetrieverEtcd) GetProvider() string {
+	return retriever.Provider
 }
 
-// Get type of retriever.
-func (retriever *CertRetrieverETCD) GetType() string {
-	return retriever.Type
+// Return server cert path.
+func (retriever *CertRetrieverEtcd) GetServerCertPath() string {
+	return retriever.ServerCertPath
+}
+
+// Return server key path.
+func (retriever *CertRetrieverEtcd) GetServerKeyPath() string {
+	return retriever.ServerKeyPath
+}
+
+// Return client cert path.
+func (retriever *CertRetrieverEtcd) GetClientCertPath() string {
+	return retriever.ClientCertPath
+}
+
+// Return client key path.
+func (retriever *CertRetrieverEtcd) GetClientKeyPath() string {
+	return retriever.ClientKeyPath
+}
+
+// Return endpoint.
+func (retriever *CertRetrieverEtcd) GetEndpoint() string {
+	return retriever.Endpoint
+}
+
+// Return locale.
+func (retriever *CertRetrieverEtcd) GetLocale() string {
+	return retriever.Locale
 }
 
 // ********************************
-// ************ Consul ************
+// ************ consul ************
 // ********************************
 
-// 1: Name: Name of retriever, required.
-// 2: Type: Type of retriever, required.
-// 3: Locale: <realm>::<region>::<az>::<domain>
-// 4: Endpoint: Endpoint of Consul server, http://x.x.x.x or x.x.x.x both acceptable.
-// 5: Datacenter: Consul datacenter.
-// 6: Token: Token for access Consul.
-// 7: BasicAuth: Basic auth for Consul server, like <user:pass>.
-// 8: ServerCertPath: Key of server cert in Consul server.
-// 9: ServerKeyPath: Key of server key in Consul server.
-// 10: ClientCertPath: Key of client cert in Consul server.
-// 11: ClientKeyPath: Key of client cert in Consul server.
+// 1: Provider: Provider of retriever, required.
+// 2: Locale: <realm>::<region>::<az>::<domain>
+// 3: Endpoint: Endpoint of consul server, http://x.x.x.x or x.x.x.x both acceptable.
+// 4: Datacenter: Consul datacenter.
+// 5: Token: Token for access Consul.
+// 6: BasicAuth: Basic auth for Consul server, like <user:pass>.
+// 7: ServerCertPath: Path of server cert in Consul server.
+// 8: ServerKeyPath: Path of server key in Consul server.
+// 9: ClientCertPath: Path of client cert in Consul server.
+// 10: ClientKeyPath: Path of client cert in Consul server.
 type CertRetrieverConsul struct {
-	Name             string
-	Type             string
-	ZapLoggerEntry   *ZapLoggerEntry
-	EventLoggerEntry *EventLoggerEntry
-	Locale           string
-	Endpoint         string
-	Datacenter       string
-	Token            string
-	BasicAuth        string
-	ServerCertPath   string
-	ServerKeyPath    string
-	ClientCertPath   string
-	ClientKeyPath    string
+	Provider         string            `yaml:"provider" json:"provider"`
+	ZapLoggerEntry   *ZapLoggerEntry   `json:"-" yaml:"-"`
+	EventLoggerEntry *EventLoggerEntry `json:"-" yaml:"-"`
+	Locale           string            `yaml:"locale" json:"locale"`
+	Endpoint         string            `yaml:"endpoint" json:"endpoint"`
+	Datacenter       string            `yaml:"datacenter" json:"datacenter"`
+	Token            string            `json:"-" yaml:"-"`
+	BasicAuth        string            `json:"-" yaml:"-"`
+	ServerCertPath   string            `yaml:"serverCertPath" json:"serverCertPath"`
+	ServerKeyPath    string            `yaml:"serverKeyPath" json:"serverKeyPath"`
+	ClientCertPath   string            `yaml:"clientCertPath" json:"clientCertPath"`
+	ClientKeyPath    string            `yaml:"clientKeyPath" json:"clientKeyPath"`
 }
 
 // Call Consul server/agent and retrieve values based on keys.
@@ -621,22 +615,46 @@ func (retriever *CertRetrieverConsul) Retrieve(context.Context) *CertStore {
 	}
 
 	return &CertStore{
-		RetrieverType: "Consul",
-		ServerCert:    retriever.getValueFromConsul(client, retriever.ServerCertPath),
-		ServerKey:     retriever.getValueFromConsul(client, retriever.ServerKeyPath),
-		ClientCert:    retriever.getValueFromConsul(client, retriever.ClientCertPath),
-		ClientKey:     retriever.getValueFromConsul(client, retriever.ClientKeyPath),
+		ServerCert: retriever.getValueFromConsul(client, retriever.ServerCertPath),
+		ServerKey:  retriever.getValueFromConsul(client, retriever.ServerKeyPath),
+		ClientCert: retriever.getValueFromConsul(client, retriever.ClientCertPath),
+		ClientKey:  retriever.getValueFromConsul(client, retriever.ClientKeyPath),
 	}
 }
 
-// Get name of retriever.
-func (retriever *CertRetrieverConsul) GetName() string {
-	return retriever.Name
+// Get provider of retriever.
+func (retriever *CertRetrieverConsul) GetProvider() string {
+	return retriever.Provider
 }
 
-// Get type of retriever.
-func (retriever *CertRetrieverConsul) GetType() string {
-	return retriever.Type
+// Return server cert path.
+func (retriever *CertRetrieverConsul) GetServerCertPath() string {
+	return retriever.ServerCertPath
+}
+
+// Return server key path.
+func (retriever *CertRetrieverConsul) GetServerKeyPath() string {
+	return retriever.ServerKeyPath
+}
+
+// Return client cert path.
+func (retriever *CertRetrieverConsul) GetClientCertPath() string {
+	return retriever.ClientCertPath
+}
+
+// Return client key path.
+func (retriever *CertRetrieverConsul) GetClientKeyPath() string {
+	return retriever.ClientKeyPath
+}
+
+// Return endpoint.
+func (retriever *CertRetrieverConsul) GetEndpoint() string {
+	return retriever.Endpoint
+}
+
+// Return locale.
+func (retriever *CertRetrieverConsul) GetLocale() string {
+	return retriever.Locale
 }
 
 // Inner utility function.
@@ -658,31 +676,29 @@ func (retriever *CertRetrieverConsul) getValueFromConsul(client *api.Client, key
 	return pair.Value
 }
 
-// *******************************
-// ************ Local ************
-// *******************************
+// *********************************
+// ************ localFs ************
+// *********************************
 
-// 1: Name: Name of retriever, required.
-// 2: Type: Type of retriever, required.
-// 3: Locale: <realm>::<region>::<az>::<domain>
-// 4: ServerCertPath: Key of server cert in local fs.
-// 5: ServerKeyPath: Key of server key in local fs.
-// 6: ClientCertPath: Key of client cert in local fs.
-// 7: ClientKeyPath: Key of client cert in local fs.
-type CertRetrieverLocal struct {
-	Name             string
-	Type             string
-	Locale           string
-	ZapLoggerEntry   *ZapLoggerEntry
-	EventLoggerEntry *EventLoggerEntry
-	ServerCertPath   string
-	ServerKeyPath    string
-	ClientCertPath   string
-	ClientKeyPath    string
+// 1: Provider: Type of retriever, required.
+// 2: Locale: <realm>::<region>::<az>::<domain>
+// 3: ServerCertPath: Path of server cert in localFs.
+// 4: ServerKeyPath: Path of server key in localFs.
+// 5: ClientCertPath: Path of client cert in localFs.
+// 6: ClientKeyPath: Path of client cert in localFs.
+type CertRetrieverLocalFs struct {
+	Provider         string            `yaml:"provider" json:"provider"`
+	Locale           string            `yaml:"locale" json:"locale"`
+	ZapLoggerEntry   *ZapLoggerEntry   `json:"-" yaml:"-"`
+	EventLoggerEntry *EventLoggerEntry `json:"-" yaml:"-"`
+	ServerCertPath   string            `yaml:"serverCertPath" json:"serverCertPath""`
+	ServerKeyPath    string            `yaml:"serverKeyPath" json:"serverKeyPath"`
+	ClientCertPath   string            `yaml:"clientCertPath" json:"clientCertPath""`
+	ClientKeyPath    string            `yaml:"clientKeyPath" json:"clientKeyPath"`
 }
 
 // Read files from local file system and retrieve values based on keys.
-func (retriever *CertRetrieverLocal) Retrieve(context.Context) *CertStore {
+func (retriever *CertRetrieverLocalFs) Retrieve(context.Context) *CertStore {
 	wd, err := os.Getwd()
 
 	if err != nil {
@@ -749,68 +765,89 @@ func (retriever *CertRetrieverLocal) Retrieve(context.Context) *CertStore {
 	}
 
 	return &CertStore{
-		RetrieverType: "LocalFS",
-		ServerCert:    serverCert,
-		ServerKey:     serverKey,
-		ClientCert:    clientCert,
-		ClientKey:     clientKey,
+		ServerCert: serverCert,
+		ServerKey:  serverKey,
+		ClientCert: clientCert,
+		ClientKey:  clientKey,
 	}
 }
 
-// Get name of retriever.
-func (retriever *CertRetrieverLocal) GetName() string {
-	return retriever.Name
+// Get provider of retriever.
+func (retriever *CertRetrieverLocalFs) GetProvider() string {
+	return retriever.Provider
 }
 
-// Get type of retriever.
-func (retriever *CertRetrieverLocal) GetType() string {
-	return retriever.Type
+// Return server cert path.
+func (retriever *CertRetrieverLocalFs) GetServerCertPath() string {
+	return retriever.ServerCertPath
 }
 
-// *******************************************
-// ************ Remote File Store ************
-// *******************************************
+// Return server key path.
+func (retriever *CertRetrieverLocalFs) GetServerKeyPath() string {
+	return retriever.ServerKeyPath
+}
 
-// 1: Name: Name of retriever, required.
-// 2: Type: Type of retriever, required.
-// 3: Locale: <realm>::<region>::<az>::<domain>
-// 4: Endpoint: Endpoint of RemoteFileStore server, http://x.x.x.x or x.x.x.x both acceptable.
-// 5: BasicAuth: Basic auth for RemoteFileStore server, like <user:pass>.
-// 6: ServerCertPath: Key of server cert in RemoteFileStore server.
-// 7: ServerKeyPath: Key of server key in RemoteFileStore server.
-// 8: ClientCertPath: Key of client cert in RemoteFileStore server.
-// 9: ClientKeyPath: Key of client cert in RemoteFileStore server.
-type CertRetrieverRemoteFileStore struct {
-	Name             string
-	Type             string
-	ZapLoggerEntry   *ZapLoggerEntry
-	EventLoggerEntry *EventLoggerEntry
-	Locale           string
-	Endpoint         string
-	BasicAuth        string
-	ServerCertPath   string
-	ServerKeyPath    string
-	ClientCertPath   string
-	ClientKeyPath    string
+// Return client cert path.
+func (retriever *CertRetrieverLocalFs) GetClientCertPath() string {
+	return retriever.ClientCertPath
+}
+
+// Return client key path.
+func (retriever *CertRetrieverLocalFs) GetClientKeyPath() string {
+	return retriever.ClientKeyPath
+}
+
+// Return endpoint.
+func (retriever *CertRetrieverLocalFs) GetEndpoint() string {
+	return "local"
+}
+
+// Return locale.
+func (retriever *CertRetrieverLocalFs) GetLocale() string {
+	return retriever.Locale
+}
+
+// **********************************
+// ************ remoteFs ************
+// **********************************
+
+// 1: Provider: Provider of retriever, required.
+// 2: Locale: <realm>::<region>::<az>::<domain>
+// 3: Endpoint: Endpoint of RemoteFileStore server, http://x.x.x.x or x.x.x.x both acceptable.
+// 4: BasicAuth: Basic auth for RemoteFileStore server, like <user:pass>.
+// 5: ServerCertPath: Path of server cert in remoteFs server.
+// 6: ServerKeyPath: Path of server key in remoteFs server.
+// 7: ClientCertPath: Path of client cert in remoteFs server.
+// 8: ClientKeyPath: Path of client cert in remoteFs server.
+type CertRetrieverRemoteFs struct {
+	Provider         string            `yaml:"provider" json:"provider"`
+	ZapLoggerEntry   *ZapLoggerEntry   `json:"-" yaml:"-"`
+	EventLoggerEntry *EventLoggerEntry `json:"-" yaml:"-"`
+	Locale           string            `yaml:"locale" json:"locale"`
+	Endpoint         string            `yaml:"endpoint" json:"endpoint"`
+	BasicAuth        string            `json:"-" yaml:"-"`
+	ServerCertPath   string            `yaml:"serverCertPath" json:"serverCertPath"`
+	ServerKeyPath    string            `yaml:"serverKeyPath" json:"serverKeyPath"`
+	ClientCertPath   string            `yaml:"clientCertPath" json:"clientCertPath"`
+	ClientKeyPath    string            `yaml:"clientKeyPath" json:"clientKeyPath"`
 }
 
 // Call remote file store and retrieve values based on keys.
-func (retriever *CertRetrieverRemoteFileStore) Retrieve(context.Context) *CertStore {
+func (retriever *CertRetrieverRemoteFs) Retrieve(context.Context) *CertStore {
 	client := &http.Client{
 		Timeout: DefaultTimeout,
 	}
 
 	return &CertStore{
-		RetrieverType: "RemoteFileStore",
-		ServerCert:    retriever.getValueFromRemoteFileStore(client, retriever.ServerCertPath),
-		ServerKey:     retriever.getValueFromRemoteFileStore(client, retriever.ServerKeyPath),
-		ClientCert:    retriever.getValueFromRemoteFileStore(client, retriever.ClientCertPath),
-		ClientKey:     retriever.getValueFromRemoteFileStore(client, retriever.ClientKeyPath),
+		ServerCert: retriever.getValueFromRemoteFs(client, retriever.ServerCertPath),
+		ServerKey:  retriever.getValueFromRemoteFs(client, retriever.ServerKeyPath),
+		ClientCert: retriever.getValueFromRemoteFs(client, retriever.ClientCertPath),
+		ClientKey:  retriever.getValueFromRemoteFs(client, retriever.ClientKeyPath),
 	}
 }
 
 // Inner utility function.
-func (retriever *CertRetrieverRemoteFileStore) getValueFromRemoteFileStore(client *http.Client, certPath string) []byte {
+func (retriever *CertRetrieverRemoteFs) getValueFromRemoteFs(client *http.Client, certPath string) []byte {
 	if !strings.HasPrefix(retriever.Endpoint, "http://") {
 		retriever.Endpoint = "http://" + retriever.Endpoint
 	}
@@ -858,12 +895,37 @@ func (retriever *CertRetrieverRemoteFileStore) getValueFromRemoteFileStore(clien
 	return res
 }
 
-// Get name of retriever.
-func (retriever *CertRetrieverRemoteFileStore) GetName() string {
-	return retriever.Name
+// Get provider of retriever.
+func (retriever *CertRetrieverRemoteFs) GetProvider() string {
+	return retriever.Provider
 }
 
-// Get type of retriever.
-func (retriever *CertRetrieverRemoteFileStore) GetType() string {
-	return retriever.Type
+// Return server cert path.
+func (retriever *CertRetrieverRemoteFs) GetServerCertPath() string {
+	return retriever.ServerCertPath
+}
+
+// Return server key path.
+func (retriever *CertRetrieverRemoteFs) GetServerKeyPath() string {
+	return retriever.ServerKeyPath
+}
+
+// Return client cert path.
+func (retriever *CertRetrieverRemoteFs) GetClientCertPath() string {
+	return retriever.ClientCertPath
+}
+
+// Return client key path.
+func (retriever *CertRetrieverRemoteFs) GetClientKeyPath() string {
+	return retriever.ClientKeyPath
+}
+
+// Return endpoint.
+func (retriever *CertRetrieverRemoteFs) GetEndpoint() string {
+	return retriever.Endpoint
+}
+
+// Return locale.
+func (retriever *CertRetrieverRemoteFs) GetLocale() string {
+	return retriever.Locale
 }

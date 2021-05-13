@@ -18,19 +18,19 @@ import (
 // 6: Count - total number of requests
 // 7: ResCode - response code labels
 type ReqMetricsRK struct {
-	Path            string       `json:"path"`
-	ElapsedNanoP50  float64      `json:"elapsed_nano_p50"`
-	ElapsedNanoP90  float64      `json:"elapsed_nano_p90"`
-	ElapsedNanoP99  float64      `json:"elapsed_nano_p99"`
-	ElapsedNanoP999 float64      `json:"elapsed_nano_p999"`
-	Count           uint64       `json:"count"`
-	ResCode         []*ResCodeRK `json:"res_code"`
+	Path            string       `json:"path" yaml:"path"`
+	ElapsedNanoP50  float64      `json:"elapsedNanoP50" yaml:"elapsedNanoP50"`
+	ElapsedNanoP90  float64      `json:"elapsedNanoP90" yaml:"elapsedNanoP90"`
+	ElapsedNanoP99  float64      `json:"elapsedNanoP99" yaml:"elapsedNanoP99"`
+	ElapsedNanoP999 float64      `json:"elapsedNanoP999" yaml:"elapsedNanoP999"`
+	Count           uint64       `json:"count" yaml:"count""`
+	ResCode         []*ResCodeRK `json:"resCode" yaml:"resCode"`
 }
 
 // Labels and request count
 type ResCodeRK struct {
-	ResCode string `json:"res_code"`
-	Count   uint64 `json:"count"`
+	ResCode string `json:"resCode" yaml:"resCode"`
+	Count   uint64 `json:"count" yaml:"count"`
 }
 
 // Parse metrics in prometheus client into rk style metrics for common servic.

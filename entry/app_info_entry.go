@@ -12,33 +12,34 @@ import (
 )
 
 const (
-	AppNameDefault     = "rkapp"
-	VersionDefault     = "v0.0.0"
-	LangDefault        = "golang"
-	DescriptionDefault = "rk application"
-	AppInfoEntryName   = "app-info-entry"
-	AppInfoEntryType   = "app-info-entry"
+	AppNameDefault          = "rkApp"
+	VersionDefault          = "v0.0.0"
+	LangDefault             = "golang"
+	DescriptionDefault      = "rk application"
+	AppInfoEntryName        = "AppInfoDefault"
+	AppInfoEntryType        = "AppInfoEntry"
+	AppInfoEntryDescription = "Internal RK entry which describes application with fields of appName, version and etc."
 )
 
 // Bootstrap config of application's basic information.
 // 1: AppName: Application name which refers to go process.
 // 2: Version: Application version.
 // 3: Description: Description of application itself.
-// 4: Keywords: A set of words describe application.
-// 5: HomeURL: Home page URL.
-// 6: IconURL: Application Icon URL.
-// 7: Maintainers: Maintainers of application.
-// 8: DocsURL: A set of URLs of documentations of application.
+// 5: Keywords: A set of words describe application.
+// 6: HomeUrl: Home page URL.
+// 7: IconUrl: Application Icon URL.
+// 8: Maintainers: Maintainers of application.
+// 9: DocsUrl: A set of URLs of documentations of application.
 type BootConfigAppInfo struct {
 	RK struct {
-		AppName     string   `yaml:"appName"`
-		Version     string   `yaml:"version"`
-		Description string   `yaml:"description"`
-		Keywords    []string `yaml:"keywords"`
-		HomeURL     string   `yaml:"homeURL"`
-		IconURL     string   `yaml:"iconURL"`
-		DocsURL     []string `yaml:"docsURL"`
-		Maintainers []string `yaml:"maintainers"`
+		AppName     string   `yaml:"appName" json:"appName"`
+		Version     string   `yaml:"version" json:"version"`
+		Description string   `yaml:"description" json:"description"`
+		Keywords    []string `yaml:"keywords" json:"keywords"`
+		HomeUrl     string   `yaml:"homeUrl" json:"homeUrl"`
+		IconUrl     string   `yaml:"iconUrl" json:"iconUrl"`
+		DocsUrl     []string `yaml:"docsUrl" json:"docsUrl"`
+		Maintainers []string `yaml:"maintainers" json:"maintainers"`
 	} `yaml:"rk"`
 }
 
@@ -48,27 +49,30 @@ type BootConfigAppInfo struct {
 // 3: Lang: Programming language <NOT configurable!>
 // 4: Description: Description of application itself
 // 5: Keywords: A set of words describe application
-// 6: HomeURL: Home page URL
-// 7: IconURL: Application Icon URL
-// 8: DocsURL: A set of URLs of documentations of application
+// 6: HomeUrl: Home page URL
+// 7: IconUrl: Application Icon URL
+// 8: DocsUrl: A set of URLs of documentations of application
 // 9: Maintainers: Maintainers of application
 type AppInfoEntry struct {
-	AppName     string
-	Version     string
-	Lang        string
-	Description string
-	Keywords    []string
-	HomeURL     string
-	IconURL     string
-	DocsURL     []string
-	Maintainers []string
+	EntryName        string   `json:"entryName" yaml:"entryName"`
+	EntryType        string   `json:"entryType" yaml:"entryType"`
+	EntryDescription string   `json:"entryDescription" yaml:"entryDescription"`
+	Description      string   `json:"description" yaml:"description"`
+	AppName          string   `json:"appName" yaml:"appName"`
+	Version          string   `json:"version" yaml:"version"`
+	Lang             string   `json:"lang" yaml:"lang"`
+	Keywords         []string `json:"keywords" yaml:"keywords"`
+	HomeUrl          string   `json:"homeUrl" yaml:"homeUrl"`
+	IconUrl          string   `json:"iconUrl" yaml:"iconUrl"`
+	DocsUrl          []string `json:"docsUrl" yaml:"docsUrl"`
+	Maintainers      []string `json:"maintainers" yaml:"maintainers"`
 }
 
 // Generate a AppInfo entry with default fields.
-// 1: AppName: rkapp
+// 1: AppName: rkApp
 // 2: Version: v0.0.0
-// 3: Lang: golang
 // 4: Description: rk application
+// 3: Lang: golang
 // 5: Keywords: []
 // 6: HomeURL: ""
 // 7: IconURL: ""
@@ -76,15 +80,18 @@ type AppInfoEntry struct {
 // 9: DocsURL: []]
 func AppInfoEntryDefault() *AppInfoEntry {
 	return &AppInfoEntry{
-		AppName:     AppNameDefault,
-		Version:     VersionDefault,
-		Lang:        LangDefault,
-		Description: DescriptionDefault,
-		Keywords:    []string{},
-		HomeURL:     "",
-		IconURL:     "",
-		DocsURL:     []string{},
-		Maintainers: []string{},
+		EntryName:        AppInfoEntryName,
+		EntryType:        AppInfoEntryType,
+		EntryDescription: AppInfoEntryDescription,
+		AppName:          AppNameDefault,
+		Version:          VersionDefault,
+		Lang:             LangDefault,
+		Description:      DescriptionDefault,
+		Keywords:         []string{},
+		HomeUrl:          "",
+		IconUrl:          "",
+		DocsUrl:          []string{},
+		Maintainers:      []string{},
 	}
 }
 
@@ -113,16 +120,16 @@ func WithDescriptionAppInfo(description string) AppInfoEntryOption {
 }
 
 // Provide home page URL.
-func WithHomeURLAppInfo(homeURL string) AppInfoEntryOption {
+func WithHomeUrlAppInfo(homeUrl string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
-		entry.HomeURL = homeURL
+		entry.HomeUrl = homeUrl
 	}
 }
 
 // Provide icon URL.
-func WithIconURLAppInfo(iconURL string) AppInfoEntryOption {
+func WithIconUrlAppInfo(iconUrl string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
-		entry.IconURL = iconURL
+		entry.IconUrl = iconUrl
 	}
 }
 
@@ -134,9 +141,9 @@ func WithKeywordsAppInfo(keywords ...string) AppInfoEntryOption {
 }
 
 // Provide documentation URLs.
-func WithDocsURLAppInfo(docsURL ...string) AppInfoEntryOption {
+func WithDocsUrlAppInfo(docsURL ...string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
-		entry.DocsURL = append(entry.DocsURL, docsURL...)
+		entry.DocsUrl = append(entry.DocsUrl, docsURL...)
 	}
 }
 
@@ -161,9 +168,9 @@ func RegisterAppInfoEntriesFromConfig(configFilePath string) map[string]Entry {
 		WithVersionAppInfo(config.RK.Version),
 		WithDescriptionAppInfo(config.RK.Description),
 		WithKeywordsAppInfo(config.RK.Keywords...),
-		WithHomeURLAppInfo(config.RK.HomeURL),
-		WithIconURLAppInfo(config.RK.IconURL),
-		WithDocsURLAppInfo(config.RK.DocsURL...),
+		WithHomeUrlAppInfo(config.RK.HomeUrl),
+		WithIconUrlAppInfo(config.RK.IconUrl),
+		WithDocsUrlAppInfo(config.RK.DocsUrl...),
 		WithMaintainersAppInfo(config.RK.Maintainers...))
 
 	res[AppInfoEntryName] = entry
@@ -181,15 +188,18 @@ func RegisterAppInfoEntriesFromConfig(configFilePath string) map[string]Entry {
 // global context automatically.
 func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 	entry := &AppInfoEntry{
-		AppName:     AppNameDefault,
-		Version:     VersionDefault,
-		Lang:        LangDefault,
-		Description: DescriptionDefault,
-		Keywords:    []string{},
-		HomeURL:     "",
-		IconURL:     "",
-		DocsURL:     []string{},
-		Maintainers: []string{},
+		EntryName:        AppInfoEntryName,
+		EntryType:        AppInfoEntryType,
+		EntryDescription: AppInfoEntryDescription,
+		AppName:          AppNameDefault,
+		Version:          VersionDefault,
+		Lang:             LangDefault,
+		Description:      DescriptionDefault,
+		Keywords:         []string{},
+		HomeUrl:          "",
+		IconUrl:          "",
+		DocsUrl:          []string{},
+		Maintainers:      []string{},
 	}
 
 	for i := range opts {
@@ -201,8 +211,8 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 		entry.Keywords = []string{}
 	}
 
-	if len(entry.DocsURL) < 1 {
-		entry.DocsURL = []string{}
+	if len(entry.DocsUrl) < 1 {
+		entry.DocsUrl = []string{}
 	}
 
 	if len(entry.Maintainers) < 1 {
@@ -226,11 +236,11 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 		entry.Description = DescriptionDefault
 	}
 
-	GlobalAppCtx.addAppInfoEntry(entry)
+	GlobalAppCtx.SetAppInfoEntry(entry)
 
 	// override default event logger entry in order to use correct application name.
 	// this is special case for default event logger entry.
-	eventLoggerConfig := GlobalAppCtx.GetEventLoggerEntryDefault().loggerConfig
+	eventLoggerConfig := GlobalAppCtx.GetEventLoggerEntryDefault().LoggerConfig
 	eventLogger, _ := eventLoggerConfig.Build()
 	eventLoggerEntry := RegisterEventLoggerEntry(
 		WithNameEvent(DefaultEventLoggerEntryName),
@@ -239,7 +249,7 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 				rkquery.WithLogger(eventLogger),
 				rkquery.WithAppName(entry.AppName))))
 
-	eventLoggerEntry.loggerConfig = eventLoggerConfig
+	eventLoggerEntry.LoggerConfig = eventLoggerConfig
 
 	return entry
 }
@@ -256,36 +266,22 @@ func (entry *AppInfoEntry) Interrupt(context.Context) {
 
 // Return name of entry
 func (entry *AppInfoEntry) GetName() string {
-	return AppInfoEntryName
+	return entry.EntryName
 }
 
 // Return type of entry
 func (entry *AppInfoEntry) GetType() string {
-	return AppInfoEntryType
+	return entry.EntryType
+}
+
+// Return description of entry
+func (entry *AppInfoEntry) GetDescription() string {
+	return entry.EntryDescription
 }
 
 // Return string of entry
 func (entry *AppInfoEntry) String() string {
-	m := map[string]interface{}{
-		"entry_name":  AppInfoEntryName,
-		"entry_type":  AppInfoEntryType,
-		"app_name":    entry.AppName,
-		"version":     entry.Version,
-		"lang":        entry.Lang,
-		"description": entry.Description,
-		"home_url":    entry.HomeURL,
-		"icon_url":    entry.IconURL,
-		"keywords":    entry.Keywords,
-		"docs_url":    entry.DocsURL,
-		"maintainers": entry.Maintainers,
-	}
-
-	// add process info
-	for k, v := range rkcommon.ConvertStructToMap(NewProcessInfo()) {
-		m[k] = v
-	}
-
-	if bytes, err := json.Marshal(&m); err != nil {
+	if bytes, err := json.Marshal(entry); err != nil {
 		return "{}"
 	} else {
 		return string(bytes)

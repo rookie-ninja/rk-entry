@@ -16,71 +16,74 @@ import (
 	"testing"
 )
 
-func TestRegisterViperEntriesWithConfig_WithoutElement(t *testing.T) {
+func TestRegisterConfigEntriesWithConfig_WithoutElement(t *testing.T) {
 	defer assertNotPanic(t)
 
 	configFile := `
 ---
-viper:
+config:
 `
 	// create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
 	// register entries with config file
-	entries := RegisterViperEntriesWithConfig(configFilePath)
+	entries := RegisterConfigEntriesWithConfig(configFilePath)
 
 	assert.Empty(t, entries)
 }
 
-func TestRegisterViperEntriesWithConfig_WithoutName(t *testing.T) {
+func TestRegisterConfigEntriesWithConfig_WithoutName(t *testing.T) {
 	defer assertNotPanic(t)
 
 	configFile := `
 ---
-viper:
+config:
   - path: ut-path
+    locale: "*::*::*::*"
 `
 	// create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
 	// register entries with config file
-	entries := RegisterViperEntriesWithConfig(configFilePath)
+	entries := RegisterConfigEntriesWithConfig(configFilePath)
 
 	assert.Empty(t, entries)
 }
 
-func TestRegisterViperEntriesWithConfig_WithoutPath(t *testing.T) {
+func TestRegisterConfigEntriesWithConfig_WithoutPath(t *testing.T) {
 	defer assertNotPanic(t)
 
 	configFile := `
 ---
-viper:
-  - name: unit-test-viper
+config:
+  - name: unit-test-config
+    locale: "*::*::*::*"
 `
 	// create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
 	// register entries with config file
-	entries := RegisterViperEntriesWithConfig(configFilePath)
+	entries := RegisterConfigEntriesWithConfig(configFilePath)
 
-	assert.Empty(t, entries)
+	assert.NotEmpty(t, entries)
 }
 
-func TestRegisterViperEntriesWithConfig_WithNonExistPath(t *testing.T) {
+func TestRegisterConfigEntriesWithConfig_WithNonExistPath(t *testing.T) {
 	defer assertNotPanic(t)
 
 	configFile := `
 ---
-viper:
+config:
   - name: unit-test-viper
     path: non-exist-path
+    locale: "*::*::*::*"
 `
 	// create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
 	// register entries with config file
-	entries := RegisterViperEntriesWithConfig(configFilePath)
+	entries := RegisterConfigEntriesWithConfig(configFilePath)
 
-	assert.Empty(t, entries)
+	assert.NotEmpty(t, entries)
 }
 
-func TestRegisterViperEntriesWithConfig_WithDomainAndFileNotExist(t *testing.T) {
+func TestRegisterConfigEntriesWithConfig_WithDomainAndFileNotExist(t *testing.T) {
 	defer assertNotPanic(t)
 	viperConfig := `
 ---
@@ -92,9 +95,10 @@ key: value
 
 	configFile := `
 ---
-viper:
+config:
   - name: unit-test-viper
     path: %s
+    locale: "*::*::*::*"
 `
 	// override path
 	configFile = fmt.Sprintf(configFile, tempDir)
@@ -106,21 +110,21 @@ viper:
 	assert.Nil(t, os.Setenv("DOMAIN", "prod"))
 
 	// register entries with config file
-	entries := RegisterViperEntriesWithConfig(configFilePath)
+	entries := RegisterConfigEntriesWithConfig(configFilePath)
 
 	assert.NotEmpty(t, entries)
-	entry := GlobalAppCtx.GetViperEntry("unit-test-viper")
+	entry := GlobalAppCtx.GetConfigEntry("unit-test-viper")
 	assert.NotNil(t, entry)
 	assert.NotNil(t, entry.GetViper())
 	assert.Equal(t, "value", entry.GetViper().GetString("key"))
 
 	// clear viper entry
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearConfigEntries()
 	// unset domain
 	assert.Nil(t, os.Setenv("DOMAIN", ""))
 }
 
-func TestRegisterViperEntriesWithConfig_WithDomainAndFileExist(t *testing.T) {
+func TestRegisterConfigEntriesWithConfig_WithDomainAndFileExist(t *testing.T) {
 	defer assertNotPanic(t)
 	viperConfig := `
 ---
@@ -132,12 +136,13 @@ key: value
 
 	configFile := `
 ---
-viper:
+config:
   - name: unit-test-viper
     path: %s
+    locale: "*::*::*::prod"
 `
 	// override path
-	configFile = fmt.Sprintf(configFile, path.Join(path.Dir(tempDir), "ut-viper.yaml"))
+	configFile = fmt.Sprintf(configFile, path.Join(path.Dir(tempDir), "ut-viper-prod.yaml"))
 
 	// create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
@@ -146,31 +151,31 @@ viper:
 	assert.Nil(t, os.Setenv("DOMAIN", "prod"))
 
 	// register entries with config file
-	entries := RegisterViperEntriesWithConfig(configFilePath)
+	entries := RegisterConfigEntriesWithConfig(configFilePath)
 
 	assert.NotEmpty(t, entries)
-	entry := GlobalAppCtx.GetViperEntry("unit-test-viper")
+	entry := GlobalAppCtx.GetConfigEntry("unit-test-viper")
 	assert.NotNil(t, entry)
 	assert.NotNil(t, entry.GetViper())
 	assert.Equal(t, "value", entry.GetViper().GetString("key"))
 
 	// clear viper entry
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearConfigEntries()
 	// unset domain
 	assert.Nil(t, os.Setenv("DOMAIN", ""))
 }
 
-func TestRegisterViperEntriesWithConfig_WithDomainAndBothFileExist(t *testing.T) {
+func TestRegisterConfigEntriesWithConfig_WithDomainAndBothFileExist(t *testing.T) {
 	defer assertNotPanic(t)
 
 	// create default viper config file named as ut-viper.yaml
-	viperConfig := `
+	viperConfigBeta := `
 ---
-key: value
+key: beta
 `
 	// create viper config file in ut temp dir
-	tempDir := path.Join(t.TempDir(), "ut-viper.yaml")
-	assert.Nil(t, ioutil.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
+	tempDirBeta := path.Join(t.TempDir(), "ut-viper-beta.yaml")
+	assert.Nil(t, ioutil.WriteFile(tempDirBeta, []byte(viperConfigBeta), os.ModePerm))
 
 	// create prod viper config file named as ut-viper-prod.yaml
 	viperConfigProd := `
@@ -178,17 +183,21 @@ key: value
 key: prod
 `
 	// create viper config file in ut temp dir
-	tempDirProd := path.Join(path.Dir(tempDir), "ut-viper-prod.yaml")
+	tempDirProd := path.Join(path.Dir(tempDirBeta), "ut-viper-prod.yaml")
 	assert.Nil(t, ioutil.WriteFile(tempDirProd, []byte(viperConfigProd), os.ModePerm))
 
 	configFile := `
 ---
-viper:
-  - name: unit-test-viper
+config:
+  - name: unit-test-beta
     path: %s
+    locale: "*::*::*::beta"
+  - name: unit-test-prod
+    path: %s
+    locale: "*::*::*::prod"
 `
 	// override path
-	configFile = fmt.Sprintf(configFile, tempDir)
+	configFile = fmt.Sprintf(configFile, tempDirBeta, tempDirProd)
 
 	// create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
@@ -197,21 +206,21 @@ viper:
 	assert.Nil(t, os.Setenv("DOMAIN", "prod"))
 
 	// register entries with config file
-	entries := RegisterViperEntriesWithConfig(configFilePath)
+	entries := RegisterConfigEntriesWithConfig(configFilePath)
 
 	assert.NotEmpty(t, entries)
-	entry := GlobalAppCtx.GetViperEntry("unit-test-viper")
+	entry := GlobalAppCtx.GetConfigEntry("unit-test-prod")
 	assert.NotNil(t, entry)
 	assert.NotNil(t, entry.GetViper())
 	assert.Equal(t, "prod", entry.GetViper().GetString("key"))
 
 	// clear viper entry
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearConfigEntries()
 	// unset domain
 	assert.Nil(t, os.Setenv("DOMAIN", ""))
 }
 
-func TestRegisterViperEntriesWithConfig_WithoutDomainAndBothFileExist(t *testing.T) {
+func TestRegisterConfigEntriesWithConfig_WithoutDomainAndBothFileExist(t *testing.T) {
 	defer assertNotPanic(t)
 
 	// create default viper config file named as ut-viper.yaml
@@ -234,9 +243,10 @@ key: prod
 
 	configFile := `
 ---
-viper:
+config:
   - name: unit-test-viper
     path: %s
+    locale: "*::*::*::*"
 `
 	// override path
 	configFile = fmt.Sprintf(configFile, tempDir)
@@ -248,21 +258,21 @@ viper:
 	assert.Nil(t, os.Setenv("DOMAIN", "test"))
 
 	// register entries with config file
-	entries := RegisterViperEntriesWithConfig(configFilePath)
+	entries := RegisterConfigEntriesWithConfig(configFilePath)
 
 	assert.NotEmpty(t, entries)
-	entry := GlobalAppCtx.GetViperEntry("unit-test-viper")
+	entry := GlobalAppCtx.GetConfigEntry("unit-test-viper")
 	assert.NotNil(t, entry)
 	assert.NotNil(t, entry.GetViper())
 	assert.Equal(t, "value", entry.GetViper().GetString("key"))
 
 	// clear viper entry
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearConfigEntries()
 	// unset domain
 	assert.Nil(t, os.Setenv("DOMAIN", ""))
 }
 
-func TestRegisterViperEntriesWithConfig_HappyCase(t *testing.T) {
+func TestRegisterConfigEntriesWithConfig_HappyCase(t *testing.T) {
 	defer assertNotPanic(t)
 	viperConfig := `
 ---
@@ -274,9 +284,10 @@ key: value
 
 	configFile := `
 ---
-viper:
+config:
   - name: unit-test-viper
     path: %s
+    locale: "*::*::*::*"
 `
 	// override path
 	configFile = fmt.Sprintf(configFile, tempDir)
@@ -284,64 +295,63 @@ viper:
 	// create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
 	// register entries with config file
-	entries := RegisterViperEntriesWithConfig(configFilePath)
+	entries := RegisterConfigEntriesWithConfig(configFilePath)
 
 	assert.NotEmpty(t, entries)
-	entry := GlobalAppCtx.GetViperEntry("unit-test-viper")
+	entry := GlobalAppCtx.GetConfigEntry("unit-test-viper")
 	assert.NotNil(t, entry)
 	assert.NotNil(t, entry.GetViper())
 	assert.Equal(t, "value", entry.GetViper().GetString("key"))
 
 	// clear viper entry
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearConfigEntries()
 }
 
-func TestRegisterViperEntry_WithoutOptions(t *testing.T) {
-	entry := RegisterViperEntry()
+func TestRegisterConfigEntry_WithoutOptions(t *testing.T) {
+	entry := RegisterConfigEntry()
 
 	assert.NotNil(t, entry)
 
 	// validate default fields
-	assert.Contains(t, entry.entryName, "viper-")
-	assert.Equal(t, ViperEntryType, entry.entryType)
+	assert.Contains(t, entry.EntryName, "config-")
+	assert.Equal(t, ConfigEntryType, entry.EntryType)
 
 	// validate viper instance
 	assert.NotNil(t, entry.vp)
-	assert.Empty(t, entry.path)
 
 	// clear viper entry
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearConfigEntries()
 }
 
-func TestRegisterViperEntry_HappyCase(t *testing.T) {
+func TestRegisterConfigEntry_HappyCase(t *testing.T) {
 	name := "unit-test-viper"
 	vp := viper.New()
 
-	entry := RegisterViperEntry(
-		WithNameViper(name),
-		WithViperInstanceViper(vp))
+	entry := RegisterConfigEntry(
+		WithNameConfig(name),
+		WithViperInstanceConfig(vp))
 
 	assert.NotNil(t, entry)
 
 	// validate default fields
-	assert.Equal(t, name, entry.entryName)
-	assert.Equal(t, ViperEntryType, entry.entryType)
+	assert.Equal(t, name, entry.EntryName)
+	assert.Equal(t, ConfigEntryType, entry.EntryType)
 
 	// validate viper instance
 	assert.Equal(t, vp, entry.vp)
-	assert.Empty(t, entry.path)
+	assert.Empty(t, entry.Path)
 
 	// clear viper entry
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearConfigEntries()
 }
 
-func TestViperEntry_GetViper_HappyCase(t *testing.T) {
+func TestConfigEntry_GetViper_HappyCase(t *testing.T) {
 	name := "unit-test-viper"
 	vp := viper.New()
 
-	entry := RegisterViperEntry(
-		WithNameViper(name),
-		WithViperInstanceViper(vp))
+	entry := RegisterConfigEntry(
+		WithNameConfig(name),
+		WithViperInstanceConfig(vp))
 
 	assert.NotNil(t, entry)
 
@@ -349,48 +359,56 @@ func TestViperEntry_GetViper_HappyCase(t *testing.T) {
 	assert.Equal(t, vp, entry.GetViper())
 
 	// clear viper entry
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearConfigEntries()
 }
 
-func TestViperEntry_Bootstrap_HappyCase(t *testing.T) {
+func TestConfigEntry_Bootstrap_HappyCase(t *testing.T) {
 	assertNotPanic(t)
-	RegisterViperEntry().Bootstrap(context.Background())
+	RegisterConfigEntry().Bootstrap(context.Background())
+
+	GlobalAppCtx.clearConfigEntries()
 }
 
-func TestViperEntry_Interrupt_HappyCase(t *testing.T) {
+func TestConfigEntry_Interrupt_HappyCase(t *testing.T) {
 	assertNotPanic(t)
-	RegisterViperEntry().Interrupt(context.Background())
+	RegisterConfigEntry().Interrupt(context.Background())
+
+	GlobalAppCtx.clearConfigEntries()
 }
 
-func TestViperEntry_GetName_HappyCase(t *testing.T) {
+func TestConfigEntry_GetName_HappyCase(t *testing.T) {
 	name := "unit-test-viper"
 	vp := viper.New()
 
-	entry := RegisterViperEntry(
-		WithNameViper(name),
-		WithViperInstanceViper(vp))
+	entry := RegisterConfigEntry(
+		WithNameConfig(name),
+		WithViperInstanceConfig(vp))
 
 	assert.NotNil(t, entry)
 
 	// default logger and logger config would be assigned
 	assert.Equal(t, name, entry.GetName())
+
+	GlobalAppCtx.clearConfigEntries()
 }
 
-func TestViperEntry_GetType_HappyCase(t *testing.T) {
+func TestConfigEntry_GetType_HappyCase(t *testing.T) {
 	name := "unit-test-viper"
 	vp := viper.New()
 
-	entry := RegisterViperEntry(
-		WithNameViper(name),
-		WithViperInstanceViper(vp))
+	entry := RegisterConfigEntry(
+		WithNameConfig(name),
+		WithViperInstanceConfig(vp))
 
 	assert.NotNil(t, entry)
 
 	// validate default fields
-	assert.Equal(t, ViperEntryType, entry.GetType())
+	assert.Equal(t, ConfigEntryType, entry.GetType())
+
+	GlobalAppCtx.clearConfigEntries()
 }
 
-func TestViperEntry_String_HappyCase(t *testing.T) {
+func TestConfigEntry_String_HappyCase(t *testing.T) {
 	defer assertNotPanic(t)
 	viperConfig := `
 ---
@@ -402,9 +420,10 @@ key: value
 
 	configFile := `
 ---
-viper:
+config:
   - name: unit-test-viper
     path: %s
+    locale: "*::*::*::*"
 `
 	// override path
 	configFile = fmt.Sprintf(configFile, tempDir)
@@ -412,16 +431,18 @@ viper:
 	// create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
 	// register entries with config file
-	entries := RegisterViperEntriesWithConfig(configFilePath)
+	entries := RegisterConfigEntriesWithConfig(configFilePath)
 
 	assert.NotEmpty(t, entries)
-	entry := GlobalAppCtx.GetViperEntry("unit-test-viper")
+	entry := GlobalAppCtx.GetConfigEntry("unit-test-viper")
 	assert.NotNil(t, entry)
 
 	m := make(map[string]interface{})
 	assert.Nil(t, json.Unmarshal([]byte(entry.String()), &m))
 
-	assert.Contains(t, m, "entry_name")
-	assert.Contains(t, m, "entry_type")
+	assert.Contains(t, m, "entryName")
+	assert.Contains(t, m, "entryType")
 	assert.Contains(t, m, "path")
+
+	GlobalAppCtx.clearConfigEntries()
 }

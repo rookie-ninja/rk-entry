@@ -16,34 +16,34 @@ import (
 func TestNoopZapLoggerEntry_HappyCase(t *testing.T) {
 	entry := NoopZapLoggerEntry()
 	assert.NotNil(t, entry)
-	assert.Equal(t, "zap-logger-noop", entry.entryName)
-	assert.Equal(t, ZapLoggerEntryType, entry.entryType)
-	assert.NotNil(t, entry.logger)
-	assert.Nil(t, entry.loggerConfig)
-	assert.Nil(t, entry.lumberjackConfig)
+	assert.Equal(t, ZapLoggerNameNoop, entry.EntryName)
+	assert.Equal(t, ZapLoggerEntryType, entry.EntryType)
+	assert.NotNil(t, entry.Logger)
+	assert.Nil(t, entry.LoggerConfig)
+	assert.Nil(t, entry.LumberjackConfig)
 }
 
 func TestWithNameZap_WithEmptyString(t *testing.T) {
 	entry := RegisterZapLoggerEntry(WithNameZap(""))
 	assert.NotNil(t, entry)
 	// default name should be assigned with random number
-	assert.NotEmpty(t, entry.entryName)
+	assert.NotEmpty(t, entry.EntryName)
 }
 
 func TestWithNameZap_HappyCase(t *testing.T) {
 	entry := RegisterZapLoggerEntry(WithNameZap("ut-zap-logger"))
 	assert.NotNil(t, entry)
 	// default name would be assigned with random number
-	assert.Equal(t, "ut-zap-logger", entry.entryName)
+	assert.Equal(t, "ut-zap-logger", entry.EntryName)
 }
 
 func TestWithLoggerZap_WithNilInput(t *testing.T) {
 	entry := RegisterZapLoggerEntry(WithLoggerZap(nil, nil, nil))
 	assert.NotNil(t, entry)
 	// default logger and logger config would be assigned
-	assert.NotNil(t, entry.logger)
-	assert.NotNil(t, entry.loggerConfig)
-	assert.Nil(t, entry.lumberjackConfig)
+	assert.NotNil(t, entry.Logger)
+	assert.NotNil(t, entry.LoggerConfig)
+	assert.Nil(t, entry.LumberjackConfig)
 }
 
 func TestWithLoggerZap_HappyCase(t *testing.T) {
@@ -55,9 +55,9 @@ func TestWithLoggerZap_HappyCase(t *testing.T) {
 	assert.NotNil(t, entry)
 
 	// default logger and logger config would be assigned
-	assert.Equal(t, logger, entry.logger)
-	assert.Equal(t, loggerConfig, entry.loggerConfig)
-	assert.Equal(t, lumberjackConfig, entry.lumberjackConfig)
+	assert.Equal(t, logger, entry.Logger)
+	assert.Equal(t, loggerConfig, entry.LoggerConfig)
+	assert.Equal(t, lumberjackConfig, entry.LumberjackConfig)
 }
 
 func TestRegisterZapLoggerEntriesWithConfig_WithoutElement(t *testing.T) {
@@ -110,30 +110,30 @@ zapLogger:
 	entry := convertToZapLoggerEntry(t, entries["ut-zap-logger"])
 
 	// validate default fields
-	assert.Equal(t, "ut-zap-logger", entry.entryName)
-	assert.Equal(t, ZapLoggerEntryType, entry.entryType)
+	assert.Equal(t, "ut-zap-logger", entry.EntryName)
+	assert.Equal(t, ZapLoggerEntryType, entry.EntryType)
 
 	// validate zap logger
-	assert.NotNil(t, entry.logger)
+	assert.NotNil(t, entry.Logger)
 
 	// validate zap logger config
-	assert.NotNil(t, entry.loggerConfig)
-	assert.Equal(t, zap.InfoLevel, entry.loggerConfig.Level.Level())
-	assert.False(t, entry.loggerConfig.Development)
-	assert.False(t, entry.loggerConfig.DisableCaller)
-	assert.False(t, entry.loggerConfig.DisableStacktrace)
-	assert.Equal(t, "console", entry.loggerConfig.Encoding)
-	assert.Contains(t, entry.loggerConfig.OutputPaths, "ut.log")
-	assert.Contains(t, entry.loggerConfig.ErrorOutputPaths, "ut.log")
-	assert.Contains(t, entry.loggerConfig.InitialFields, "ut-key")
+	assert.NotNil(t, entry.LoggerConfig)
+	assert.Equal(t, zap.InfoLevel, entry.LoggerConfig.Level.Level())
+	assert.False(t, entry.LoggerConfig.Development)
+	assert.False(t, entry.LoggerConfig.DisableCaller)
+	assert.False(t, entry.LoggerConfig.DisableStacktrace)
+	assert.Equal(t, "console", entry.LoggerConfig.Encoding)
+	assert.Contains(t, entry.LoggerConfig.OutputPaths, "ut.log")
+	assert.Contains(t, entry.LoggerConfig.ErrorOutputPaths, "ut.log")
+	assert.Contains(t, entry.LoggerConfig.InitialFields, "ut-key")
 
 	// validate lumberjack config
-	assert.Equal(t, "ut-lumberjack-filename", entry.lumberjackConfig.Filename)
-	assert.Equal(t, 1, entry.lumberjackConfig.MaxSize)
-	assert.Equal(t, 1, entry.lumberjackConfig.MaxAge)
-	assert.Equal(t, 1, entry.lumberjackConfig.MaxBackups)
-	assert.True(t, entry.lumberjackConfig.LocalTime)
-	assert.True(t, entry.lumberjackConfig.Compress)
+	assert.Equal(t, "ut-lumberjack-filename", entry.LumberjackConfig.Filename)
+	assert.Equal(t, 1, entry.LumberjackConfig.MaxSize)
+	assert.Equal(t, 1, entry.LumberjackConfig.MaxAge)
+	assert.Equal(t, 1, entry.LumberjackConfig.MaxBackups)
+	assert.True(t, entry.LumberjackConfig.LocalTime)
+	assert.True(t, entry.LumberjackConfig.Compress)
 }
 
 func TestRegisterZapLoggerEntry_WithoutOptions(t *testing.T) {
@@ -142,13 +142,13 @@ func TestRegisterZapLoggerEntry_WithoutOptions(t *testing.T) {
 	assert.NotNil(t, entry)
 
 	// validate default fields
-	assert.Contains(t, entry.entryName, "zap-logger-")
-	assert.Equal(t, ZapLoggerEntryType, entry.entryType)
+	assert.Contains(t, entry.EntryName, "zapLogger-")
+	assert.Equal(t, ZapLoggerEntryType, entry.EntryType)
 
 	// validate zap logger
-	assert.NotNil(t, entry.logger)
-	assert.NotNil(t, entry.loggerConfig)
-	assert.Nil(t, entry.lumberjackConfig)
+	assert.NotNil(t, entry.Logger)
+	assert.NotNil(t, entry.LoggerConfig)
+	assert.Nil(t, entry.LumberjackConfig)
 }
 
 func TestRegisterZapLoggerEntry_HappyCase(t *testing.T) {
@@ -160,9 +160,9 @@ func TestRegisterZapLoggerEntry_HappyCase(t *testing.T) {
 	assert.NotNil(t, entry)
 
 	// default logger and logger config would be assigned
-	assert.Equal(t, logger, entry.logger)
-	assert.Equal(t, loggerConfig, entry.loggerConfig)
-	assert.Equal(t, lumberjackConfig, entry.lumberjackConfig)
+	assert.Equal(t, logger, entry.Logger)
+	assert.Equal(t, loggerConfig, entry.LoggerConfig)
+	assert.Equal(t, lumberjackConfig, entry.LumberjackConfig)
 }
 
 func TestZapLoggerEntry_Bootstrap_HappyCase(t *testing.T) {
@@ -229,16 +229,9 @@ zapLogger:
 	m := make(map[string]interface{})
 	assert.Nil(t, json.Unmarshal([]byte(entry.String()), &m))
 
-	assert.Contains(t, m, "entry_name")
-	assert.Contains(t, m, "entry_type")
-	assert.Contains(t, m, "output_path")
-	assert.Contains(t, m, "level")
-	assert.Contains(t, m, "lumberjack_filename")
-	assert.Contains(t, m, "lumberjack_compress")
-	assert.Contains(t, m, "lumberjack_maxsize")
-	assert.Contains(t, m, "lumberjack_maxage")
-	assert.Contains(t, m, "lumberjack_maxbackups")
-	assert.Contains(t, m, "lumberjack_localtime")
+	assert.Contains(t, m, "entryName")
+	assert.Contains(t, m, "entryType")
+	assert.Contains(t, m, "zapConfig")
 }
 
 func TestZapLoggerEntry_GetLogger_HappyCase(t *testing.T) {

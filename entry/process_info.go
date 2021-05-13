@@ -17,9 +17,9 @@ import (
 // 2: Version - Version of application set by user
 // 3: Description - Description of application set by user
 // 4: Keywords - Keywords of application set by user
-// 5: HomeURL - Home URL of application set by user
-// 6: IconURL - Icon URL of application set by user
-// 7: DocsURL - Document URL list of application set by user
+// 5: HomeUrl - Home URL of application set by user
+// 6: IconUrl - Icon URL of application set by user
+// 7: DocsUrl; - Document URL list of application set by user
 // 8: Maintainers - Maintainers of applicaiton set by user
 // 9: UID - user id which runs process
 // 10: GID - group id which runs process
@@ -32,24 +32,24 @@ import (
 // 17: Realm - realm where process runs
 // 18: Domain - domain where process runs
 type ProcessInfo struct {
-	AppName     string   `json:"app_name"`
-	Version     string   `json:"version"`
-	Description string   `json:"description"`
-	Keywords    []string `json:"keywords"`
-	HomeURL     string   `json:"home_url"`
-	IconURL     string   `json:"icon_url"`
-	DocsURL     []string `json:"docs_url"`
-	Maintainers []string `json:"maintainers"`
-	UID         string   `json:"uid"`
-	GID         string   `json:"gid"`
-	Username    string   `json:"username"`
-	StartTime   string   `json:"start_time"`
-	UpTimeSec   int64    `json:"up_time_sec"`
-	UpTimeStr   string   `json:"up_time_str"`
-	Region      string   `json:"region"`
-	AZ          string   `json:"az"`
-	Realm       string   `json:"realm"`
-	Domain      string   `json:"domain"`
+	AppName     string   `json:"appName" yaml:"appName"`
+	Version     string   `json:"version" yaml:"version"`
+	Description string   `json:"description" yaml:"description"`
+	Keywords    []string `json:"keywords" yaml:"keywords"`
+	HomeUrl     string   `json:"homeUrl" yaml:"homeUrl"`
+	IconUrl     string   `json:"iconUrl" yaml:"iconUrl"`
+	DocsUrl     []string `json:"docsUrl" json:"docsUrl"`
+	Maintainers []string `json:"maintainers" json:"maintainers"`
+	UID         string   `json:"uid" json:"uid"`
+	GID         string   `json:"gid" json:"gid"`
+	Username    string   `json:"username" json:"username"`
+	StartTime   string   `json:"startTime" json:"startTime"`
+	UpTimeSec   int64    `json:"upTimeSec" json:"upTimeSec"`
+	UpTimeStr   string   `json:"upTimeStr" json:"upTimeStr"`
+	Region      string   `json:"region" json:"region"`
+	AZ          string   `json:"az" json:"az"`
+	Realm       string   `json:"realm" json:"realm"`
+	Domain      string   `json:"domain" json:"domain"`
 }
 
 func NewProcessInfo() *ProcessInfo {
@@ -68,14 +68,14 @@ func NewProcessInfo() *ProcessInfo {
 		Version:     GlobalAppCtx.GetAppInfoEntry().Version,
 		Description: GlobalAppCtx.GetAppInfoEntry().Description,
 		Keywords:    GlobalAppCtx.GetAppInfoEntry().Keywords,
-		HomeURL:     GlobalAppCtx.GetAppInfoEntry().HomeURL,
-		IconURL:     GlobalAppCtx.GetAppInfoEntry().IconURL,
-		DocsURL:     GlobalAppCtx.GetAppInfoEntry().DocsURL,
+		HomeUrl:     GlobalAppCtx.GetAppInfoEntry().HomeUrl,
+		IconUrl:     GlobalAppCtx.GetAppInfoEntry().IconUrl,
+		DocsUrl:     GlobalAppCtx.GetAppInfoEntry().DocsUrl,
 		Maintainers: GlobalAppCtx.GetAppInfoEntry().Maintainers,
 		Username:    u.Name,
 		UID:         u.Uid,
 		GID:         u.Gid,
-		StartTime:   GlobalAppCtx.StartTime.Format(time.RFC3339),
+		StartTime:   GlobalAppCtx.GetStartTime().Format(time.RFC3339),
 		UpTimeSec:   int64(GlobalAppCtx.GetUpTime().Seconds()),
 		UpTimeStr:   durafmt.ParseShort(GlobalAppCtx.GetUpTime()).String(),
 		Realm:       rkcommon.GetDefaultIfEmptyString(os.Getenv("REALM"), "unknown"),

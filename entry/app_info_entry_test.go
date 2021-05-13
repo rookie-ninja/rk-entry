@@ -7,6 +7,7 @@ package rkentry
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
@@ -24,9 +25,9 @@ func TestAppInfoEntryDefault_HappyCase(t *testing.T) {
 	assert.Equal(t, LangDefault, entry.Lang)
 	assert.Equal(t, DescriptionDefault, entry.Description)
 	assert.Empty(t, entry.Keywords)
-	assert.Empty(t, entry.HomeURL)
-	assert.Empty(t, entry.IconURL)
-	assert.Empty(t, entry.DocsURL)
+	assert.Empty(t, entry.HomeUrl)
+	assert.Empty(t, entry.IconUrl)
+	assert.Empty(t, entry.DocsUrl)
 	assert.Empty(t, entry.Maintainers)
 }
 
@@ -84,45 +85,45 @@ func TestWithKeywordsAppInfo_HappyCase(t *testing.T) {
 	assert.Len(t, entry.Keywords, 2)
 }
 
-func TestWithHomeURLAppInfo_WithEmptyString(t *testing.T) {
-	entry := RegisterAppInfoEntry(WithHomeURLAppInfo(""))
+func TestWithHomeUrlAppInfo_WithEmptyString(t *testing.T) {
+	entry := RegisterAppInfoEntry(WithHomeUrlAppInfo(""))
 	assert.NotNil(t, entry)
-	assert.Empty(t, entry.HomeURL)
+	assert.Empty(t, entry.HomeUrl)
 }
 
-func TestWithHomeURLAppInfo_HappyCase(t *testing.T) {
-	homeURL := "unit-test-home-URL"
-	entry := RegisterAppInfoEntry(WithHomeURLAppInfo(homeURL))
+func TestWithHomeUrlAppInfo_HappyCase(t *testing.T) {
+	homeUrl := "unit-test-home-Url"
+	entry := RegisterAppInfoEntry(WithHomeUrlAppInfo(homeUrl))
 	assert.NotNil(t, entry)
-	assert.Equal(t, homeURL, entry.HomeURL)
+	assert.Equal(t, homeUrl, entry.HomeUrl)
 }
 
-func TestWithIconURLAppInfo_WithEmptyString(t *testing.T) {
-	entry := RegisterAppInfoEntry(WithIconURLAppInfo(""))
+func TestWithIconUrlAppInfo_WithEmptyString(t *testing.T) {
+	entry := RegisterAppInfoEntry(WithIconUrlAppInfo(""))
 	assert.NotNil(t, entry)
-	assert.Empty(t, entry.IconURL)
+	assert.Empty(t, entry.IconUrl)
 }
 
-func TestWithIconURLAppInfo_HappyCase(t *testing.T) {
-	iconURL := "unit-test-icon-URL"
-	entry := RegisterAppInfoEntry(WithIconURLAppInfo(iconURL))
+func TestWithIconUrlAppInfo_HappyCase(t *testing.T) {
+	iconUrl := "unit-test-icon-Url"
+	entry := RegisterAppInfoEntry(WithIconUrlAppInfo(iconUrl))
 	assert.NotNil(t, entry)
-	assert.Equal(t, iconURL, entry.IconURL)
+	assert.Equal(t, iconUrl, entry.IconUrl)
 }
 
-func TestWithDocsURLAppInfo_WithEmptySlice(t *testing.T) {
-	entry := RegisterAppInfoEntry(WithDocsURLAppInfo())
+func TestWithDocsUrlAppInfo_WithEmptySlice(t *testing.T) {
+	entry := RegisterAppInfoEntry(WithDocsUrlAppInfo())
 	assert.NotNil(t, entry)
-	assert.Empty(t, entry.DocsURL)
+	assert.Empty(t, entry.DocsUrl)
 }
 
-func TestWithDocsURLAppInfo_HappyCase(t *testing.T) {
+func TestWithDocsUrlAppInfo_HappyCase(t *testing.T) {
 	one := "unit-test-one"
 	two := "unit-test-two"
 
-	entry := RegisterAppInfoEntry(WithDocsURLAppInfo(one, two))
+	entry := RegisterAppInfoEntry(WithDocsUrlAppInfo(one, two))
 	assert.NotNil(t, entry)
-	assert.Len(t, entry.DocsURL, 2)
+	assert.Len(t, entry.DocsUrl, 2)
 }
 
 func TestWithMaintainersAppInfo_WithEmptySlice(t *testing.T) {
@@ -159,11 +160,11 @@ rk:
   appName: ut-app
   version: ut-version
   description: ut-description
-  homeURL: ut-homeURL
-  iconURL: ut-iconURL
+  homeUrl: ut-homeUrl
+  iconUrl: ut-iconUrl
   keywords: ["ut-keyword"]
   maintainers: ["ut-maintainer"]
-  docsURL: ["ut-docURL"]
+  docsUrl: ["ut-docUrl"]
 `
 	// create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
@@ -177,11 +178,11 @@ rk:
 	assert.Equal(t, "ut-app", entry.AppName)
 	assert.Equal(t, "ut-version", entry.Version)
 	assert.Equal(t, "ut-description", entry.Description)
-	assert.Equal(t, "ut-homeURL", entry.HomeURL)
-	assert.Equal(t, "ut-iconURL", entry.IconURL)
+	assert.Equal(t, "ut-homeUrl", entry.HomeUrl)
+	assert.Equal(t, "ut-iconUrl", entry.IconUrl)
 	assert.Contains(t, entry.Keywords, "ut-keyword")
 	assert.Contains(t, entry.Maintainers, "ut-maintainer")
-	assert.Contains(t, entry.DocsURL, "ut-docURL")
+	assert.Contains(t, entry.DocsUrl, "ut-docUrl")
 }
 
 func TestRegisterAppInfoEntriesFromConfig_WithInvalidElementType(t *testing.T) {
@@ -193,11 +194,11 @@ rk:
   appName: ut-app
   version: ut-version
   description: ut-description
-  homeURL: ut-homeURL
-  iconURL: ut-iconURL
+  homeUrl: ut-homeUrl
+  iconUrl: ut-iconUrl
   keywords: "ut-keyword" # this should be a string slice
   maintainers: ["ut-maintainer"]
-  docsURL: ["ut-docURL"]
+  docsUrl: ["ut-docsUrl"]
 `
 	// create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
@@ -224,11 +225,11 @@ rk:
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
 	assert.Equal(t, DescriptionDefault, entry.Description)
-	assert.Empty(t, entry.HomeURL)
-	assert.Empty(t, entry.IconURL)
+	assert.Empty(t, entry.HomeUrl)
+	assert.Empty(t, entry.IconUrl)
 	assert.Empty(t, entry.Keywords)
 	assert.Empty(t, entry.Maintainers)
-	assert.Empty(t, entry.DocsURL)
+	assert.Empty(t, entry.DocsUrl)
 }
 
 func TestRegisterAppInfoEntriesFromConfig_WithoutRKSection(t *testing.T) {
@@ -249,11 +250,11 @@ func TestRegisterAppInfoEntriesFromConfig_WithoutRKSection(t *testing.T) {
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
 	assert.Equal(t, DescriptionDefault, entry.Description)
-	assert.Empty(t, entry.HomeURL)
-	assert.Empty(t, entry.IconURL)
+	assert.Empty(t, entry.HomeUrl)
+	assert.Empty(t, entry.IconUrl)
 	assert.Empty(t, entry.Keywords)
 	assert.Empty(t, entry.Maintainers)
-	assert.Empty(t, entry.DocsURL)
+	assert.Empty(t, entry.DocsUrl)
 }
 
 func TestRegisterAppInfoEntriesFromConfig_WithEmptyElements(t *testing.T) {
@@ -283,11 +284,11 @@ rk:
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
 	assert.Equal(t, DescriptionDefault, entry.Description)
-	assert.Empty(t, entry.HomeURL)
-	assert.Empty(t, entry.IconURL)
+	assert.Empty(t, entry.HomeUrl)
+	assert.Empty(t, entry.IconUrl)
 	assert.Empty(t, entry.Keywords)
 	assert.Empty(t, entry.Maintainers)
-	assert.Empty(t, entry.DocsURL)
+	assert.Empty(t, entry.DocsUrl)
 }
 
 func TestRegisterAppInfoEntry_WithoutOptions(t *testing.T) {
@@ -297,11 +298,11 @@ func TestRegisterAppInfoEntry_WithoutOptions(t *testing.T) {
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
 	assert.Equal(t, DescriptionDefault, entry.Description)
-	assert.Empty(t, entry.HomeURL)
-	assert.Empty(t, entry.IconURL)
+	assert.Empty(t, entry.HomeUrl)
+	assert.Empty(t, entry.IconUrl)
 	assert.Empty(t, entry.Keywords)
 	assert.Empty(t, entry.Maintainers)
-	assert.Empty(t, entry.DocsURL)
+	assert.Empty(t, entry.DocsUrl)
 }
 
 func TestRegisterAppInfoEntry_WithEmptyElements(t *testing.T) {
@@ -315,11 +316,11 @@ func TestRegisterAppInfoEntry_WithEmptyElements(t *testing.T) {
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
 	assert.Equal(t, DescriptionDefault, entry.Description)
-	assert.Empty(t, entry.HomeURL)
-	assert.Empty(t, entry.IconURL)
+	assert.Empty(t, entry.HomeUrl)
+	assert.Empty(t, entry.IconUrl)
 	assert.Empty(t, entry.Keywords)
 	assert.Empty(t, entry.Maintainers)
-	assert.Empty(t, entry.DocsURL)
+	assert.Empty(t, entry.DocsUrl)
 }
 
 func TestRegisterAppInfoEntry_HappyCase(t *testing.T) {
@@ -327,10 +328,10 @@ func TestRegisterAppInfoEntry_HappyCase(t *testing.T) {
 		WithAppNameAppInfo("ut-app"),
 		WithVersionAppInfo("ut-version"),
 		WithDescriptionAppInfo("ut-description"),
-		WithHomeURLAppInfo("ut-homeURL"),
-		WithIconURLAppInfo("ut-iconURL"),
+		WithHomeUrlAppInfo("ut-homeUrl"),
+		WithIconUrlAppInfo("ut-iconUrl"),
 		WithKeywordsAppInfo("ut-keyword"),
-		WithDocsURLAppInfo("ut-docURL"),
+		WithDocsUrlAppInfo("ut-docUrl"),
 		WithMaintainersAppInfo("ut-maintainer"))
 
 	assert.NotNil(t, entry)
@@ -338,10 +339,10 @@ func TestRegisterAppInfoEntry_HappyCase(t *testing.T) {
 	assert.Equal(t, "ut-app", entry.AppName)
 	assert.Equal(t, "ut-version", entry.Version)
 	assert.Equal(t, "ut-description", entry.Description)
-	assert.Equal(t, "ut-homeURL", entry.HomeURL)
-	assert.Equal(t, "ut-iconURL", entry.IconURL)
+	assert.Equal(t, "ut-homeUrl", entry.HomeUrl)
+	assert.Equal(t, "ut-iconUrl", entry.IconUrl)
 	assert.Contains(t, entry.Keywords, "ut-keyword")
-	assert.Contains(t, entry.DocsURL, "ut-docURL")
+	assert.Contains(t, entry.DocsUrl, "ut-docUrl")
 	assert.Contains(t, entry.Maintainers, "ut-maintainer")
 }
 
@@ -372,16 +373,16 @@ func TestAppInfoEntry_String_HappyCase(t *testing.T) {
 	// assert unmarshalling without error
 	assert.Nil(t, json.Unmarshal([]byte(str), &m))
 
-	assert.Equal(t, AppInfoEntryName, m["entry_name"])
-	assert.Equal(t, AppInfoEntryType, m["entry_type"])
-	assert.Equal(t, entry.AppName, m["app_name"])
+	assert.Equal(t, AppInfoEntryName, m["entryName"])
+	assert.Equal(t, AppInfoEntryType, m["entryType"])
+	assert.Equal(t, entry.AppName, m["appName"])
 	assert.Equal(t, entry.Version, m["version"])
 	assert.Equal(t, entry.Lang, m["lang"])
 	assert.Equal(t, entry.Description, m["description"])
-	assert.Equal(t, entry.HomeURL, m["home_url"])
-	assert.Equal(t, entry.IconURL, m["icon_url"])
+	assert.Equal(t, entry.HomeUrl, m["homeUrl"])
+	assert.Equal(t, entry.IconUrl, m["iconUrl"])
 	assert.Empty(t, entry.Keywords, m["keywords"])
-	assert.Empty(t, entry.DocsURL, m["docs_url"])
+	assert.Empty(t, entry.DocsUrl, m["docsUrl"])
 	assert.Empty(t, entry.Maintainers, m["maintainers"])
 }
 
@@ -398,6 +399,7 @@ func assertPanic(t *testing.T) {
 func assertNotPanic(t *testing.T) {
 	if r := recover(); r != nil {
 		// expect panic to be called with non nil error
+		fmt.Println(r)
 		assert.True(t, false)
 	} else {
 		// this should never be called in case of a bug

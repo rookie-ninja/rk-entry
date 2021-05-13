@@ -17,7 +17,9 @@ import (
 )
 
 const (
-	EventLoggerEntryType = "event-logger"
+	EventLoggerEntryType   = "EventLoggerEntry"
+	EventLoggerNameNoop    = "EventLoggerNoop"
+	EventLoggerDescription = "Internal RK entry which is used to log event such as RPC request or periodic jobs."
 )
 
 // Create event logger entry with noop event factory.
@@ -25,12 +27,12 @@ const (
 // Since we don't need any log rotation in case of noop, lumberjack config will be nil.
 func NoopEventLoggerEntry() *EventLoggerEntry {
 	entry := &EventLoggerEntry{
-		entryName:    "event-logger-noop",
-		entryType:    EventLoggerEntryType,
-		eventFactory: rkquery.NewEventFactory(rkquery.WithLogger(rklogger.NoopLogger)),
+		EntryName:    EventLoggerNameNoop,
+		EntryType:    EventLoggerEntryType,
+		EventFactory: rkquery.NewEventFactory(rkquery.WithLogger(rklogger.NoopLogger)),
 	}
 
-	entry.eventHelper = rkquery.NewEventHelper(entry.eventFactory)
+	entry.EventHelper = rkquery.NewEventHelper(entry.EventFactory)
 
 	return entry
 }
@@ -38,39 +40,44 @@ func NoopEventLoggerEntry() *EventLoggerEntry {
 // Bootstrap config of Event Logger information.
 // 1: RK.AppName: Application name which refers to go process.
 //                Default application name of AppNameDefault would be assigned if missing in boot config file.
-// 2: EventLogger.Name: Name of event logger entry.
-// 3: EventLogger.Format: Format of event logger, RK & JSON is supported. Please refer rkquery.RK & rkquery.JSON.
-// 4: EventLogger.OutputPaths: Output paths of event logger, stdout would be the default one if not provided.
+// 2: RK.Version: Version of application.
+// 3: EventLogger.Name: Name of event logger entry.
+// 4: EventLogger.Description: Description of event logger entry.
+// 5: EventLogger.Format: Format of event logger, RK & JSON is supported. Please refer rkquery.RK & rkquery.JSON.
+// 6: EventLogger.OutputPaths: Output paths of event logger, stdout would be the default one if not provided.
 //                             If one of output path was provided, then stdout would be omitted.
 //                             Output path could be relative or absolute paths either.
-// 5: EventLogger.Lumberjack: Lumberjack config which follows lumberjack.Logger style.
+// 7: EventLogger.Lumberjack: Lumberjack config which follows lumberjack.Logger style.
 type BootConfigEventLogger struct {
 	RK struct {
-		AppName string `yaml:"appName"`
-		Version string `yaml:"version"`
-	} `yaml:"rk"`
+		AppName string `yaml:"appName" json:"appName"`
+		Version string `yaml:"version" json:"version"`
+	} `yaml:"rk" json:"rk"`
 	EventLogger []struct {
-		Name        string             `yaml:"name"`
-		Format      string             `yaml:"format"`
-		OutputPaths []string           `yaml:"outputPaths"`
-		Lumberjack  *lumberjack.Logger `yaml:"lumberjack"`
-	} `yaml:"eventLogger`
+		Name        string             `yaml:"name" json:"name"`
+		Description string             `yaml:"description" json:"description"`
+		Format      string             `yaml:"format" json:"format"`
+		OutputPaths []string           `yaml:"outputPaths" json:"outputPaths"`
+		Lumberjack  *lumberjack.Logger `yaml:"lumberjack" json:"lumberjack"`
+	} `yaml:"eventLogger json:"eventLogger"`
 }
 
 // EventLoggerEntry contains bellow fields.
-// 1: entryName: Name of entry.
-// 2: entryType: Type of entry which is EventLoggerEntryType.
-// 3: eventFactory: rkquery.EventFactory was initialized at the beginning.
-// 4: eventHelper: rkquery.EventHelper was initialized at the beginning.
-// 5: loggerConfig: zap.Config which was initialized at the beginning which is not accessible after initialization.
-// 6: lumberjackConfig: lumberjack.Logger which was initialized at the beginning.
+// 1: EntryName: Name of entry.
+// 2: EntryType: Type of entry which is EventLoggerEntryType.
+// 3: EntryDescription: Description of EventLoggerEntry.
+// 4: EventFactory: rkquery.EventFactory was initialized at the beginning.
+// 5: EventHelper: rkquery.EventHelper was initialized at the beginning.
+// 6: LoggerConfig: zap.Config which was initialized at the beginning which is not accessible after initialization.
+// 7: LumberjackConfig: lumberjack.Logger which was initialized at the beginning.
 type EventLoggerEntry struct {
-	entryName        string
-	entryType        string
-	eventFactory     *rkquery.EventFactory
-	eventHelper      *rkquery.EventHelper
-	loggerConfig     *zap.Config
-	lumberjackConfig *lumberjack.Logger
+	EntryName        string                `yaml:"entryName" json:"entryName"`
+	EntryType        string                `yaml:"entryType" json:"entryType"`
+	EntryDescription string                `yaml:"entryDescription" json:"entryDescription"`
+	EventFactory     *rkquery.EventFactory `yaml:"-" json:"-"`
+	EventHelper      *rkquery.EventHelper  `yaml:"-" json:"-"`
+	LoggerConfig     *zap.Config           `yaml:"zapConfig" json:"zapConfig"`
+	LumberjackConfig *lumberjack.Logger    `yaml:"lumberjackConfig" json:"lumberjackConfig"`
 }
 
 // EventLoggerEntry Option which used while registering entry from codes.
@@ -79,14 +86,21 @@ type EventLoggerEntryOption func(*EventLoggerEntry)
 // Provide name of entry.
 func WithNameEvent(name string) EventLoggerEntryOption {
 	return func(entry *EventLoggerEntry) {
-		entry.entryName = name
+		entry.EntryName = name
+	}
+}
+
+// Provide description of entry.
+func WithDescriptionEvent(description string) EventLoggerEntryOption {
+	return func(entry *EventLoggerEntry) {
+		entry.EntryDescription = description
 	}
 }
 
 // Provide event factory of entry which refers to rkquery.EventFactory.
 func WithEventFactoryEvent(fac *rkquery.EventFactory) EventLoggerEntryOption {
 	return func(entry *EventLoggerEntry) {
-		entry.eventFactory = fac
+		entry.EventFactory = fac
 	}
 }
 
@@ -115,16 +129,16 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 
 		var eventFactory *rkquery.EventFactory
 		// assign default zap config and lumberjack config
-		queryLoggerConfig := rklogger.NewZapEventConfig()
-		queryLoggerLumberjackConfig := rklogger.NewLumberjackConfigDefault()
+		eventLoggerConfig := rklogger.NewZapEventConfig()
+		eventLoggerLumberjackConfig := rklogger.NewLumberjackConfigDefault()
 		// override with user provided zap config and lumberjack config
-		rkcommon.OverrideLumberjackConfig(queryLoggerLumberjackConfig, element.Lumberjack)
+		rkcommon.OverrideLumberjackConfig(eventLoggerLumberjackConfig, element.Lumberjack)
 		// if output paths were provided by user, we will override it which means <stdout> would be omitted
 		if len(element.OutputPaths) > 0 {
-			queryLoggerConfig.OutputPaths = element.OutputPaths
+			eventLoggerConfig.OutputPaths = element.OutputPaths
 		}
 
-		if queryLogger, err := rklogger.NewZapLoggerWithConf(queryLoggerConfig, queryLoggerLumberjackConfig); err != nil {
+		if eventLogger, err := rklogger.NewZapLoggerWithConf(eventLoggerConfig, eventLoggerLumberjackConfig); err != nil {
 			rkcommon.ShutdownWithError(err)
 		} else {
 			elements := []string{
@@ -137,7 +151,7 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 			locale := strings.Join(elements, "::")
 
 			eventFactory = rkquery.NewEventFactory(
-				rkquery.WithLogger(queryLogger),
+				rkquery.WithLogger(eventLogger),
 				rkquery.WithAppName(config.RK.AppName),
 				rkquery.WithAppVersion(config.RK.Version),
 				rkquery.WithLocale(locale),
@@ -146,11 +160,12 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 
 		entry := RegisterEventLoggerEntry(
 			WithNameEvent(element.Name),
+			WithDescriptionEvent(element.Description),
 			WithEventFactoryEvent(eventFactory))
 
 		// special case for logger config
-		entry.loggerConfig = queryLoggerConfig
-		entry.lumberjackConfig = queryLoggerLumberjackConfig
+		entry.LoggerConfig = eventLoggerConfig
+		entry.LumberjackConfig = eventLoggerLumberjackConfig
 
 		res[element.Name] = entry
 	}
@@ -161,24 +176,25 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 // Create event logger entry with options.
 func RegisterEventLoggerEntry(opts ...EventLoggerEntryOption) *EventLoggerEntry {
 	entry := &EventLoggerEntry{
-		entryType: EventLoggerEntryType,
+		EntryType:        EventLoggerEntryType,
+		EntryDescription: EventLoggerDescription,
 	}
 
 	for i := range opts {
 		opts[i](entry)
 	}
 
-	if len(entry.entryName) < 1 {
-		entry.entryName = "event-logger-" + rkcommon.RandString(4)
+	if len(entry.EntryName) < 1 {
+		entry.EntryName = "eventLogger-" + rkcommon.RandString(4)
 	}
 
-	if entry.eventFactory == nil {
-		entry.eventFactory = rkquery.NewEventFactory()
+	if entry.EventFactory == nil {
+		entry.EventFactory = rkquery.NewEventFactory()
 	}
 
-	entry.eventHelper = rkquery.NewEventHelper(entry.eventFactory)
+	entry.EventHelper = rkquery.NewEventHelper(entry.EventFactory)
 
-	GlobalAppCtx.addEventLoggerEntry(entry)
+	GlobalAppCtx.AddEventLoggerEntry(entry)
 
 	return entry
 }
@@ -195,50 +211,65 @@ func (entry *EventLoggerEntry) Interrupt(context.Context) {
 
 // Get name of entry.
 func (entry *EventLoggerEntry) GetName() string {
-	return entry.entryName
+	return entry.EntryName
 }
 
 // Get type of entry.
 func (entry *EventLoggerEntry) GetType() string {
-	return entry.entryType
+	return entry.EntryType
 }
 
 // Convert entry into JSON style string.
 func (entry *EventLoggerEntry) String() string {
-	m := map[string]interface{}{
-		"entry_name": entry.entryName,
-		"entry_type": entry.entryType,
+	if bytes, err := json.Marshal(entry); err != nil {
+		return "{}"
+	} else {
+		return string(bytes)
+	}
+}
+
+// Marshal entry.
+func (entry *EventLoggerEntry) MarshalJSON() ([]byte, error) {
+	loggerConfigWrap := rklogger.TransformToZapConfigWrap(entry.LoggerConfig)
+
+	type innerEventLoggerEntry struct {
+		EntryName        string                  `yaml:"entryName" json:"entryName"`
+		EntryType        string                  `yaml:"entryType" json:"entryType"`
+		EntryDescription string                  `yaml:"entryDescription" json:"entryDescription"`
+		LoggerConfig     *rklogger.ZapConfigWrap `yaml:"zapConfig" json:"zapConfig"`
+		LumberjackConfig *lumberjack.Logger      `yaml:"lumberjackConfig" json:"lumberjackConfig"`
 	}
 
-	if entry.loggerConfig != nil {
-		m["output_path"] = entry.loggerConfig.OutputPaths
-	}
+	return json.Marshal(&innerEventLoggerEntry{
+		EntryName:        entry.EntryName,
+		EntryType:        entry.EntryType,
+		EntryDescription: entry.EntryDescription,
+		LoggerConfig:     loggerConfigWrap,
+		LumberjackConfig: entry.LumberjackConfig,
+	})
+}
 
-	if entry.lumberjackConfig != nil {
-		m["lumberjack_filename"] = entry.lumberjackConfig.Filename
-		m["lumberjack_compress"] = entry.lumberjackConfig.Compress
-		m["lumberjack_maxsize"] = entry.lumberjackConfig.MaxSize
-		m["lumberjack_maxage"] = entry.lumberjackConfig.MaxAge
-		m["lumberjack_maxbackups"] = entry.lumberjackConfig.MaxBackups
-		m["lumberjack_localtime"] = entry.lumberjackConfig.LocalTime
-	}
+// Not supported
+func (entry *EventLoggerEntry) UnmarshalJSON([]byte) error {
+	return nil
+}
 
-	bytes, _ := json.Marshal(m)
-
-	return string(bytes)
+// Return description of entry
+func (entry *EventLoggerEntry) GetDescription() string {
+	return entry.EntryDescription
 }
 
 // Get event factory, refer to rkquery.EventFactory.
 func (entry *EventLoggerEntry) GetEventFactory() *rkquery.EventFactory {
-	return entry.eventFactory
+	return entry.EventFactory
 }
 
 // Get event helperm refer to rkquery.EventHelper.
 func (entry *EventLoggerEntry) GetEventHelper() *rkquery.EventHelper {
-	return entry.eventHelper
+	return entry.EventHelper
 }
 
 // Get lumberjack config, refer to lumberjack.Logger.
 func (entry *EventLoggerEntry) GetLumberjackConfig() *lumberjack.Logger {
-	return entry.lumberjackConfig
+	return entry.LumberjackConfig
 }

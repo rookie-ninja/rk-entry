@@ -55,6 +55,9 @@ type Entry interface {
 	// Get type of entry
 	GetType() string
 
+	// Get description of entry
+	GetDescription() string
+
 	// print entry as string
 	String() string
 }

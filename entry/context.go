@@ -16,25 +16,29 @@ import (
 )
 
 const (
-	DefaultZapLoggerEntryName   = "zap-logger-default"
-	DefaultEventLoggerEntryName = "event-logger-default"
+	DefaultZapLoggerEntryName   = "zapLoggerDefault"
+	DefaultEventLoggerEntryName = "eventLoggerDefault"
 )
 
 var (
 	// Global application context
 	GlobalAppCtx = &appContext{
-		StartTime:     time.Now(),
-		BasicEntries:  make(map[string]Entry),
-		Entries:       make(map[string]Entry),
-		ViperConfigs:  make(map[string]Entry),
-		ShutdownSig:   make(chan os.Signal),
-		ShutdownHooks: make(map[string]ShutdownHook),
-		UserValues:    make(map[string]interface{}),
+		startTime:          time.Now(),
+		appInfoEntry:       AppInfoEntryDefault(),  // internal entry
+		zapLoggerEntries:   make(map[string]Entry), // internal entry
+		eventLoggerEntries: make(map[string]Entry), // internal entry
+		configEntries:      make(map[string]Entry), // internal entry
+		certEntries:        make(map[string]Entry), // internal entry
+		externalEntries:    make(map[string]Entry), // external entry
+		shutdownSig:        make(chan os.Signal),
+		shutdownHooks:      make(map[string]ShutdownHook),
+		userValues:         make(map[string]interface{}),
 	}
 	// list of entry registration function
 	entryRegFuncList = make([]EntryRegFunc, 0)
-	// list of basic entry registration function
-	basicEntryRegFuncList = make([]EntryRegFunc, 0)
+
+	// list of internal entry registration function
+	internalEntryRegFuncList = make([]EntryRegFunc, 0)
 )
 
 type ShutdownHook func()
@@ -66,18 +70,18 @@ func init() {
 			rkquery.NewEventFactory(
 				rkquery.WithLogger(defaultEventLogger))))
 
-	eventLoggerEntry.loggerConfig = defaultEventLoggerConfig
+	eventLoggerEntry.LoggerConfig = defaultEventLoggerConfig
 
 	// register rk style entries here including RKEntry which contains basic information,
 	// and application logger and event logger, otherwise, we will have import cycle
-	basicEntryRegFuncList = append(basicEntryRegFuncList,
+	internalEntryRegFuncList = append(internalEntryRegFuncList,
 		RegisterAppInfoEntriesFromConfig,
 		RegisterZapLoggerEntriesWithConfig,
 		RegisterEventLoggerEntriesWithConfig,
-		RegisterViperEntriesWithConfig,
+		RegisterConfigEntriesWithConfig,
 		RegisterCertEntriesFromConfig)
 
-	signal.Notify(GlobalAppCtx.ShutdownSig,
+	signal.Notify(GlobalAppCtx.shutdownSig,
 		syscall.SIGHUP,
 		syscall.SIGINT,
 		syscall.SIGTERM,
@@ -85,23 +89,29 @@ func init() {
 }
 
 // Application context which contains bellow fields.
-// 1: StartTime - Application start time.
-// 2: BasicEntries - Basic entries contains default zap logger entry, event logger entry and rk entry by default.
-// 3: Entries - User entries registered from user code.
-// 4: ViperConfigs - Viper configs registered from user code.
-// 5: UserValues - User K/V registered from code.
-// 6: ShutdownSig - Shutdown signals which contains syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT.
-// 7: ShutdownHooks - Shutdown hooks registered from user code.
+// 1: startTime - Application start time.
+// 2: appInfoEntry - AppInfoEntry.
+// 3: zapLoggerEntries - List of ZapLoggerEntry.
+// 4: eventLoggerEntries - List of EventLoggerEntry.
+// 5: configEntries - List of ConfigEntry.
+// 6: certEntries - List of ConfigEntry.
+// 7: externalEntries - User entries registered from user code.
+// 8: userValues - User K/V registered from code.
+// 9: shutdownSig - Shutdown signals which contains syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT.
+// 10: shutdownHooks - Shutdown hooks registered from user code.
 type appContext struct {
 	// It is not recommended to override this value since StartTime would be assigned to current time
 	// at beginning of go process in init() function.
-	StartTime     time.Time               `json:"start_time"`
-	BasicEntries  map[string]Entry        `json:"basic_entries"`
-	Entries       map[string]Entry        `json:"entries"`
-	ViperConfigs  map[string]Entry        `json:"viper_configs"`
-	UserValues    map[string]interface{}  `json:"user_values"`
-	ShutdownSig   chan os.Signal          `json:"shutdown_sig"`
-	ShutdownHooks map[string]ShutdownHook `json:"shutdown_hooks"`
+	startTime          time.Time               `json:"startTime" yaml:"startTime"`
+	appInfoEntry       Entry                   `json:"appInfoEntry" yaml:"appInfoEntry"`
+	zapLoggerEntries   map[string]Entry        `json:"zapLoggerEntries" yaml:"zapLoggerEntries"`
+	eventLoggerEntries map[string]Entry        `json:"eventLoggerEntries" yaml:"eventLoggerEntries"`
+	configEntries      map[string]Entry        `json:"configEntries" yaml:"configEntries"`
+	certEntries        map[string]Entry        `json:"certEntries" yaml:"certEntries"`
+	externalEntries    map[string]Entry        `json:"externalEntries" yaml:"externalEntries"`
+	userValues         map[string]interface{}  `json:"userValues" yaml:"userValues"`
+	shutdownSig        chan os.Signal          `json:"shutdownSig" yaml:"shutdownSig"`
+	shutdownHooks      map[string]ShutdownHook `json:"shutdownHooks" yaml:"shutdownHooks"`
 }
 
 // Register user defined registration function.
@@ -126,13 +136,13 @@ func ListEntryRegFunc() []EntryRegFunc {
 
 // Internal use only, please do not add entries registration function via this.
 // Please use RegisterEntryRegFunc instead.
-func RegisterBasicEntriesFromConfig(configFilePath string) {
-	for i := range basicEntryRegFuncList {
-		entries := basicEntryRegFuncList[i](configFilePath)
+func RegisterInternalEntriesFromConfig(configFilePath string) {
+	ctx := context.Background()
 
-		for k, v := range entries {
-			GlobalAppCtx.BasicEntries[k] = v
-			v.Bootstrap(context.Background())
+	for i := range internalEntryRegFuncList {
+		entries := internalEntryRegFuncList[i](configFilePath)
+		for _, v := range entries {
+			v.Bootstrap(ctx)
 		}
 	}
 }
@@ -143,28 +153,28 @@ func RegisterBasicEntriesFromConfig(configFilePath string) {
 
 // Add value to GlobalAppCtx.
 func (ctx *appContext) AddValue(key string, value interface{}) {
-	ctx.UserValues[key] = value
+	ctx.userValues[key] = value
 }
 
 // Get value from GlobalAppCtx.
 func (ctx *appContext) GetValue(key string) interface{} {
-	return ctx.UserValues[key]
+	return ctx.userValues[key]
 }
 
 // List values from GlobalAppCtx.
 func (ctx *appContext) ListValues() map[string]interface{} {
-	return ctx.UserValues
+	return ctx.userValues
 }
 
 // Remove value from GlobalAppCtx.
 func (ctx *appContext) RemoveValue(key string) {
-	delete(ctx.UserValues, key)
+	delete(ctx.userValues, key)
 }
 
 // Clear values from GlobalAppCtx.
 func (ctx *appContext) ClearValues() {
-	for k := range ctx.UserValues {
-		delete(ctx.UserValues, k)
+	for k := range ctx.userValues {
+		delete(ctx.userValues, k)
 	}
 }
 
@@ -173,20 +183,19 @@ func (ctx *appContext) ClearValues() {
 // **************************************
 
 // Returns entry name if entry is not nil, otherwise, return an empty string.
-// Entry will be added into map of appContext.BasicEntries in order to distinguish between user entries and basic entries.
-func (ctx *appContext) addZapLoggerEntry(entry *ZapLoggerEntry) string {
+func (ctx *appContext) AddZapLoggerEntry(entry *ZapLoggerEntry) string {
 	if entry == nil {
 		return ""
 	}
 
-	ctx.BasicEntries[entry.GetName()] = entry
+	ctx.zapLoggerEntries[entry.GetName()] = entry
 	return entry.GetName()
 }
 
 // Get zap logger entry from GlobalAppCtx with name.
 // If entry retrieved with provided name was not type of rkentry.ZapLoggerEntry, we will just return nil.
 func (ctx *appContext) GetZapLoggerEntry(name string) *ZapLoggerEntry {
-	if val, ok := GlobalAppCtx.BasicEntries[name]; ok {
+	if val, ok := GlobalAppCtx.zapLoggerEntries[name]; ok {
 		if res, ok := val.(*ZapLoggerEntry); ok {
 			return res
 		}
@@ -197,9 +206,9 @@ func (ctx *appContext) GetZapLoggerEntry(name string) *ZapLoggerEntry {
 
 // Remove zap logger entry.
 func (ctx *appContext) RemoveZapLoggerEntry(name string) bool {
-	if val, ok := GlobalAppCtx.BasicEntries[name]; ok {
+	if val, ok := GlobalAppCtx.zapLoggerEntries[name]; ok {
 		if _, ok := val.(*ZapLoggerEntry); ok {
-			delete(GlobalAppCtx.BasicEntries, name)
+			delete(GlobalAppCtx.zapLoggerEntries, name)
 			return true
 		}
 	}
@@ -207,16 +216,21 @@ func (ctx *appContext) RemoveZapLoggerEntry(name string) bool {
 	return false
 }
 
-// Returns map of zap logger entries in appContext.BasicEntries.
+// Returns map of zap logger entries.
 func (ctx *appContext) ListZapLoggerEntries() map[string]*ZapLoggerEntry {
 	res := make(map[string]*ZapLoggerEntry, 0)
 
-	for k, v := range ctx.BasicEntries {
+	for k, v := range ctx.zapLoggerEntries {
 		if logger, ok := v.(*ZapLoggerEntry); ok {
 			res[k] = logger
 		}
 	}
 	return res
+}
+
+// Returns map of zap logger entries as Entry.
+func (ctx *appContext) ListZapLoggerEntriesRaw() map[string]Entry {
+	return ctx.zapLoggerEntries
 }
 
 // Get zap logger entry from GlobalAppCtx with name.
@@ -231,7 +245,7 @@ func (ctx *appContext) ListZapLoggerEntries() map[string]*ZapLoggerEntry {
 // 5: GetZapLoggerConfigDefault
 // 6: GetZapLoggerEntryDefault
 func (ctx *appContext) GetZapLogger(name string) *zap.Logger {
-	if val, ok := GlobalAppCtx.BasicEntries[name]; ok {
+	if val, ok := GlobalAppCtx.zapLoggerEntries[name]; ok {
 		if res, ok := val.(*ZapLoggerEntry); ok {
 			return res.GetLogger()
 		}
@@ -243,7 +257,7 @@ func (ctx *appContext) GetZapLogger(name string) *zap.Logger {
 // Get zap logger config from GlobalAppCtx with name.
 // If entry retrieved with provided name was not type of rkentry.ZapLoggerEntry, we will just return nil.
 func (ctx *appContext) GetZapLoggerConfig(name string) *zap.Config {
-	if val, ok := GlobalAppCtx.BasicEntries[name]; ok {
+	if val, ok := GlobalAppCtx.zapLoggerEntries[name]; ok {
 		if res, ok := val.(*ZapLoggerEntry); ok {
 			return res.GetLoggerConfig()
 		}
@@ -272,16 +286,12 @@ func (ctx *appContext) GetZapLoggerConfigDefault() *zap.Config {
 // ****************************************
 
 // Returns entry name if entry is not nil, otherwise, return an empty string.
-// Entry will be added into map of appContext.BasicEntries in order to distinguish between user entries
-// and RK default entries.
-//
-// Please do NOT add other entries by calling this function although it would do no harm to context.
-func (ctx *appContext) addEventLoggerEntry(entry *EventLoggerEntry) string {
+func (ctx *appContext) AddEventLoggerEntry(entry *EventLoggerEntry) string {
 	if entry == nil {
 		return ""
 	}
 
-	ctx.BasicEntries[entry.GetName()] = entry
+	ctx.eventLoggerEntries[entry.GetName()] = entry
 	return entry.GetName()
 }
 
@@ -294,7 +304,7 @@ func (ctx *appContext) addEventLoggerEntry(entry *EventLoggerEntry) string {
 // 3: GetEventFactory
 // 4: GetEventHelper
 func (ctx *appContext) GetEventLoggerEntry(name string) *EventLoggerEntry {
-	if val, ok := GlobalAppCtx.BasicEntries[name]; ok {
+	if val, ok := GlobalAppCtx.eventLoggerEntries[name]; ok {
 		if res, ok := val.(*EventLoggerEntry); ok {
 			return res
 		}
@@ -305,9 +315,9 @@ func (ctx *appContext) GetEventLoggerEntry(name string) *EventLoggerEntry {
 
 // Remove event logger entry.
 func (ctx *appContext) RemoveEventLoggerEntry(name string) bool {
-	if val, ok := GlobalAppCtx.BasicEntries[name]; ok {
+	if val, ok := GlobalAppCtx.eventLoggerEntries[name]; ok {
 		if _, ok := val.(*EventLoggerEntry); ok {
-			delete(GlobalAppCtx.BasicEntries, name)
+			delete(GlobalAppCtx.eventLoggerEntries, name)
 			return true
 		}
 	}
@@ -315,16 +325,21 @@ func (ctx *appContext) RemoveEventLoggerEntry(name string) bool {
 	return false
 }
 
-// Returns map of event logger entries in appContext.BasicEntries.
+// Returns map of event logger entries.
 func (ctx *appContext) ListEventLoggerEntries() map[string]*EventLoggerEntry {
 	res := make(map[string]*EventLoggerEntry, 0)
 
-	for k, v := range ctx.BasicEntries {
+	for k, v := range ctx.eventLoggerEntries {
 		if logger, ok := v.(*EventLoggerEntry); ok {
 			res[k] = logger
 		}
 	}
 	return res
+}
+
+// Returns map of zap logger entries as Entry.
+func (ctx *appContext) ListEventLoggerEntriesRaw() map[string]Entry {
+	return ctx.eventLoggerEntries
 }
 
 // Get rkquery.EventFactory from GlobalAppCtx with name.
@@ -359,25 +374,59 @@ func (ctx *appContext) GetEventLoggerEntryDefault() *EventLoggerEntry {
 // and RK default entries.
 //
 // Please do NOT add other entries by calling this function although it would do no harm to context.
-func (ctx *appContext) addCertEntry(entry Entry) string {
+func (ctx *appContext) AddCertEntry(entry *CertEntry) string {
 	if entry == nil {
 		return ""
 	}
 
-	ctx.BasicEntries[entry.GetName()] = entry
+	ctx.certEntries[entry.GetName()] = entry
 	return entry.GetName()
 }
 
 // Get event logger entry from GlobalAppCtx with name.
 // If entry retrieved with provided name was not type of rkentry.CertEntry, we will just return nil.
-func (ctx *appContext) GetCertEntry() *CertEntry {
-	if val, ok := GlobalAppCtx.BasicEntries[CertEntryName]; ok {
+func (ctx *appContext) GetCertEntry(name string) *CertEntry {
+	if val, ok := GlobalAppCtx.certEntries[name]; ok {
 		if res, ok := val.(*CertEntry); ok {
 			return res
 		}
 	}
 
 	return nil
+}
+
+// Remove cert entry.
+func (ctx *appContext) RemoveCertEntry(name string) bool {
+	if val, ok := GlobalAppCtx.certEntries[name]; ok {
+		if _, ok := val.(*CertEntry); ok {
+			delete(GlobalAppCtx.certEntries, name)
+			return true
+		}
+	}
+
+	return false
+}
+
+// Returns map of cert entries.
+func (ctx *appContext) ListCertEntries() map[string]*CertEntry {
+	res := make(map[string]*CertEntry)
+	for k, v := range ctx.certEntries {
+		res[k] = v.(*CertEntry)
+	}
+
+	return res
+}
+
+// Returns map of cert entries as Entry.
+func (ctx *appContext) ListCertEntriesRaw() map[string]Entry {
+	return GlobalAppCtx.certEntries
+}
+
+// Internal use only.
+func (ctx *appContext) clearCertEntries() {
+	for k := range ctx.certEntries {
+		delete(ctx.certEntries, k)
+	}
 }
 
 // ************************************
@@ -389,90 +438,90 @@ func (ctx *appContext) GetCertEntry() *CertEntry {
 // and RK default entries.
 //
 // Please do NOT add other entries by calling this function although it would do no harm to context.
-func (ctx *appContext) addAppInfoEntry(entry Entry) string {
+func (ctx *appContext) SetAppInfoEntry(entry Entry) string {
 	if entry == nil {
 		return ""
 	}
 
-	ctx.BasicEntries[entry.GetName()] = entry
+	ctx.appInfoEntry = entry
 	return entry.GetName()
 }
 
 // Get rkentry.AppInfoEntry.
 func (ctx *appContext) GetAppInfoEntry() *AppInfoEntry {
-	if rawEntry, ok := ctx.BasicEntries[AppInfoEntryName]; ok {
-		if res, ok := rawEntry.(*AppInfoEntry); ok {
-			return res
-		}
-	}
+	return ctx.appInfoEntry.(*AppInfoEntry)
+}
 
-	return AppInfoEntryDefault()
+// Get rkentry.AppInfoEntry.
+func (ctx *appContext) GetAppInfoEntryRaw() Entry {
+	return ctx.appInfoEntry
 }
 
 // Get up time of application from StartTime.
 func (ctx *appContext) GetUpTime() time.Duration {
-	return time.Since(ctx.StartTime)
+	return time.Since(ctx.startTime)
 }
 
-// *********************************
-// ****** Viper Entry related ******
-// *********************************
+// Get start time of application.
+func (ctx *appContext) GetStartTime() time.Time {
+	return ctx.startTime
+}
 
-// Add viper config entry into GlobalAppCtx.
-func (ctx *appContext) AddViperEntry(entry *ViperEntry) {
+// **********************************
+// ****** Config Entry related ******
+// **********************************
+
+// Add config entry into GlobalAppCtx.
+func (ctx *appContext) AddConfigEntry(entry *ConfigEntry) string {
 	if entry == nil {
-		return
+		return ""
 	}
 
-	ctx.ViperConfigs[entry.GetName()] = entry
+	ctx.configEntries[entry.GetName()] = entry
+	return entry.GetName()
 }
 
-// Get viper config.
-func (ctx *appContext) GetViperEntry(name string) *ViperEntry {
-	if val, ok := ctx.ViperConfigs[name]; ok {
-		return val.(*ViperEntry)
+// Get config entry from GlobalAppCtx with name.
+// If entry retrieved with provided name was not type of rkentry.ConfigEntry, we will just return nil.
+func (ctx *appContext) GetConfigEntry(name string) *ConfigEntry {
+	if val, ok := ctx.configEntries[name]; ok {
+		return val.(*ConfigEntry)
 	}
 
 	return nil
 }
 
-func (ctx *appContext) ListViperEntries() map[string]*ViperEntry {
-	res := make(map[string]*ViperEntry)
-	for k, v := range ctx.ViperConfigs {
-		res[k] = v.(*ViperEntry)
+// Returns map of config entries.
+func (ctx *appContext) ListConfigEntries() map[string]*ConfigEntry {
+	res := make(map[string]*ConfigEntry)
+	for k, v := range ctx.configEntries {
+		res[k] = v.(*ConfigEntry)
 	}
 
 	return res
 }
 
-func (ctx *appContext) clearViperEntries() {
-	for k := range ctx.ViperConfigs {
-		delete(ctx.ViperConfigs, k)
+// Returns map of config entries as Entry.
+func (ctx *appContext) ListConfigEntriesRaw() map[string]Entry {
+	return ctx.configEntries
+}
+
+// Remove config entry.
+func (ctx *appContext) RemoveConfigEntry(name string) bool {
+	if val, ok := GlobalAppCtx.configEntries[name]; ok {
+		if _, ok := val.(*ConfigEntry); ok {
+			delete(GlobalAppCtx.configEntries, name)
+			return true
+		}
 	}
+
+	return false
 }
 
-// ***********************************
-// ****** Shutdown hook related ******
-// ***********************************
-
-func (ctx *appContext) AddShutdownHook(name string, f ShutdownHook) {
-	if f == nil {
-		return
-	}
-	ctx.ShutdownHooks[name] = f
-}
-
-func (ctx *appContext) GetShutdownHook(name string) ShutdownHook {
-	return ctx.ShutdownHooks[name]
-}
-
-func (ctx *appContext) ListShutdownHooks() map[string]ShutdownHook {
-	return ctx.ShutdownHooks
-}
-
-func (ctx *appContext) clearShutdownHooks() {
-	for k := range ctx.ShutdownHooks {
-		delete(ctx.ShutdownHooks, k)
+// Internal use only.
+func (ctx *appContext) clearConfigEntries() {
+	for k := range ctx.configEntries {
+		delete(ctx.configEntries, k)
 	}
 }
 
@@ -480,30 +529,85 @@ func (ctx *appContext) clearShutdownHooks() {
 // ****** User entry related *********
 // ***********************************
 
+// Add user entry into GlobalAppCtx.
 func (ctx *appContext) AddEntry(entry Entry) {
 	if entry == nil {
 		return
 	}
-	ctx.Entries[entry.GetName()] = entry
+	ctx.externalEntries[entry.GetName()] = entry
 }
 
+// Get user entry from GlobalAppCtx with name.
+// If entry retrieved with provided name was not type of rkentry.Entry, we will just return nil.
 func (ctx *appContext) GetEntry(name string) Entry {
-	return ctx.Entries[name]
+	return ctx.externalEntries[name]
 }
 
+// Merge entries.
 func (ctx *appContext) MergeEntries(entries map[string]Entry) {
 	for k, v := range entries {
-		ctx.Entries[k] = v
+		ctx.externalEntries[k] = v
 	}
 }
 
-func (ctx *appContext) ListEntries() map[string]Entry {
-	return ctx.Entries
+// Remove entry.
+func (ctx *appContext) RemoveEntry(name string) bool {
+	if _, ok := GlobalAppCtx.externalEntries[name]; ok {
+		delete(GlobalAppCtx.externalEntries, name)
+		return true
+	}
+
+	return false
 }
 
+// Returns map of config entries.
+func (ctx *appContext) ListEntries() map[string]Entry {
+	return ctx.externalEntries
+}
+
+// Internal use only.
 func (ctx *appContext) clearEntries() {
-	for k := range ctx.Entries {
-		delete(ctx.Entries, k)
+	for k := range ctx.externalEntries {
+		delete(ctx.externalEntries, k)
+	}
+}
+
+// ***********************************
+// ****** Shutdown hook related ******
+// ***********************************
+
+// Add shutdown hook with name.
+func (ctx *appContext) AddShutdownHook(name string, f ShutdownHook) {
+	if f == nil {
+		return
+	}
+	ctx.shutdownHooks[name] = f
+}
+
+// Get shutdown hook with name.
+func (ctx *appContext) GetShutdownHook(name string) ShutdownHook {
+	return ctx.shutdownHooks[name]
+}
+
+// List shutdown hooks.
+func (ctx *appContext) ListShutdownHooks() map[string]ShutdownHook {
+	return ctx.shutdownHooks
+}
+
+// Remove shutdown hook.
+func (ctx *appContext) RemoveShutdownHook(name string) bool {
+	if _, ok := GlobalAppCtx.configEntries[name]; ok {
+		delete(GlobalAppCtx.configEntries, name)
+		return true
+	}
+
+	return false
+}
+
+// Internal use only.
+func (ctx *appContext) clearShutdownHooks() {
+	for k := range ctx.shutdownHooks {
+		delete(ctx.shutdownHooks, k)
 	}
 }
 
@@ -511,7 +615,12 @@ func (ctx *appContext) clearEntries() {
 // ****** Shutdown sig related *********
 // *************************************
 
-// Wait for shutdown signal
+// Wait for shutdown signal.
 func (ctx *appContext) WaitForShutdownSig() {
-	<-ctx.ShutdownSig
+	<-ctx.shutdownSig
+}
+
+// Get shutdown signal.
+func (ctx *appContext) GetShutdownSig() chan os.Signal {
+	return ctx.shutdownSig
 }

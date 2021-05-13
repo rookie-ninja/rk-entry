@@ -6,6 +6,7 @@ package rkentry
 
 import (
 	"context"
+	"fmt"
 	"github.com/rookie-ninja/rk-logger"
 	"github.com/rookie-ninja/rk-query"
 	"github.com/spf13/viper"
@@ -18,7 +19,7 @@ func TestGlobalAppCtx_init(t *testing.T) {
 	assert.NotNil(t, GlobalAppCtx)
 
 	// validate start time recorded.
-	assert.NotNil(t, GlobalAppCtx.StartTime)
+	assert.NotNil(t, GlobalAppCtx.GetStartTime())
 
 	// validate application logger entry.
 	assert.NotNil(t, GlobalAppCtx.GetZapLoggerEntryDefault())
@@ -27,19 +28,38 @@ func TestGlobalAppCtx_init(t *testing.T) {
 	assert.NotNil(t, GlobalAppCtx.GetEventLoggerEntryDefault())
 
 	// validate basic entry reg functions.
-	assert.Len(t, basicEntryRegFuncList, 5)
+	assert.Len(t, internalEntryRegFuncList, 5)
 
 	// validate user entries.
 	assert.Empty(t, entryRegFuncList)
 
-	// validate viper configs.
-	assert.Empty(t, GlobalAppCtx.ViperConfigs)
+	// validate app info entry
+	assert.NotNil(t, GlobalAppCtx.GetAppInfoEntry())
+
+	// validate config entries.
+	configEntries := GlobalAppCtx.ListConfigEntries()
+	assert.Equal(t, 0, len(configEntries))
+
+	fmt.Println(configEntries)
+
+	// validate zap logger entries.
+	zapEntries := GlobalAppCtx.ListZapLoggerEntries()
+	assert.Equal(t, 1, len(zapEntries))
+
+	// validate event logger entries.
+	eventEntries := GlobalAppCtx.ListEventLoggerEntries()
+	assert.Equal(t, 1, len(eventEntries))
+
+	// validate cert entries.
+	certEntries := GlobalAppCtx.ListCertEntries()
+	assert.Equal(t, 0, len(certEntries))
 
 	// validate shutdown hooks.
-	assert.Empty(t, GlobalAppCtx.ShutdownHooks)
+	assert.Empty(t, GlobalAppCtx.ListShutdownHooks())
 
 	// validate user values.
-	assert.Empty(t, GlobalAppCtx.UserValues)
+	values := GlobalAppCtx.ListValues()
+	assert.Equal(t, 0, len(values))
 }
 
 func TestRegisterEntryRegFunc_WithNilInput(t *testing.T) {
@@ -177,9 +197,9 @@ func TestAppContext_ClearValues_HappyCase(t *testing.T) {
 	assert.Empty(t, GlobalAppCtx.ListValues())
 }
 
-// logger related
-func TestAppContext_addZapLoggerEntry_WithNilEntry(t *testing.T) {
-	assert.Empty(t, GlobalAppCtx.addZapLoggerEntry(nil))
+// zap logger related
+func TestAppContext_AddZapLoggerEntry_WithNilEntry(t *testing.T) {
+	assert.Empty(t, GlobalAppCtx.AddZapLoggerEntry(nil))
 }
 
 func TestAppContext_RemoveZapLoggerEntry_HappyCase(t *testing.T) {
@@ -276,6 +296,19 @@ func TestAppContext_ListZapLoggerEntries_HappyCase(t *testing.T) {
 	GlobalAppCtx.RemoveZapLoggerEntry(loggerName)
 }
 
+func TestAppContext_ListZapLoggerEntriesRaw_HappyCase(t *testing.T) {
+	length := len(GlobalAppCtx.ListZapLoggerEntriesRaw())
+
+	loggerName := "logger-unit-test"
+
+	RegisterZapLoggerEntry(WithNameZap(loggerName))
+
+	assert.Len(t, GlobalAppCtx.ListZapLoggerEntriesRaw(), length+1)
+
+	// remove zap logger entry
+	GlobalAppCtx.RemoveZapLoggerEntry(loggerName)
+}
+
 func TestAppContext_GetZapLoggerDefault_HappyCase(t *testing.T) {
 	assert.NotNil(t, GlobalAppCtx.GetZapLoggerDefault())
 }
@@ -292,6 +325,11 @@ func TestAppContext_GetDefaultZapLogger_HappyCase(t *testing.T) {
 	assert.NotNil(t, GlobalAppCtx.GetZapLoggerDefault())
 }
 
+// event logger related
+func TestAppContext_AddEventLoggerEntry_WithNilEntry(t *testing.T) {
+	assert.Empty(t, GlobalAppCtx.AddEventLoggerEntry(nil))
+}
+
 func TestAppContext_GetEventLoggerEntry_WithNonExist(t *testing.T) {
 	loggerName := "non-exist"
 	assert.Nil(t, GlobalAppCtx.GetEventLoggerEntry(loggerName))
@@ -306,8 +344,8 @@ func TestAppContext_GetEventLoggerEntry_HappyCase(t *testing.T) {
 
 	assert.Equal(t, entry, GlobalAppCtx.GetZapLoggerEntry(loggerName))
 
-	// remove zap logger entry
-	GlobalAppCtx.RemoveZapLoggerEntry(loggerName)
+	// remove event logger entry
+	GlobalAppCtx.RemoveEventLoggerEntry(loggerName)
 }
 
 func TestAppContext_ListEventLoggerEntries_HappyCase(t *testing.T) {
@@ -319,8 +357,21 @@ func TestAppContext_ListEventLoggerEntries_HappyCase(t *testing.T) {
 
 	assert.Len(t, GlobalAppCtx.ListEventLoggerEntries(), length+1)
 
-	// remove zap logger entry
-	GlobalAppCtx.RemoveZapLoggerEntry(loggerName)
+	// remove event logger entry
+	GlobalAppCtx.RemoveEventLoggerEntry(loggerName)
+}
+
+func TestAppContext_ListEventLoggerEntriesRaw_HappyCase(t *testing.T) {
+	length := len(GlobalAppCtx.ListEventLoggerEntriesRaw())
+
+	loggerName := "logger-unit-test"
+
+	RegisterEventLoggerEntry(WithNameEvent(loggerName))
+
+	assert.Equal(t, length+1, len(GlobalAppCtx.ListEventLoggerEntriesRaw()))
+
+	// remove event logger entry
+	GlobalAppCtx.RemoveEventLoggerEntry(loggerName)
 }
 
 func TestAppContext_GetEventFactory_WithNonExist(t *testing.T) {
@@ -338,8 +389,8 @@ func TestAppContext_GetEventFactory_HappyCase(t *testing.T) {
 
 	assert.Equal(t, fac, GlobalAppCtx.GetEventFactory(loggerName))
 
-	// remove zap logger entry
-	GlobalAppCtx.RemoveZapLoggerEntry(loggerName)
+	// remove event logger entry
+	GlobalAppCtx.RemoveEventLoggerEntry(loggerName)
 }
 
 func TestAppContext_GetEventHelper_HappyCase(t *testing.T) {
@@ -352,8 +403,8 @@ func TestAppContext_GetEventHelper_HappyCase(t *testing.T) {
 
 	assert.NotNil(t, GlobalAppCtx.GetEventHelper(loggerName))
 
-	// remove zap logger entry
-	GlobalAppCtx.RemoveZapLoggerEntry(loggerName)
+	// remove event logger entry
+	GlobalAppCtx.RemoveEventLoggerEntry(loggerName)
 }
 
 func TestAppContext_GetEventLoggerEntryDefault_HappyCase(t *testing.T) {
@@ -364,48 +415,119 @@ func TestAppContext_GetAppInfoEntry_HappyCase(t *testing.T) {
 	assert.NotNil(t, GlobalAppCtx.GetAppInfoEntry())
 }
 
-// viper entry related
-func TestAppContext_GetViperConfig_WithNonExist(t *testing.T) {
+// Cert entry related
+func TestAppContext_AddCertEntry_WithNilEntry(t *testing.T) {
+	assert.Empty(t, GlobalAppCtx.AddCertEntry(nil))
+}
+
+func TestAppContext_GetCertEntry_WithNonExist(t *testing.T) {
 	name := "non-exist"
-	assert.Nil(t, GlobalAppCtx.GetViperEntry(name))
+	assert.Nil(t, GlobalAppCtx.GetCertEntry(name))
 	// clear viper entries
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearCertEntries()
 }
 
-func TestAppContext_GetViperEntry_HappyCase(t *testing.T) {
+func TestAppContext_GetCertEntry_HappyCase(t *testing.T) {
+	RegisterCertEntry()
+
+	assert.True(t, len(GlobalAppCtx.ListCertEntries()) == 1)
+
+	// clear viper entries
+	GlobalAppCtx.clearCertEntries()
+}
+
+func TestAppContext_ListCertEntries_WithEmptyList(t *testing.T) {
+	assert.True(t, len(GlobalAppCtx.ListCertEntries()) == 0)
+	// clear viper entries
+	GlobalAppCtx.clearCertEntries()
+}
+
+func TestAppContext_ListCertEntries_HappyCase(t *testing.T) {
+	RegisterCertEntry()
+
+	assert.True(t, len(GlobalAppCtx.ListCertEntries()) == 1)
+	// clear viper entries
+	GlobalAppCtx.clearCertEntries()
+}
+
+func TestAppContext_ListCertEntriesRaw_WithEmptyList(t *testing.T) {
+	assert.True(t, len(GlobalAppCtx.ListCertEntriesRaw()) == 0)
+	// clear viper entries
+	GlobalAppCtx.clearCertEntries()
+}
+
+func TestAppContext_ListCertEntriesRaw_HappyCase(t *testing.T) {
+	RegisterCertEntry()
+
+	assert.True(t, len(GlobalAppCtx.ListCertEntriesRaw()) == 1)
+	// clear viper entries
+	GlobalAppCtx.clearCertEntries()
+}
+
+// Config entry related
+func TestAppContext_AddConfigEntry_WithNilEntry(t *testing.T) {
+	assert.Empty(t, GlobalAppCtx.AddConfigEntry(nil))
+}
+
+func TestAppContext_GetConfigEntry_WithNonExist(t *testing.T) {
+	name := "non-exist"
+	assert.Nil(t, GlobalAppCtx.GetConfigEntry(name))
+	// clear viper entries
+	GlobalAppCtx.clearConfigEntries()
+}
+
+func TestAppContext_GetConfigEntry_HappyCase(t *testing.T) {
 	name := "viper-config"
 	vp := viper.New()
-	RegisterViperEntry(
-		WithNameViper(name),
-		WithViperInstanceViper(vp))
+	RegisterConfigEntry(
+		WithNameConfig(name),
+		WithViperInstanceConfig(vp))
 
-	assert.True(t, len(GlobalAppCtx.ViperConfigs) == 1)
-	assert.NotNil(t, GlobalAppCtx.GetViperEntry(name))
+	assert.True(t, len(GlobalAppCtx.ListConfigEntries()) == 1)
+	assert.NotNil(t, GlobalAppCtx.GetConfigEntry(name))
 	// clear viper entries
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearConfigEntries()
 }
 
-func TestAppContext_ListViperEntries_WithEmptyList(t *testing.T) {
-	assert.True(t, len(GlobalAppCtx.ListViperEntries()) == 0)
+func TestAppContext_ListConfigEntries_WithEmptyList(t *testing.T) {
+	assert.True(t, len(GlobalAppCtx.ListConfigEntries()) == 0)
 	// clear viper entries
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearConfigEntries()
 }
 
-func TestAppContext_ListViperEntries_HappyCase(t *testing.T) {
+func TestAppContext_ListConfigEntries_HappyCase(t *testing.T) {
 	name := "viper-config"
 	vp := viper.New()
-	RegisterViperEntry(
-		WithNameViper(name),
-		WithViperInstanceViper(vp))
+	RegisterConfigEntry(
+		WithNameConfig(name),
+		WithViperInstanceConfig(vp))
 
-	assert.True(t, len(GlobalAppCtx.ListViperEntries()) == 1)
+	assert.True(t, len(GlobalAppCtx.ListConfigEntries()) == 1)
 	// clear viper entries
-	GlobalAppCtx.clearViperEntries()
+	GlobalAppCtx.clearConfigEntries()
+}
+
+func TestAppContext_ListConfigEntriesRaw_WithEmptyList(t *testing.T) {
+	assert.True(t, len(GlobalAppCtx.ListConfigEntriesRaw()) == 0)
+	// clear viper entries
+	GlobalAppCtx.clearConfigEntries()
+}
+
+func TestAppContext_ListConfigEntriesRaw_HappyCase(t *testing.T) {
+	name := "viper-config"
+	vp := viper.New()
+	RegisterConfigEntry(
+		WithNameConfig(name),
+		WithViperInstanceConfig(vp))
+
+	assert.True(t, len(GlobalAppCtx.ListConfigEntriesRaw()) == 1)
+	// clear viper entries
+	GlobalAppCtx.clearConfigEntries()
 }
 
 // shutdown signal related
 func TestAppContext_GetShutdownSig_HappyCase(t *testing.T) {
-	assert.NotNil(t, GlobalAppCtx.ShutdownSig)
+	assert.NotNil(t, GlobalAppCtx.GetShutdownSig())
 }
 
 // shutdown hook related
@@ -573,6 +695,10 @@ func (entry *EntryMock) GetType() string {
 }
 
 func (entry *EntryMock) String() string {
+	return ""
+}
+
+func (entry *EntryMock) GetDescription() string {
 	return ""
 }
 

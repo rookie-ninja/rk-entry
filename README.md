@@ -13,7 +13,7 @@ The entry library mainly used by rk-boot.
   - [GlobalAppCtx](#globalappctx)
     - [Access GlobalAppCtx](#access-globalappctx)
     - [Usage of GlobalAppCtx](#usage-of-globalappctx)
-  - [Built in entries](#built-in-entries)
+  - [Built in internal entries](#built-in-internal-entries)
     - [AppInfoEntry](#appinfoentry)
       - [YAML Hierarchy](#yaml-hierarchy)
       - [Access AppInfoEntry](#access-appinfoentry)
@@ -26,27 +26,37 @@ The entry library mainly used by rk-boot.
       - [YAML Hierarchy](#yaml-hierarchy-2)
       - [Access ZapLoggerEntry](#access-zaploggerentry)
       - [Stringfy EventLoggerEntry](#stringfy-eventloggerentry-1)
-    - [ViperEntry](#viperentry)
+    - [ConfigEntry](#configentry)
       - [YAML Hierarchy](#yaml-hierarchy-3)
-      - [Access ViperEntry](#access-viperentry)
-      - [Stringfy ViperEntry](#stringfy-viperentry)
+      - [Access ConfigEntry](#access-configentry)
+      - [Stringfy ConfigEntry](#stringfy-configentry)
+      - [Dynamically load config based on Environment variable](#dynamically-load-config-based-on-environment-variable)
     - [CertEntry](#certentry)
       - [YAML Hierarchy](#yaml-hierarchy-4)
       - [Access CertEntry](#access-certentry)
-      - [Stringfy ViperEntry](#stringfy-viperentry-1)
-      - [Select config file dynamically](#select-config-file-dynamically)
+      - [Stringfy CertEntry](#stringfy-certentry)
+      - [Select cert entry dynamically based on environment](#select-cert-entry-dynamically-based-on-environment)
   - [Info Utility](#info-utility)
     - [ProcessInfo](#processinfo)
       - [Fields](#fields)
       - [Access ProcessInfo](#access-processinfo)
-    - [ViperConfigInfo](#viperconfiginfo)
+    - [CpuInfo](#cpuinfo)
       - [Fields](#fields-1)
-      - [Access ViperConfigInfo](#access-viperconfiginfo)
-    - [MemStatsInfo](#memstatsinfo)
+      - [Access CpuInfo](#access-cpuinfo)
+    - [MemInfo](#meminfo)
       - [Fields](#fields-2)
-      - [Access MemStatsInfo](#access-memstatsinfo)
-    - [PromMetricsInfo](#prommetricsinfo)
+      - [Access MemInfo](#access-meminfo)
+    - [NetInfo](#netinfo)
       - [Fields](#fields-3)
+      - [Access NetInfo](#access-netinfo)
+    - [OsInfo](#osinfo)
+      - [Fields](#fields-4)
+      - [Access OsInfo](#access-osinfo)
+    - [GoEnvInfo](#goenvinfo)
+      - [Fields](#fields-5)
+      - [Access OsInfo](#access-osinfo-1)
+    - [PromMetricsInfo](#prommetricsinfo)
+      - [Fields](#fields-6)
       - [Access PromMetricsInfo](#access-prommetricsinfo)
 - [Contributing](#contributing)
 
@@ -99,6 +109,10 @@ func (entry *MyEntry) GetType() string {
 func (entry *MyEntry) String() string {
 	return ""
 }
+
+func (entry *MyEntry) GetDescription() string {
+	return ""
+}
 ```
 
 - **Step 3:**
@@ -107,10 +121,10 @@ Implements **rkentry.EntryRegFunc** and define a struct which could be marshaled
 // A struct which is for unmarshalled YAML.
 type BootConfig struct {
 	MyEntry struct {
-		Enabled   bool   `yaml:"enabled"`
-		Name      string `yaml:"name"`
-		Key       string `yaml:"key"`
-	} `yaml:"myEntry"`
+		Enabled   bool   `yaml:"enabled" json:"enabled"`
+		Name      string `yaml:"name" json:"name"`
+		Key       string `yaml:"key" json:"key"`
+	} `yaml:"myEntry" json:"myEntry"`
 }
 
 // An implementation of <type EntryRegFunc func(string) map[string]rkentry.Entry>
@@ -134,7 +148,7 @@ func RegisterMyEntriesFromConfig(configFilePath string) map[string]rkentry.Entry
 
 func RegisterMyEntry(opts ...MyEntryOption) *MyEntry {
 	entry := &MyEntry{
-		name:             "my-default",
+		name: "my-default",
 	}
 
 	for i := range opts {
@@ -194,50 +208,156 @@ A struct called AppContext witch contains RK style application metadata.
 
 Access it via GlobalAppCtx variable 
 ```go
-rkentry.GlobalAppCtx
+GlobalAppCtx
 ```
 **Fields in rkentry.GlobalAppCtx**
 
 | Element | Description | JSON | Default values |
 | ------ | ------ | ------ | ------ |
-| StartTime | Application start time. | start_time | 0001-01-01 00:00:00 +0000 UTC |
-| BasicEntries | Basic entries contains default zap logger entry, event logger entry and rk entry by default. | basic_entries | three default entries including AppInfoEntry, ZapLoggerEntry and EventLoggerEntry |
-| Entries | User entries registered from user code. | entries | empty map |
-| ViperConfigs | Viper configs with a name as a key. | viper_configs | empty map |
-| ShutdownSig | Shutdown signals which includes syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT. | shutdown_sig | channel includes syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT |
-| ShutdownHooks | Shutdown hooks registered from user code. | shutdown_hooks | empty list |
-| UserValues | User K/V registered from code. | user_values | empty map |
+| startTime | Application start time. | startTime | 0001-01-01 00:00:00 +0000 UTC |
+| appInfoEntry | See ApplicationInfoEntry for detail. | appInfoEntry | Includes application info specified by user. |
+| zapLoggerEntries | See ZapLoggerEntry for detail. | zapLoggerEntries | Includes zap logger entity initiated by user or system by default. |
+| eventLoggerEntries | See EventLoggerEntry for detail. | eventLoggerEntries | Includes query logger entity initiated by user or system by default. |
+| configEntries | See ConfigEntry for detail. | configEntries | Includes viper config entity initiated by user or system by default. |
+| certEntries | See CertEntry for detail. | configEntries | Includes certificates retrieved while bootstrapping with configuration initiated by user. |
+| externalEntries | User implemented Entry. | configEntries | Includes user implemented Entry configuration initiated by user. |
+| userValues | User K/V registered from code. | userValues | empty map |
+| shutdownSig | Shutdown signals which includes syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT. | shutdown_sig | channel includes syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT |
+| shutdownHooks | Shutdown hooks registered from user code. | shutdown_hooks | empty list |
+
 
 #### Usage of GlobalAppCtx
-- Access start_time and application up time.
+- Access start time and up time of application.
 ```go
-// It is not recommended to override this value since StartTime would be assigned to current time
-// at beginning of go process in init() function.
-startTime := rkentry.GlobalAppCtx.StartTime
+// Get start time of application
+startTime := rkentry.GlobalAppCtx.GetStartTime()
 
 // Get up time of application/process.
 upTime := rkentry.GlobalAppCtx.GetUpTime()
 ```
 
-- Access basic_entries
-Basic entries includes default AppInfoEntry if values not overridden by user via config file or codes.
+- Access AppInfoEntry
 ```go
-// Access entries from GlobalAppCtx directly
-basicEntries := rkentry.GlobalAppCtx.BasicEntries
+// Get AppInfoEntry from GlobalAppCtx
+appInfoEntry := rkentry.GlobalAppCtx.GetAppInfoEntry()
+
+// Get AppInfoEntry as Entry type
+appInfoEntryRaw := rkentry.GetAppInfoEntryRaw()
+
+// Set AppInfoEntry
+entryName := SetAppInfoEntry(<AppInfoEntry>)
+```
+
+- Access ZapLoggerEntry
+```go
+// Get ZapLoggerEntry from GlobalAppCtx
+zapLoggerEntry := rkentry.GlobalAppCtx.GetZapLoggerEntry("entry name")
+
+// List ZapLoggerEntry as map[<entry name>]*ZapLoggerEntry
+zapLoggerEntries := rkentry.GlobalAppCtx.ListZapLoggerEntries()
+
+// List ZapLoggerEntry as map[<entry name>]*Entry
+zapLoggerEntriesRaw := rkentry.GlobalAppCtx.GetZapLoggerEntriesRaw()
+
+// Add ZapLoggerEntry
+entryName := rkentry.GlobalAppCtx.AddZapLoggerEntry(<ZapLoggerEntry>)
+
+// Remove ZapLoggerEntry
+success := rkentry.GlobalAppCtx.RemoveZapLoggerEntry("entry name")
+
+// Get zap.Logger from ZapLoggerEntry
+zapLogger := rkentry.GlobalAppCtx.GetZapLogger("entry name")
+
+// Get zap.Config from ZapLoggerEntry
+zapLoggerConfig := rkentry.GlobalAppCtx.GetZapLoggerConfig("entry name")
+
+// Get default ZapLoggerEntry whose output is stdout
+zapLoggerEntryDefault := rkentry.GlobalAppCtx.GetZapLoggerEntryDefault()
+
+// Get zap.Logger from default ZapLoggerEntry
+zapLoggerDefault := rkentry.GlobalAppCtx.GetZapLoggerEntryDefault()
+
+// Get zap.Config from default ZapLoggerEntry
+zapConfigDefault := rkentry.GlobalAppCtx.GetZapLoggerConfigDefault()
+```
+
+- Access EventLoggerEntry
+```go
+// Get EventLoggerEntry from GlobalAppCtx
+eventLoggerEntry := rkentry.GlobalAppCtx.GetEventLoggerEntry("entry name")
+
+// List EventLoggerEntry as map[<entry name>]*EventLoggerEntry
+eventLoggerEntry := rkentry.GlobalAppCtx.ListEventLoggerEntries()
+
+// List EventLoggerEntry as map[<entry name>]*Entry
+eventLoggerEntryRaw := rkentry.GlobalAppCtx.ListEventLoggerEntriesRaw()
+
+// Add EventLoggerEntry
+entryName := rkentry.GlobalAppCtx.AddEventLoggerEntry(<EventLoggerEntry>)
+
+// Remove EventLoggerEntry
+success := rkentry.GlobalAppCtx.RemoveEventLoggerEntry("entry name")
+
+// Get rkquery.EventFactory from EventLoggerEntry
+eventFactory := rkentry.GlobalAppCtx.GetEventFactory("entry name")
+
+// Get rkquery.EventHelper from EventLoggerEntry
+eventHelper := rkentry.GlobalAppCtx.GetEventHelper("entry name")
+
+// Get default EventLoggerEntry whose output is stdout
+eventLoggerEntryDefault := rkentry.GlobalAppCtx.GetEventLoggerEntryDefault()
+```
+
+- Access CertEntry
+```go
+// Get CertEntry from GlobalAppCtx
+certEntry := rkentry.GlobalAppCtx.GetCertEntry("entry name")
+
+// List CertEntry as map[<entry name>]*CertEntry
+certEntries := rkentry.GlobalAppCtx.ListCertEntries()
+
+// List CertEntry as map[<entry name>]*Entry
+certEntriesRaw := rkentry.GlobalAppCtx.ListCertEntriesRaw()
+
+// Remove CertEntry
+success := rkentry.GlobalAppCtx.RemoveCertEntry("entry name")
+
+// Add CertEntry
+entryName := rkentry.GlobalAppCtx.AddCertEntry(<CertEntry>)
+```
+
+- Access ConfigEntry
+```go
+// Get ConfigEntry from GlobalAppCtx
+configEntry := rkentry.GlobalAppCtx.GetConfigEntry("entry name")
+
+// List ConfigEntry as map[<entry name>]*ConfigEntry
+configEntries := rkentry.GlobalAppCtx.ListConfigEntryEntries()
+
+// List ConfigEntry as map[<entry name>]*Entry
+certEntriesRaw := rkentry.GlobalAppCtx.ListConfigEntryEntriesRaw()
+
+// Remove ConfigEntry
+success := rkentry.GlobalAppCtx.RemoveConfigEntry("entry name")
+
+// Add ConfigEntry
+entryName := rkentry.GlobalAppCtx.AddConfigEntry(<ConfigEntry>)
 ```
 
 - Access entries
-
-Entries contains user defined or non basic entries.
+Entries contains user defined entry.
 ```go
-// Access entries from GlobalAppCtx directly
-entries := rkentry.GlobalAppCtx.Entries
+// Access entries from GlobalAppCtx
+entry := rkentry.GlobalAppCtx.GetEntry("entry name")
 
 // Access entries via utility function
 entries := rkentry.GlobalAppCtx.ListEntries()
 
 // Add entry
 rkentry.GlobalAppCtx.AddEntry()
+
+// Remove ConfigEntry
+success := rkentry.GlobalAppCtx.RemoveEntry("entry name")
 
 // Get entry with name
 entry := rkentry.GlobalAppCtx.GetEntry("name of your entry")
@@ -246,180 +366,89 @@ entry := rkentry.GlobalAppCtx.GetEntry("name of your entry")
 rkentry.GlobalAppCtx.MergeEntries(mapOfYourEntries map[string]rkentry.Entry)
 ```
 
-- Access viper_configs
-```go
-// Return map of viper instances
-viperConfigs := rkentry.GlobalAppCtx.ViperConfigs
-viperConfigs = rkentry.GlobalAppCtx.ListViperEntries()
-
-// Retrieve certain viper config instance with name
-viperConfig := rkentry.GlobalAppCtx.GetViperEntry("you viper config entry name")
-
-// Add viper entry, just call RegisterViperEntry function
-name := "your viper entry name"
-vp := viper.New()
-
-entry := RegisterViperEntry(
-	WithNameViper(name),
-	WithViperInstanceViper(vp))
-
-// Or add viper entry via registration function with config file
-rkentry.RegisterEventLoggerEntriesWithConfig("your config file path")
-```
-
-- Access user_values
+- Access Values
 
 User can add/get/list/remove any values into map of rkentry.GlobalAppCtx.UserValues as needed.
 
 GlobalAppCtx don't provide any locking mechanism.
 ```go
 // Add k/v value into GlobalAppCtx, key should be string and value could be any kind
-rkentry.GlobalAppCtx.AddValue()
+rkentry.GlobalAppCtx.AddValue(<"key">, <value interface{}>)
 
 // Get value with key
-value := rkentry.GlobalAppCtx.GetValue()
+value := rkentry.GlobalAppCtx.GetValue(<"key">)
 
-// Access entries from GlobalAppCtx directly
-entries := rkentry.GlobalAppCtx.UserValues
-
-// Access entries via utility function
+// List values
 entries := rkentry.GlobalAppCtx.ListValues()
 
 // Remove value with key
-rkentry.GlobalAppCtx.RemoveValue()
+rkentry.GlobalAppCtx.RemoveValue(<"key">)
+
+// Clear values
+rkentry.GlobalAppCtx.ClearValues()
 ```
 
-- Access shutdown_sig
+- Access shutdown sig
 ```go
 // Access shutdown signal directly
-rkentry.GlobalAppCtx.ShutdownSig
+rkentry.GlobalAppCtx.GetShutdownSig()
 
 // Wait for shutdown signal via utility function, otherwise, user must call by himself
 rkentry.GlobalAppCtx.WaitForShutdownSig()
 ```
 
-- Access shutdown_hooks
+- Access shutdown hooks
 
 Users can add their own shutdown hook function into GlobalAppCtx.
 
 rkboot will iterate all shutdown hooks in GlobalAppCtx and call every shutdown hook function.
 ```go
-// Access shutdown hooks directly
-rkentry.GlobalAppCtx.ShutdownHooks
-
-// Access shutdown hooks via utility function
-rkentry.GlobalAppCtx.ListSHutdownHooks()
+// Get shutdown
+rkentry.GlobalAppCtx.GetShutdownHook("name of shutdown hook")
 
 // Add shutdown hook function with name
-rkentry.GlobalAppCtx.AddShutdownHook()
+rkentry.GlobalAppCtx.AddShutdownHook(<"name">, <"function">)
 
-// Get shutdown with name
+// List shutdown hooks
+rkentry.GlobalAppCtx.ListShutdownHooks()
+
+// Remove shutdown hook
+success := rkentry.GlobalAppCtx.RemoveShutdownHook("name of shutdown hook")
+
+// Internal 
 rkentry.GlobalAppCtx.GetShutdownHook("name of shutdown hook function")
 ```
 
-- Access EventLoggerEntry
-
-Please refer to EventLoggerEntry section in README for details of EventLoggerEntry.
-```go
-// Add event logger via registration function with config file
-rkentry.RegisterEventLoggerEntriesWithConfig("your config file path")
-// Or add event logger from code
-rkentry.RegisterEventLoggerEntry()
-
-// Get event logger entry with name
-rkentry.GlobalAppCtx.GetEventLoggerEntry("name of event logger entry")
-
-// Remove event logger entry with name
-rkentry.RemoveEventLoggerEntry("your entry name")
-
-// List event logger entries
-rkentry.GlobalAppCtx.ListEventLoggerEntries()
-
-// Get event factory, utility function would get event logger entry first and retrieve event factory in it.
-rkentry.GlobalAppCtx.GetEventFactory("name of event logger entry")
-
-// Get event helper, utility function would get event logger entry first and retrieve event helper in it.
-rkentry.GlobalAppCtx.GetEventHelper("name of event logger entry")
-
-// Get default event logger entry, default entry would log every thing to stdout
-rkentry.GlobalAppCtx.GetEventLoggerEntryDefault()
-```
-
-- Access ZapLoggerEntry
-
-Please refer to ZapLoggerEntry section in README for details of ZapLoggerEntry. 
-```go
-// Add zap logger via registration function with config file
-rkentry.RegisterZapLoggerEntriesWithConfig("your config file path")
-// Or add zap logger from code
-rkentry.RegisterZapLoggerEntry()
-
-// Get zap logger entry with name
-rkentry.GlobalAppCtx.GetZapLoggerEntry("name of zap logger entry")
-
-// Remove zap logger entry with name
-rkentry.RemoveZapLoggerEntry("your entry name")
-
-// List zap logger entries
-rkentry.GlobalAppCtx.ListZapLoggerEntries()
-
-// Get zap logger, utility function would get zap logger entry first and retrieve zap logger instance in it.
-rkentry.GlobalAppCtx.GetZapLogger("name of zap logger entry")
-
-// Get zap logger config, utility function would get zap logger entry first and retrieve zap logger config in it.
-rkentry.GlobalAppCtx.GetZapLoggerConfig("name of zap logger entry")
-
-// Get default zap logger entry, default entry would log every thing to stdout
-rkentry.GlobalAppCtx.GetZapLoggerEntryDefault()
-
-// Get default zap logger, default entry would log every thing to stdout
-rkentry.GlobalAppCtx.GetZapLoggerDefault()
-
-// Get default zap logger config, default entry would log every thing to stdout
-rkentry.GlobalAppCtx.GetZapLoggerConfigDefault()
-```
-
-- Access AppInfoEntry
-```go
-// User don't need to add app info into GlobalAppCtx and it is strongly not recommended.
-
-// Get app info entry
-rkentry.GlobalAppCtx.GetAppInfoEntry()
-```
-
-- Access up time of application/process
-```go
-// Get up time of application/process which is calculated based on start_time
-rkentry.GlobalAppCtx.GetUpTime()
-```
-
-### Built in entries
+### Built in internal entries
 #### AppInfoEntry
 AppInfoEntry contains bellow fields which could be overridden via YAML file or code.
 
 | Name | Description | YAML | Default value |
 | ------ | ------ | ------ | ------ |
-| AppName | Application name which refers to go process | appName | rkapp |
-| Version | Application version | version | v0.0.0 |
-| Lang | Programming language <NOT configurable!> | N/A | golang |
-| Description | Description of application itself | description | "" |
-| Keywords | A set of words describe application | keywords | [] |
-| HomeURL | Home page URL | homeURL | "" |
-| IconURL | Application Icon URL | iconURL | "" |
-| DocsURL | A set of URLs of documentations of application | docsURL | [] |
-| Maintainers | Maintainers of application | maintainers | [] |
+| EntryName | Name of entry. | N/A | AppInfoDefault |
+| EntryType | Type of entry which is EventEntry. | N/A | AppInfoEntry |
+| EntryDescription | Description of entry. | N/A | Internal RK entry which describes application with fields of appName, version and etc. |
+| AppName | Application name which refers to go process. | appName | rkApp |
+| Version | Application version. | version | v0.0.0 |
+| Lang | Programming language <NOT configurable!> .| N/A | golang |
+| Description | Description of application itself. | description | "" |
+| Keywords | A set of words describe application. | keywords | [] |
+| HomeUrl | Home page URL. | homeURL | "" |
+| IconUrl | Application Icon URL. | iconURL | "" |
+| DocsUrl | A set of URLs of documentations of application. | docsURL | [] |
+| Maintainers | Maintainers of application. | maintainers | [] |
 
 ##### YAML Hierarchy
 ```yaml
 rk:
-  appName: rk-example-entry           # Optional, default: "rkapp"
-  version: v0.0.1                     # Optional, default: "v0.0.0"
-  description: "this is description"  # Optional, default: ""
-  keywords: ["rk", "golang"]          # Optional, default: []
-  homeURL: "http://example.com"       # Optional, default: ""
-  iconURL: "http://example.com"       # Optional, default: ""
-  docsURL: ["http://example.com"]     # Optional, default: []
-  maintainers: ["rk-dev"]             # Optional, default: []
+  AppName: rk-example-entry           # Optional, default: "rkApp"
+  Version: v0.0.1                     # Optional, default: "v0.0.0"
+  Description: "this is description"  # Optional, default: ""
+  Keywords: ["rk", "golang"]          # Optional, default: []
+  HomeUrl: "http://example.com"       # Optional, default: ""
+  IconUrl: "http://example.com"       # Optional, default: ""
+  DocsUrl: ["http://example.com"]     # Optional, default: []
+  Maintainers: ["rk-dev"]             # Optional, default: []
 ```
 
 ##### Access AppInfoEntry
@@ -427,16 +456,21 @@ rk:
 // Access entry
 rkentry.GlobalAppCtx.GetAppInfoEntry()
 
+// Access default fields
+rkentry.GlobalAppCtx.GetAppInfoEntry().EntryName
+rkentry.GlobalAppCtx.GetAppInfoEntry().EntryType
+rkentry.GlobalAppCtx.GetAppInfoEntry().EntryDescription
+
 // Access fields in entry
 rkentry.GlobalAppCtx.GetAppInfoEntry().AppName
 rkentry.GlobalAppCtx.GetAppInfoEntry().Version
 rkentry.GlobalAppCtx.GetAppInfoEntry().Lang
 rkentry.GlobalAppCtx.GetAppInfoEntry().Description
 rkentry.GlobalAppCtx.GetAppInfoEntry().Keywords
-rkentry.GlobalAppCtx.GetAppInfoEntry().HomeURL
-rkentry.GlobalAppCtx.GetAppInfoEntry().IconURL
-rkentry.GlobalAppCtx.GetAppInfoEntry().DocsURL
-rkentry.GlobalAppCtx.GetAppInfoEntry().Maintainers
+rkentry.GlobalAppCtx.GetAppInfoEntry().HomeUrl
+rkentry.GlobalAppCtx.GetAppInfoEntry().IconUrl
+rkentry.GlobalAppCtx.GetAppInfoEntry().DocsUrl
+rkentry.rkentry.GlobalAppCtx.GetAppInfoEntry().Maintainers
 ```
 
 ##### Stringfy AppInfoEntry
@@ -445,13 +479,13 @@ Assuming we have application info YAML as bellow:
 ```yaml
 ---
 rk: 
-  appName: rk-example-entry           # Optional, default: "rkapp"
+  appName: rk-example-entry           # Optional, default: "rkApp"
   version: v0.0.1                     # Optional, default: "v0.0.0"
   description: "this is description"  # Optional, default: ""
   keywords: ["rk", "golang"]          # Optional, default: []
-  homeURL: "http://example.com"       # Optional, default: ""
-  iconURL: "http://example.com"       # Optional, default: ""
-  docsURL: ["http://example.com"]     # Optional, default: []
+  homeUrl: "http://example.com"       # Optional, default: ""
+  iconUrl: "http://example.com"       # Optional, default: ""
+  docsUrl: ["http://example.com"]     # Optional, default: []
   maintainers: ["rk-dev"]             # Optional, default: []
 ```
 
@@ -462,28 +496,25 @@ fmt.Println(rkentry.GlobalAppCtx.GetAppInfoEntry().String())
 Process information could be printed either.
 ```json
 {
-	"app_name": "rk-example-entry",
-	"application_name": "rk-example-entry",
-	"az": "unknown",
-	"description": "this is description",
-	"docs_url": ["http://example.com"],
-	"domain": "unknown",
-	"entry_name": "rk-app-info-entry",
-	"entry_type": "rk-app-info-entry",
-	"gid": "20",
-	"home_url": "http://example.com",
-	"icon_url": "http://example.com",
-	"keywords": ["rk", "golang"],
-	"lang": "golang",
-	"maintainers": ["rk-dev"],
-	"realm": "unknown",
-	"region": "unknown",
-	"start_time": "2021-04-04T07:33:09+08:00",
-	"uid": "501",
-	"up_time_sec": 0,
-	"up_time_str": "4 milliseconds",
-	"username": "rk-dev",
-	"version": "v0.0.1"
+    "entryName":"AppInfoDefault",
+    "entryType":"AppInfoEntry",
+    "entryDescription":"Internal RK entry which describes application with fields of appName, version and etc.",
+    "description":"this is description",
+    "appName":"rk-example-entry",
+    "version":"v0.0.1",
+    "lang":"golang",
+    "keywords":[
+        "rk",
+        "golang"
+    ],
+    "homeUrl":"http://example.com",
+    "iconUrl":"http://example.com",
+    "docsUrl":[
+        "http://example.com"
+    ],
+    "maintainers":[
+        "rk-dev"
+    ]
 }
 ```
 
@@ -492,20 +523,25 @@ EventLoggerEntry is used for [rkquery](https://github.com/rookie-ninja/rk-query)
 
 | Name | Description |
 | ------ | ------ |
-| eventFactory | rkquery.EventFactory was initialized at the beginning |
-| eventHelper | rkquery.EventHelper was initialized at the beginning |
-| loggerConfig | zap.Config which was initialized at the beginning which is not accessible after initialization |
-| lumberjackConfig | lumberjack.Logger which was initialized at the beginning |
+| EntryName | Name of entry. |
+| EntryType | Type of entry which is EventEntry. |
+| EntryDescription | Description of entry. |
+| EventFactory | rkquery.EventFactory was initialized at the beginning. |
+| EventHelper | rkquery.EventHelper was initialized at the beginning. |
+| LoggerConfig | zap.Config which was initialized at the beginning which is not accessible after initialization. |
+| LumberjackConfig | lumberjack.Logger which was initialized at the beginning. |
 
 ##### YAML Hierarchy
-EventLoggerEntry needs application name while creating event log. As a result, it is recommended to add AppInfoEntry while
-initializing event logger entry. Otherwise, default application name would be assigned.
+EventLoggerEntry needs application name while creating event log. 
+As a result, it is recommended to add AppInfoEntry while initializing event logger entry. 
+Otherwise, default application name would be assigned.
 
 | Name | Description | Default |
 | ------ | ------ | ------ |
-| rk.appName | Application name which refers to go process | rkapp | 
-| eventLogger.name | Name of event logger entry | N/A |
-| eventLogger.format | Format of event logger, RK & JSON is supported. Please refer rkquery.RK & rkquery.JSON | RK | 
+| rk.appName | Application name which refers to go process. | rkapp | 
+| eventLogger.name | Required. Name of event logger entry. | N/A |
+| eventLogger.description | Description of event logger entry. | N/A |
+| eventLogger.format | Format of event logger, RK & JSON is supported. Please refer rkquery.RK & rkquery.JSON. | RK | 
 | eventLogger.outputPaths | Output paths of event logger, stdout would be the default one if not provided. If one of output path was provided, then stdout would be omitted. Output path could be relative or absolute paths either. | stdout |
 | eventLogger.lumberjack.filename | Filename is the file to write logs to | It uses <processname>-lumberjack.log in os.TempDir() if empty. |
 | eventLogger.lumberjack.maxsize | MaxSize is the maximum size in megabytes of the log file before it gets rotated. | 1024 |
@@ -520,6 +556,7 @@ rk:
   appName: rk-example-entry            # Optional, default: "rkapp"
 eventLogger:
   - name: event-logger                 # Required
+    description: "This is description" # Optional
     format: RK                         # Optional, default: RK, options: RK and JSON
     outputPaths: ["stdout"]            # Optional
     lumberjack:                        # Optional
@@ -554,16 +591,17 @@ Assuming we have event logger YAML as bellow:
 rk:
   appName: rk-example-entry            # Optional, default: "rkapp"
 eventLogger:
-  - name: event-logger                 # Required
-    format: RK                         # Optional, default: RK, options: RK and JSON
-    outputPaths: ["stdout"]            # Optional
-    lumberjack:                        # Optional
-      filename: "rkapp-event.log"      # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
-      maxsize: 1024                    # Optional, default: 1024 (MB)
-      maxage: 7                        # Optional, default: 7 (days)
-      maxbackups: 3                    # Optional, default: 3 (days)
-      localtime: true                  # Optional, default: true
-      compress: true                   # Optional, default: true
+  - name: event-logger                    # Required
+    description: "Description of entry"   # Optional
+    format: RK                            # Optional, default: RK, options: RK and JSON
+    outputPaths: ["stdout"]               # Optional
+    lumberjack:                           # Optional
+      filename: "rkapp-event.log"         # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
+      maxsize: 1024                       # Optional, default: 1024 (MB)
+      maxage: 7                           # Optional, default: 7 (days)
+      maxbackups: 3                       # Optional, default: 3 (days)
+      localtime: true                     # Optional, default: true
+      compress: true                      # Optional, default: true
 ```
 
 ```go
@@ -573,15 +611,50 @@ fmt.Println(rkentry.GlobalAppCtx.GetEventLoggerEntry("event-logger").String())
 Process information could be printed either.
 ```json
 {
-	"entry_name": "event-logger",
-	"entry_type": "event-logger",
-	"lumberjack_compress": true,
-	"lumberjack_filename": "rkapp-event.log",
-	"lumberjack_localtime": true,
-	"lumberjack_maxage": 7,
-	"lumberjack_maxbackups": 3,
-	"lumberjack_maxsize": 1024,
-	"output_path": ["stdout"]
+    "entryName":"event-logger",
+    "entryType":"EventLoggerEntry",
+    "entryDescription":"Description of entry",
+    "zapConfig":{
+        "level":"info",
+        "development":false,
+        "disableCaller":false,
+        "disableStacktrace":false,
+        "sampling":null,
+        "encoding":"console",
+        "encoderConfig":{
+            "messageKey":"msg",
+            "levelKey":"",
+            "timeKey":"",
+            "nameKey":"",
+            "callerKey":"",
+            "functionKey":"",
+            "stacktraceKey":"",
+            "lineEnding":"",
+            "levelEncoder":"capital",
+            "timeEncoder":"ISO8601",
+            "durationEncoder":"secs",
+            "callerEncoder":"full",
+            "nameEncoder":"full",
+            "consoleSeparator":""
+        },
+        "outputPaths":[
+            "stdout"
+        ],
+        "errorOutputPaths":[
+            "stderr"
+        ],
+        "initialFields":{
+
+        }
+    },
+    "lumberjackConfig":{
+        "filename":"rkapp-event.log",
+        "maxsize":1024,
+        "maxage":7,
+        "maxbackups":3,
+        "localtime":true,
+        "compress":true
+    }
 }
 ```
 
@@ -590,64 +663,89 @@ ZapLoggerEntry is used for initializing zap logger.
 
 | Name | Description |
 | ------ | ------ |
-| logger | zap.Logger which was initialized at the beginning |
-| loggerConfig | zap.Config which was initialized at the beginning |
-| lumberjackConfig | lumberjack.Logger which was initialized at the beginning |
+| EntryName | Name of entry. |
+| EntryType | Type of entry which is EventEntry. |
+| EntryDescription | Description of entry. |
+| Logger | zap.Logger which was initialized at the beginning |
+| LoggerConfig | zap.Config which was initialized at the beginning |
+| LumberjackConfig | lumberjack.Logger which was initialized at the beginning |
 
 ##### YAML Hierarchy
 ZapLoggerEntry follows zap and lumberjack YAML hierarchy, please refer to [zap](https://pkg.go.dev/go.uber.org/zap#section-documentation) and [lumberjack](https://github.com/natefinch/lumberjack) site for details.
 
 | Name | Description | Default |
 | ------ | ------ | ------ |
-| appLogger.name | Name of zap logger entry | N/A |
-| eventLogger.format | Format of event logger, RK & JSON is supported. Please refer rkquery.RK & rkquery.JSON | RK | 
-| eventLogger.outputPaths | Output paths of event logger, stdout would be the default one if not provided. If one of output path was provided, then stdout would be omitted. Output path could be relative or absolute paths either. | stdout |
-| appLogger.lumberjack.filename | Filename is the file to write logs to | It uses <processname>-lumberjack.log in os.TempDir() if empty. |
-| appLogger.lumberjack.maxsize | MaxSize is the maximum size in megabytes of the log file before it gets rotated. | 1024 |
-| appLogger.lumberjack.maxage | MaxAge is the maximum number of days to retain old log files based on the timestamp encoded in their filename. | 7 |
-| appLogger.lumberjack.maxbackups | axBackups is the maximum number of old log files to retain. | 3 |
-| appLogger.lumberjack.localtime | LocalTime determines if the time used for formatting the timestamps in backup files is the computer's local time. | true |
-| appLogger.lumberjack.compress | Compress determines if the rotated log files should be compressed using gzip. | true |
+| zapLogger.name | Required. Name of zap logger entry | N/A |
+| zapLogger.description | Description of zap logger entry. | N/A |
+| zapLogger.zap.level | Level is the minimum enabled logging level. | info | 
+| zapLogger.zap.development | Development puts the logger in development mode, which changes the behavior of DPanicLevel and takes stacktraces more liberally. | true |
+| zapLogger.zap.disableCaller | DisableCaller stops annotating logs with the calling function's file name and line number. | false |
+| zapLogger.zap.disableStacktrace | DisableStacktrace completely disables automatic stacktrace capturing. | true |
+| zapLogger.zap.sampling | Sampling sets a sampling policy. | nil |
+| zapLogger.zap.encoding | Encoding sets the logger's encoding. Valid values are "json" and "console", as well as any third-party encodings registered via RegisterEncoder. | console |
+| zapLogger.zap.encoderConfig.messageKey | As name described. | msg |
+| zapLogger.zap.encoderConfig.levelKey | As name described. | level |
+| zapLogger.zap.encoderConfig.timeKey | As name described. | ts |
+| zapLogger.zap.encoderConfig.nameKey | As name described. | logger |
+| zapLogger.zap.encoderConfig.callerKey | As name described. | caller |
+| zapLogger.zap.encoderConfig.functionKey | As name described. | "" |
+| zapLogger.zap.encoderConfig.stacktraceKey | As name described. | stacktraceKey |
+| zapLogger.zap.encoderConfig.lineEnding | As name described. | \n |
+| zapLogger.zap.encoderConfig.timeEncoder | As name described. | iso8601 |
+| zapLogger.zap.encoderConfig.durationEncoder | As name described. | string |
+| zapLogger.zap.encoderConfig.callerEncoder | As name described. | "" |
+| zapLogger.zap.encoderConfig.nameEncoder | As name described. | "" |
+| zapLogger.zap.encoderConfig.consoleSeparator | As name described. | "" |
+| zapLogger.zap.outputPaths | Output paths. | ["stdout"] |
+| zapLogger.zap.errorOutputPaths | Output paths. | ["stderr"] |
+| zapLogger.zap.initialFields | Output paths. | empty map |
+| zapLogger.lumberjack.filename | Filename is the file to write logs to | It uses <processname>-lumberjack.log in os.TempDir() if empty. |
+| zapLogger.lumberjack.maxsize | MaxSize is the maximum size in megabytes of the log file before it gets rotated. | 1024 |
+| zapLogger.lumberjack.maxage | MaxAge is the maximum number of days to retain old log files based on the timestamp encoded in their filename. | 7 |
+| zapLogger.lumberjack.maxbackups | axBackups is the maximum number of old log files to retain. | 3 |
+| zapLogger.lumberjack.localtime | LocalTime determines if the time used for formatting the timestamps in backup files is the computer's local time. | true |
+| zapLogger.lumberjack.compress | Compress determines if the rotated log files should be compressed using gzip. | true |
 
 ```yaml
 ---
 zapLogger:
-  - name: zap-logger                   # Required
-    zap:                              
-      level: info                      # Optional, default: info, options: [debug, DEBUG, info, INFO, warn, WARN, dpanic, DPANIC, panic, PANIC, fatal, FATAL]
-      development: true                # Optional, default: true
-      disableCaller: false             # Optional, default: false
-      disableStacktrace: true          # Optional, default: true
-      sampling:                        # Optional, default: empty map
+  - name: zap-logger                      # Required
+    description: "Description of entry"   # Optional
+    zap:
+      level: info                         # Optional, default: info, options: [debug, DEBUG, info, INFO, warn, WARN, dpanic, DPANIC, panic, PANIC, fatal, FATAL]
+      development: true                   # Optional, default: true
+      disableCaller: false                # Optional, default: false
+      disableStacktrace: true             # Optional, default: true
+      sampling:                           # Optional, default: empty map
         initial: 0
         thereafter: 0
-      encoding: console                # Optional, default: "console", options: [console, json]
+      encoding: console                   # Optional, default: "console", options: [console, json]
       encoderConfig:
-        messageKey: "msg"              # Optional, default: "msg"
-        levelKey: "level"              # Optional, default: "level"
-        timeKey: "ts"                  # Optional, default: "ts"
-        nameKey: "logger"              # Optional, default: "logger"
-        callerKey: "caller"            # Optional, default: "caller"
-        functionKey: ""                # Optional, default: ""
-        stacktraceKey: "msg"           # Optional, default: "msg"
-        lineEnding: "\n"               # Optional, default: "\n"
-        levelEncoder: "capitalColor"   # Optional, default: "capitalColor", options: [capital, capitalColor, color, lowercase]
-        timeEncoder: "iso8601"         # Optional, default: "iso8601", options: [rfc3339nano, RFC3339Nano, rfc3339, RFC3339, iso8601, ISO8601, millis, nanos]
-        durationEncoder: "string"      # Optional, default: "string", options: [string, nanos, ms]
-        callerEncoder: ""              # Optional, default: ""
-        nameEncoder: ""                # Optional, default: ""
-        consoleSeparator: ""           # Optional, default: ""
-      outputPaths: [ "stdout" ]        # Optional, default: ["stdout"], stdout would be replaced if specified
-      errorOutputPaths: [ "stderr" ]   # Optional, default: ["stderr"], stderr would be replaced if specified
-      initialFields:                   # Optional, default: empty map
-        key: "value"             
-    lumberjack:                        # Optional
-      filename: "rkapp-event.log"      # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
-      maxsize: 1024                    # Optional, default: 1024 (MB)
-      maxage: 7                        # Optional, default: 7 (days)
-      maxbackups: 3                    # Optional, default: 3 (days)
-      localtime: true                  # Optional, default: true
-      compress: true                   # Optional, default: true
+        messageKey: "msg"                 # Optional, default: "msg"
+        levelKey: "level"                 # Optional, default: "level"
+        timeKey: "ts"                     # Optional, default: "ts"
+        nameKey: "logger"                 # Optional, default: "logger"
+        callerKey: "caller"               # Optional, default: "caller"
+        functionKey: ""                   # Optional, default: ""
+        stacktraceKey: "stacktrace"       # Optional, default: "stacktrace"
+        lineEnding: "\n"                  # Optional, default: "\n"
+        levelEncoder: "capitalColor"      # Optional, default: "capitalColor", options: [capital, capitalColor, color, lowercase]
+        timeEncoder: "iso8601"            # Optional, default: "iso8601", options: [rfc3339nano, RFC3339Nano, rfc3339, RFC3339, iso8601, ISO8601, millis, nanos]
+        durationEncoder: "string"         # Optional, default: "string", options: [string, nanos, ms]
+        callerEncoder: ""                 # Optional, default: ""
+        nameEncoder: ""                   # Optional, default: ""
+        consoleSeparator: ""              # Optional, default: ""
+      outputPaths: [ "stdout" ]           # Optional, default: ["stdout"], stdout would be replaced if specified
+      errorOutputPaths: [ "stderr" ]      # Optional, default: ["stderr"], stderr would be replaced if specified
+      initialFields:                      # Optional, default: empty map
+        key: "value"
+    lumberjack:                           # Optional
+      filename: "rkapp-event.log"         # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
+      maxsize: 1024                       # Optional, default: 1024 (MB)
+      maxage: 7                           # Optional, default: 7 (days)
+      maxbackups: 3                       # Optional, default: 3 (days)
+      localtime: true                     # Optional, default: true
+      compress: true                      # Optional, default: true
 ```
 
 ##### Access ZapLoggerEntry
@@ -690,72 +788,160 @@ fmt.Println(rkentry.GlobalAppCtx.GetZapLoggerEntry("zap-logger").String())
 Process information could be printed either.
 ```json
 {
-	"entry_name": "zap-logger",
-	"entry_type": "zap-logger",
-	"level": "info",
-	"lumberjack_compress": true,
-	"lumberjack_filename": "rkapp-event.log",
-	"lumberjack_localtime": true,
-	"lumberjack_maxage": 7,
-	"lumberjack_maxbackups": 3,
-	"lumberjack_maxsize": 1024,
-	"output_path": ["stdout"]
+    "entryName":"zap-logger",
+    "entryType":"ZapLoggerEntry",
+    "entryDescription":"Description of entry",
+    "zapConfig":{
+        "level":"info",
+        "development":false,
+        "disableCaller":false,
+        "disableStacktrace":false,
+        "sampling":null,
+        "encoding":"console",
+        "encoderConfig":{
+            "messageKey":"msg",
+            "levelKey":"level",
+            "timeKey":"ts",
+            "nameKey":"logger",
+            "callerKey":"caller",
+            "functionKey":"",
+            "stacktraceKey":"stacktrace",
+            "lineEnding":"\n",
+            "levelEncoder":"capitalColor",
+            "timeEncoder":"ISO8601",
+            "durationEncoder":"string",
+            "callerEncoder":"short",
+            "nameEncoder":"full",
+            "consoleSeparator":""
+        },
+        "outputPaths":[
+            "stdout"
+        ],
+        "errorOutputPaths":[
+            "stderr"
+        ],
+        "initialFields":null
+    },
+    "lumberjackConfig":{
+        "filename":"rkapp-event.log",
+        "maxsize":1024,
+        "maxage":7,
+        "maxbackups":3,
+        "localtime":true,
+        "compress":true
+    }
 }
 ```
 
-#### ViperEntry
-ViperEntry provides convenient way to initialize viper instance. [viper](https://github.com/spf13/viper) is a complete configuration solution for Go applications.
+#### ConfigEntry
+ConfigEntry provides convenient way to initialize viper instance. [viper](https://github.com/spf13/viper) is a complete configuration solution for Go applications.
 Each viper instance combined with one configuration file. 
 
 | Name | Description |
 | ------ | ------ |
-| path | File path of config file, could be either relative or absolute path |
-| vp | Viper instance |
+| EntryName | Name of entry. |
+| EntryType | Type of entry which is EventEntry. |
+| EntryDescription | Description of entry. |
+| Path | File path of config file, could be either relative or absolute path. |
+| vp | Viper instance. |
 
 ##### YAML Hierarchy
 
 | Name | Description | Default |
 | ------ | ------ | ------ |
-| viper.name | Name of viper entry | N/A |
-| viper.path | File path of config file, could be either relative or absolute path | N/A | 
+| config.name | Name of config entry. | config-<random string> |
+| config.path | File path of config file, could be either relative or absolute path | "" | 
 
-##### Access ViperEntry
+##### Access ConfigEntry
 ```go
 // Access entry
-rkentry.GlobalAppCtx.GetViperEntry("my-viper"))
+rkentry.GlobalAppCtx.GetConfigEntry("my-config"))
 
 // Access viper instance
-rkentry.GlobalAppCtx.GetViperEntry("my-viper").GetViper()
+rkentry.GlobalAppCtx.GetConfigEntry("my-config").GetViper()
 ```
 
-##### Stringfy ViperEntry
-Assuming we have viper YAML as bellow:
+##### Stringfy ConfigEntry
+Assuming we have config YAML as bellow:
 
 ```yaml
 ---
-viper:
-  - name: my-viper
+config:
+  - name: my-config
     path: example/my-config.yaml
 ```
 
 ```go
-fmt.Println(rkentry.GlobalAppCtx.GetViperEntry("my-viper").String())
+fmt.Println(rkentry.GlobalAppCtx.GetViperEntry("my-config").String())
 ```
 
 Process information could be printed either.
 ```json
 {
-	"entry_name": "my-viper",
-	"entry_type": "viper-config",
-	"path": "/xxxx/example/my-config.yaml"
+    "entryName":"my-config",
+    "entryType":"ConfigEntry",
+    "entryDescription":"Description of entry",
+    "path":"/usr/rk/example/my-config.yaml",
+    "viper":{
+        "key":"value"
+    }
 }
+```
+
+##### Dynamically load config based on Environment variable
+We are using <locale> in yaml config and OS environment variable to distinguish different cert entries.
+
+```
+RK use <realm>::<region>::<az>::<domain> to distinguish different environment.
+Variable of <locale> could be composed as form of <realm>::<region>::<az>::<domain>
+- realm: It could be a company, department and so on, like RK-Corp.
+         Environment variable: REALM
+         Eg: RK-Corp
+         Wildcard: supported
+
+- region: Please see AWS web site: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
+          Environment variable: REGION
+          Eg: us-east
+          Wildcard: supported
+
+- az: Availability zone, please see AWS web site for details: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
+      Environment variable: AZ
+      Eg: us-east-1
+      Wildcard: supported
+
+- domain: Stands for different environment, like dev, test, prod and so on, users can define it by themselves.
+          Environment variable: DOMAIN
+          Eg: prod
+          Wildcard: supported
+
+How it works?
+First, we will split locale with "::" and extract realm, region, az and domain.
+Second, get environment variable named as REALM, REGION, AZ and DOMAIN.
+Finally, compare every element in locale variable and environment variable.
+If variables in locale represented as wildcard(*), we will ignore comparison step.
+
+Example:
+# let's assuming we are going to define DB address which is different based on environment.
+# Then, user can distinguish DB address based on locale.
+# We recommend to include locale with wildcard.
+---
+DB:
+  - name: redis-default
+    locale: "*::*::*::*"
+    addr: "192.0.0.1:6379"
+  - name: redis-in-test
+    locale: "*::*::*::test"
+    addr: "192.0.0.1:6379"
+  - name: redis-in-prod
+    locale: "*::*::*::prod"
+    addr: "176.0.0.1:6379"
 ```
 
 #### CertEntry
 CertEntry provides a convenient way to retrieve certifications from local or remote services.
 Supported services listed bellow:
-- local
-- remote file store
+- localFs
+- remoteFs
 - etcd
 - consul
 
@@ -771,157 +957,191 @@ Supported services listed bellow:
 | cert.consul.name | Name of consul retriever | "" |
 | cert.consul.locale | Represent environment of current process follows schema of \<realm\>::\<region\>::\<az\>::\<domain\> | \*::\*::\*::\* | 
 | cert.consul.endpoint | Endpoint of Consul server, http://x.x.x.x or x.x.x.x both acceptable. | N/A |
-| cert.consul.datacenter | Consul datacenter. | "" |
-| cert.consul.token | Token for access Consul. | "" |
-| cert.consul.basicAuth | Basic auth for Consul server, like <user:pass>. | "" |
-| cert.consul.serverCertPath | Key of server cert in Consul server. | "" |
-| cert.consul.serverKeyPath | Key of server key in Consul server. | "" |
-| cert.consul.clientCertPath | Key of client cert in Consul server. | "" |
-| cert.consul.clientCertPath | Key of client key in Consul server. | "" |
+| cert.consul.datacenter | consul datacenter. | "" |
+| cert.consul.token | Token for access consul. | "" |
+| cert.consul.basicAuth | Basic auth for consul server, like <user:pass>. | "" |
+| cert.consul.serverCertPath | Path of server cert in Consul server. | "" |
+| cert.consul.serverKeyPath | Path of server key in Consul server. | "" |
+| cert.consul.clientCertPath | Path of client cert in Consul server. | "" |
+| cert.consul.clientCertPath | Path of client key in Consul server. | "" |
 | cert.etcd.name | Name of etcd retriever | "" |
 | cert.etcd.locale | Represent environment of current process follows schema of \<realm\>::\<region\>::\<az\>::\<domain\> | \*::\*::\*::\* | 
-| cert.etcd.endpoint | Endpoint of ETCD server, http://x.x.x.x or x.x.x.x both acceptable. | N/A |
-| cert.etcd.basicAuth | Basic auth for ETCD server, like <user:pass>. | "" |
-| cert.etcd.serverCertPath | Key of server cert in ETCD server. | "" |
-| cert.etcd.serverKeyPath | Key of server key in ETCD server. | "" |
-| cert.etcd.clientCertPath | Key of client cert in ETCD server. | "" |
-| cert.etcd.clientCertPath | Key of client key in ETCD server. | "" |
-| cert.local.name | Name of local retriever | "" |
-| cert.local.locale | Represent environment of current process follows schema of \<realm\>::\<region\>::\<az\>::\<domain\> | \*::\*::\*::\* | 
-| cert.local.serverCertPath | Key of server cert in local file system. | "" |
-| cert.local.serverKeyPath | Key of server key in local file system. | "" |
-| cert.local.clientCertPath | Key of client cert in local file system. | "" |
-| cert.local.clientCertPath | Key of client key in local file system. | "" |
-| cert.remoteFileStore.name | Name of remoteFileStore retriever | "" |
-| cert.remoteFileStore.locale | Represent environment of current process follows schema of \<realm\>::\<region\>::\<az\>::\<domain\> | \*::\*::\*::\* | 
-| cert.remoteFileStore.endpoint | Endpoint of remoteFileStore server, http://x.x.x.x or x.x.x.x both acceptable. | N/A |
-| cert.remoteFileStore.basicAuth | Basic auth for remoteFileStore server, like <user:pass>. | "" |
-| cert.remoteFileStore.serverCertPath | Key of server cert in remoteFileStore server. | "" |
-| cert.remoteFileStore.serverKeyPath | Key of server key in remoteFileStore server. | "" |
-| cert.remoteFileStore.clientCertPath | Key of client cert in remoteFileStore server. | "" |
-| cert.remoteFileStore.clientCertPath | Key of client key in remoteFileStore server. | "" |
+| cert.etcd.endpoint | Endpoint of etcd server, http://x.x.x.x or x.x.x.x both acceptable. | N/A |
+| cert.etcd.basicAuth | Basic auth for etcd server, like <user:pass>. | "" |
+| cert.etcd.serverCertPath | Path of server cert in etcd server. | "" |
+| cert.etcd.serverKeyPath | Path of server key in etcd server. | "" |
+| cert.etcd.clientCertPath | Path of client cert in etcd server. | "" |
+| cert.etcd.clientCertPath | Path of client key in etcd server. | "" |
+| cert.localFs.name | Name of localFs retriever | "" |
+| cert.localFs.locale | Represent environment of current process follows schema of \<realm\>::\<region\>::\<az\>::\<domain\> | \*::\*::\*::\* | 
+| cert.localFs.serverCertPath | Path of server cert in local file system. | "" |
+| cert.localFs.serverKeyPath | Path of server key in local file system. | "" |
+| cert.localFs.clientCertPath | Path of client cert in local file system. | "" |
+| cert.localFs.clientCertPath | Path of client key in local file system. | "" |
+| cert.remoteFs.name | Name of remoteFileStore retriever | "" |
+| cert.remoteFs.locale | Represent environment of current process follows schema of \<realm\>::\<region\>::\<az\>::\<domain\> | \*::\*::\*::\* | 
+| cert.remoteFs.endpoint | Endpoint of remoteFileStore server, http://x.x.x.x or x.x.x.x both acceptable. | N/A |
+| cert.remoteFs.basicAuth | Basic auth for remoteFileStore server, like <user:pass>. | "" |
+| cert.remoteFs.serverCertPath | Path of server cert in remoteFs server. | "" |
+| cert.remoteFs.serverKeyPath | Path of server key in remoteFs server. | "" |
+| cert.remoteFs.clientCertPath | Path of client cert in remoteFs server. | "" |
+| cert.remoteFs.clientCertPath | Path of client key in remoteFs server. | "" |
 
 ##### Access CertEntry
 ```go
 // Access entry
-certEntry := rkentry.GlobalAppCtx.GetCertEntry()
+certEntry := rkentry.GlobalAppCtx.GetCertEntry("name of cert entry")
 
 // Access cert stores which contains certificates as byte array
-serverCert := certEntry.Stores["your retriever name"].ServerCert
-serverKey := certEntry.Stores["your retriever name"].ServerKey
-clientCert := certEntry.Stores["your retriever name"].ClientCert
-clientKey := certEntry.Stores["your retriever name"].ClientKey
+serverCert := certEntry.Store.ServerCert
+serverKey := certEntry.Store.ServerKey
+clientCert := certEntry.Store.ClientCert
+clientKey := certEntry.Store.ClientKey
 ```
 
-##### Stringfy ViperEntry
-Assuming we have viper YAML as bellow:
+##### Stringfy CertEntry
+Assuming we have cert YAML as bellow:
 
 ```yaml
 ---
 cert:
-  etcd:
-    - name: "etcd-test"                     # Required
-      locale: "*::*::*::*"                  # Optional, default: *::*::*::*
-      endpoint: "localhost:2379"            # Required, http://x.x.x.x or x.x.x.x both acceptable.
-      basicAuth: "root:etcd"                # Optional, default: "", basic auth for Consul server, like <user:pass>
-      serverCertPath: "serverCert"          # Optional, default: "", key of value in etcd
-      serverKeyPath: "serverKey"            # Optional, default: "", key of value in etcd
-      clientCertPath: "clientCert"          # Optional, default: "", key of value in etcd
-      clientKeyPath: "clientKey"            # Optional, default: "", key of value in etcd
-  local:
-    - name: "local-test"                       # Required
-      locale: "*::*::*::*"                     # Optional, default: *::*::*::*
-      serverCertPath: "example/server.pem"     # Optional, default: "", path of certificate on local FS
-      serverKeyPath: "example/server-key.pem"  # Optional, default: "", path of certificate on local FS
-      clientCertPath: "example/client.pem"     # Optional, default: "", path of certificate on local FS
-      clientKeyPath: "example/client.pem"      # Optional, default: "", path of certificate on local FS
-  consul:
-    - name: "consul-test"                      # Required
-      locale: "*::*::*::*"                     # Optional, default: *::*::*::*
-      endpoint: "localhost:8500"               # Required, http://x.x.x.x or x.x.x.x both acceptable.
-      basicAuth: "user:pass"                   # Optional, default: "", basic auth for consul server, like <user:pass>
-      datacenter: "rk"                         # Optional, default: "", consul datacenter
-      token: ""                                # Optional, default: "", token to access consul
-      serverCertPath: "serverCert"             # Optional, default: "", key of value in consul 
-      serverKeyPath: "serverKey"               # Optional, default: "", key of value in consul
-      clientCertPath: "clientCert"             # Optional, default: "", key of value in consul
-      clientKeyPath: "clientKey"               # Optional, default: "", key of value in consul
-  remoteFileStore:
-    - name: "remote-file-store-test"           # Required
-      locale: "*::*::*::*"                     # Optional, default: *::*::*::*
-      endpoint: "localhost:8080"               # Required, http://x.x.x.x or x.x.x.x both acceptable.
-      basicAuth: "user:pass"                   # Optional, default: "", basic auth for remote file store, like <user:pass>
-      serverCertPath: "serverCert"             # Optional, default: "", path of file in remote file store
-      serverKeyPath: "serverKey"               # Optional, default: "", path of file in remote file store
-      clientCertPath: "clientCert"             # Optional, default: "", path of file in remote file store
-      clientKeyPath: "clientKey"               # Optional, default: "", path of file in remote file store
+  - name: "local-cert"                       # Required
+    description: "Description of entry"      # Optional
+    provider: "localFs"                      # Required, etcd, consul, localFS, remoteFs are supported options
+    locale: "*::*::*::*"                     # Optional, default: *::*::*::*
+    serverCertPath: "example/server.pem"     # Optional, default: "", path of certificate on local FS
+    serverKeyPath: "example/server-key.pem"  # Optional, default: "", path of certificate on local FS
+    clientCertPath: "example/client.pem"     # Optional, default: "", path of certificate on local FS
+    clientKeyPath: "example/client.pem"      # Optional, default: "", path of certificate on local FS
 ```
 
 ```go
-fmt.Println(rkentry.GlobalAppCtx.GetCertEntry().String())
+fmt.Println(rkentry.GlobalAppCtx.GetCertEntry("local-cert").String())
 ```
 
 Process information could be printed either.
 ```json
 {
-	"entry_name": "rk-cert-entry",
-	"entry_type": "rk-cert-entry",
-	"local-test_client_cert_exist": false,
-	"local-test_client_key_exist": false,
-	"local-test_server_cert_exist": true,
-	"local-test_server_key_exist": true,
-	"retrievers": ["local-test"]
+    "entryName":"local-cert",
+    "entryType":"CertEntry",
+    "entryDescription":"",
+    "eventLoggerEntry":"eventLoggerDefault",
+    "zapLoggerEntry":"zapLoggerDefault",
+    "retriever":{
+        "provider":"localFs",
+        "locale":"*::*::*::*",
+        "serverCertPath":"/usr/rk/example/server.pem",
+        "serverKeyPath":"/usr/rk/example/server-key.pem",
+        "clientCertPath":"/usr/rk/example/client.pem",
+        "clientKeyPath":"/usr/rk/example/client-key.pem"
+    },
+    "store":{
+        "clientCert":"",
+        "serverCert":"Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 509952525898157401469127978785735696864294231142 (0x59530fe773bcdf9fa78ecaf6dd46485f62845c66)
+    Signature Algorithm: SHA256-RSA
+        Issuer: C=CN,ST=Beijing,UnknownOID=2.5.4.7,O=RK,OU=RK Demo,CN=RK Demo CA
+        Validity
+            Not Before: Apr 7 13:03:00 2021 UTC
+            Not After : Apr 6 13:03:00 2026 UTC
+        Subject: C=CN,ST=Beijing,UnknownOID=2.5.4.7,CN=example.net
+        Subject Public Key Info:
+            Public Key Algorithm: ECDSA
+                Public-Key: (256 bit)
+                X:
+                    5f:f2:9f:e7:c6:f6:35:1c:75:24:25:76:64:7c:54:
+                    20:0e:d4:36:08:af:43:38:07:ba:cb:79:44:db:51:
+                    d3:27
+                Y:
+                    f5:62:e2:f1:cd:a9:69:28:f6:4a:32:62:02:aa:81:
+                    45:f2:8a:ae:65:18:0b:30:a3:af:0a:be:60:fb:73:
+                    62:f8
+                Curve: P-256
+        X509v3 extensions:
+            X509v3 Key Usage: critical
+                Digital Signature, Key Encipherment
+            X509v3 Extended Key Usage:
+                TLS Web Server Authentication
+            X509v3 Basic Constraints: critical
+                CA:FALSE
+            X509v3 Subject Key Identifier:
+                EF:E9:D5:25:10:8E:8D:71:00:73:8A:19:F3:29:9A:F1:2A:96:E7:4D
+            X509v3 Authority Key Identifier:
+                keyid:60:C2:96:0A:86:07:DE:3B:7A:76:5E:E5:F4:85:ED:F9:71:A7:94:81
+            X509v3 Subject Alternative Name:
+                DNS:localhost
+                IP Address:127.0.0.1, IP Address:0.0.0.0
+
+    Signature Algorithm: SHA256-RSA
+         1c:aa:2d:cd:d0:91:a1:8d:af:e4:2a:8c:5c:3b:ce:79:3d:8f:
+         45:f8:51:c9:bf:d4:de:a2:18:8a:7c:7d:48:bd:b7:e9:92:d4:
+         b6:ba:08:1d:5e:8f:e1:68:5a:44:98:b2:4c:ea:06:97:48:92:
+         ac:ea:65:a9:f5:72:1c:85:9e:38:6d:32:c5:a0:65:85:ba:b2:
+         b5:cd:46:00:72:03:d5:d2:da:cd:bc:fb:18:3d:a3:07:29:71:
+         e5:da:df:01:b8:c1:b9:d3:8f:57:a6:72:e9:f3:4a:b2:95:16:
+         34:b5:20:95:23:97:91:d6:08:a8:9b:9d:58:e0:b7:88:34:b3:
+         db:5c:f0:a6:29:5e:41:98:97:6d:d4:e0:55:2d:6b:fd:3b:60:
+         59:ad:5b:94:83:17:7f:0d:5a:b3:4e:7b:9a:95:10:02:cc:cf:
+         54:72:d0:f3:20:63:44:83:b4:a8:5d:74:33:67:35:2d:f6:7f:
+         3e:34:20:fd:30:07:b6:b7:d5:3d:b8:79:97:ad:64:af:c8:35:
+         a2:22:fb:94:8c:d2:22:f1:91:fa:8d:ef:5c:4a:c4:02:08:62:
+         6b:88:f5:8c:16:08:56:99:db:ea:9b:2c:88:83:4d:b4:7a:83:
+         2b:8b:21:0d:80:7f:00:4b:67:4e:a0:f7:7f:59:7d:2a:99:b8:
+         ff:0f:a3:15
+"
+    }
 }
 ```
 
-##### Select config file dynamically
-In order to select config file dynamically in different environment, we are using environment variable to choose config files.
+##### Select cert entry dynamically based on environment
+We are using <locale> in yaml config and OS environment variable to distinguish different cert entries.
 
-**How it works?**
-ViperEntry will reconstruct path user provided with DOMAIN(environment variable) as bellow:
-
-Path that user provided: example/my-config.yaml
-Value of DOMAIN: prod
-Reconstructed path: example/my-config-prod.yaml
-
-As a result, there could be two files named as my-config-test.yaml and my-config-prod.yaml in one path, 
-and specify viper.path as my-config.yaml in ViperEntry YAML file.
-
-**Example:**
-Assuming we have test and prod environment each needs own configuration file with same index in it.
-We need to make sure access correct configuration file without any code changes.
-
-- Step 1: 
-Two configuration file described as bellow.
-
-my-config-test.yaml
-```yaml
-key: test
 ```
+RK use <realm>::<region>::<az>::<domain> to distinguish different environment.
+Variable of <locale> could be composed as form of <realm>::<region>::<az>::<domain>
+- realm: It could be a company, department and so on, like RK-Corp.
+         Environment variable: REALM
+         Eg: RK-Corp
+         Wildcard: supported
 
-my-config-prod.yaml
-```yaml
-key: prod
-```
+- region: Please see AWS web site: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
+          Environment variable: REGION
+          Eg: us-east
+          Wildcard: supported
 
-- Step 2:
-Configure path at bootstrap yaml file.
+- az: Availability zone, please see AWS web site for details: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
+      Environment variable: AZ
+      Eg: us-east-1
+      Wildcard: supported
 
-my-boot.yaml
-```yaml
-viper:
-  - name: my-config
-    path: my-config.yaml  # ViperEntry will reconstruct this as my-config-<DOOMAIN>.yaml, if value of DOAMIN is empty, then look up my-config.yaml.
-```
+- domain: Stands for different environment, like dev, test, prod and so on, users can define it by themselves.
+          Environment variable: DOMAIN
+          Eg: prod
+          Wildcard: supported
 
-- Step 3:
-Set environment variable as DOMAIN=prod or DOMAIN=test
+How it works?
+First, we will split locale with "::" and extract realm, region, az and domain.
+Second, get environment variable named as REALM, REGION, AZ and DOMAIN.
+Finally, compare every element in locale variable and environment variable.
+If variables in locale represented as wildcard(*), we will ignore comparison step.
 
-- Step 4: 
-Access values in configuration file with name of viper entry
-
-```go
-rkentry.GlobalAppCtx.GetViperEntry("my-config").GetViper().GetString("key")
+Example:
+# let's assuming we are going to define DB address which is different based on environment.
+# Then, user can distinguish DB address based on locale.
+# We recommend to include locale with wildcard.
+---
+DB:
+  - name: redis-default
+    locale: "*::*::*::*"
+    addr: "192.0.0.1:6379"
+  - name: redis-in-test
+    locale: "*::*::*::test"
+    addr: "192.0.0.1:6379"
+  - name: redis-in-prod
+    locale: "*::*::*::prod"
+    addr: "176.0.0.1:6379"
 ```
 
 ### Info Utility
@@ -930,13 +1150,21 @@ Process information for a running application.
 ##### Fields
 | Element | Description | Default | JSON Key |
 | ------ | ------ | ------ | ------ |
-| ApplicationName | Name of current application set by user | based on system | application_name |
+| AppName | Application name which refers to go process. | based on user config | appName |
+| Version | Application version. | based on user config | version |
+| Lang | Programming language <NOT configurable!>. | based on user config | lang |
+| Description | Description of application itself. | based on user config | description |
+| Keywords | A set of words describe application. | based on user config | keywords |
+| HomeUrl | Home page URL. | based on user config | homeUrl |
+| IconUrl | Application Icon URL. | based on user config | iconUrl |
+| DocsUrl | A set of URLs of documentations of application. | based on user config | docsUrl |
+| Maintainers | Maintainers of application. | based on user config | maintainers |
 | UID | user id which runs process | based on system | uid |
 | GID | group id which runs process | based on system | gid |
-| Username | username which runs process | based on system | username |
-| StartTime | application start time | time.now() | start_time |
-| UpTimeSec | application up time in seconds | zero at the beginning | up_time_sec |
-| UpTimeStr | application up time in string | zero as string at the beginning | up_time_str |
+| Username | Username which runs process. | based on system | username |
+| StartTime | application start time | time.now() | startTime |
+| UpTimeSec | application up time in seconds | zero at the beginning | upTimeSec |
+| UpTimeStr | application up time in string | zero as string at the beginning | upTimeStr |
 | Region | region where process runs | based on environment variable REGION | region |
 | AZ | availability zone where process runs | based on environment variable AZ | az |
 | Realm | realm where process runs | based on environment variable REALM | realm |
@@ -949,67 +1177,429 @@ fmt.Println(rkcommon.ConvertStructToJSONPretty(rkentry.NewProcessInfo()))
 
 ```json
 {
-  "application_name": "rk-example-entry",
+  "appName": "rk-example-entry",
+  "version": "v0.0.1",
+  "description": "this is description",
+  "keywords": [
+    "rk",
+    "golang"
+  ],
+  "homeUrl": "http://example.com",
+  "iconUrl": "http://example.com",
+  "docsUrl": [
+    "http://example.com"
+  ],
+  "maintainers": [
+    "rk-dev"
+  ],
   "uid": "501",
   "gid": "20",
   "username": "rk-dev",
-  "start_time": "2021-04-04T17:31:45+08:00",
-  "up_time_sec": 0,
-  "up_time_str": "5 milliseconds",
+  "startTime": "2021-05-14T02:59:51+08:00",
+  "upTimeSec": 0,
+  "upTimeStr": "12 milliseconds",
   "region": "unknown",
   "az": "unknown",
   "realm": "unknown",
-  "domain": "prod"
+  "domain": "dev"
 }
 ```
 
-#### ViperConfigInfo
-Viper config information stored in GlobalAppCtx.
-##### Fields
-| Element | Description | Default | JSON key |
-| ------ | ------ | ------ | ------ |
-| Name | Name of config instance | N/A | name |
-| Raw | Name of config instance | N/A | raw |
-
-##### Access ViperConfigInfo
-```go
-fmt.Println(rkcommon.ConvertStructToJSONPretty(rkentry.NewViperConfigInfo()))
-```
-
-```json
-[
-  {
-    "name": "my-viper",
-    "raw": "map[key:prod]"
-  }
-]
-```
-
-#### MemStatsInfo
-Memory stats of current running process.
+#### CpuInfo
+CPU information for a running application.
 ##### Fields
 | Element | Description | Default | JSON Key |
 | ------ | ------ | ------ | ------ |
-| MemAllocByte | Bytes of allocated heap objects, from runtime.MemStats.Alloc | based on system | mem_alloc_byte |
-| SysAllocByte | Total bytes of memory obtained from the OS, from runtime.MemStats.Sys | based on system | sys_alloc_byte |
-| MemPercentage | float64(stats.Alloc) / float64(stats.Sys) | based on system | mem_usage_percentage |
-| LastGCTimestamp | The time the last garbage collection finished as RFC3339 | based on system | last_gc_timestamp |
-| GCCount | The number of completed GC cycles | zero at the beginning | gc_count_total |
-| ForceGCCount | The number of GC cycles that were forced by the application calling the GC function | zero as string at the beginning | force_gc_count |
+| CpuUsedPercentage | CPU usage. | based on system | cpuUsedPercentage |
+| LogicalCoreCount | Logical core count. | based on system | logicalCoreCount |
+| PhysicalCoreCount | Physical core count. | based on system | physicalCoreCount |
+| VendorId | CPU vendor Id. | based on system | vendorId |
+| ModelName | CPU model name. | based on system | modelName |
+| Mhz | CPU power. | based on system | mhz |
+| CacheSize | CPU cache size in bytes. | based on system | cacheSize |
 
-##### Access MemStatsInfo
+##### Access CpuInfo
 ```go
-fmt.Println(rkcommon.ConvertStructToJSONPretty(rkentry.NewMemStatsInfo()))
+fmt.Println(rkcommon.ConvertStructToJSONPretty(rkentry.NewCpuInfo()))
 ```
 
 ```json
 {
-  "mem_alloc_byte": 1123856,
-  "sys_alloc_byte": 73614592,
-  "mem_usage_percentage": 0.015266755808413636,
-  "last_gc_timestamp": "1970-01-01T08:00:00+08:00",
-  "gc_count_total": 0,
-  "force_gc_count": 0
+  "cpuUsedPercentage": 11.88,
+  "logicalCoreCount": 8,
+  "physicalCoreCount": 4,
+  "vendorId": "GenuineIntel",
+  "modelName": "Intel(R) Core(TM) i5-1038NG7 CPU @ 2.00GHz",
+  "mhz": 2000,
+  "cacheSize": 256
+}
+```
+
+#### MemInfo
+Memory information for a running application.
+##### Fields
+| Element | Description | Default | JSON Key |
+| ------ | ------ | ------ | ------ |
+| MemUsedPercentage | Memory usage in percentage. | based on system | memUsedPercentage |
+| MemUsedMb | Memory usage in megabytes. | based on system | memUsedMb |
+| MemAllocByte | Bytes of allocated heap objects. | based on system | memAllocByte |
+| SysAllocByte | Total bytes of memory obtained from the OS. | based on system | sysAllocByte |
+| LastGcTimestamp | Last GC timestamp. | based on system | lastGcTimestamp |
+| GcCount | GC count. | based on system | gcCountTotal |
+| ForceGcCount | GC count triggered by user. | based on system | forceGcCount |
+
+##### Access MemInfo
+```go
+fmt.Println(rkcommon.ConvertStructToJSONPretty(rkentry.NewMemInfo()))
+```
+
+```json
+{
+  "memUsedPercentage": 0.04,
+  "memUsedMb": 2,
+  "memAllocByte": 2728536,
+  "sysAllocByte": 72436744,
+  "lastGcTimestamp": "1970-01-01T08:00:00+08:00",
+  "gcCountTotal": 0,
+  "forceGcCount": 0
+}
+```
+
+#### NetInfo
+Network information for a running application.
+##### Fields
+| Element | Description | Default | JSON Key |
+| ------ | ------ | ------ | ------ |
+| NetInterface.Name | Name of Network interface. | based on system | name |
+| NetInterface.Mtu | Maximum transmission unit. | based on system | mtu |
+| NetInterface.HardwareAddr | IEEE MAC-48, EUI-48 and EUI-64 form. | based on system | hardwareAddr |
+| NetInterface.Flags | Flags of Network interface. | based on system | flags |
+| NetInterface.Addrs | A list of unicast interface addresses for a specific interface. | based on system | addrs |
+| NetInterface.MulticastAddrs | List of multicast, joined group addresses for a specific interface. | based on system | multicastAddrs |
+
+##### Access NetInfo
+```go
+fmt.Println(rkcommon.ConvertStructToJSONPretty(rkentry.NewNetInfo()))
+```
+
+```json
+{
+  "netInterface": [
+    {
+      "name": "lo0",
+      "mtu": 16384,
+      "hardwareAddr": "",
+      "flags": [
+        "up",
+        "loopback",
+        "multicast"
+      ],
+      "addrs": [
+        "127.0.0.1/8",
+        "::1/128",
+        "fe80::1/64"
+      ],
+      "multicastAddrs": [
+        "ff02::fb",
+        "224.0.0.251",
+        "ff02::2:ff33:9cc0",
+        "ff01::1",
+        "ff02::1",
+        "ff02::1:ff00:1",
+        "224.0.0.1"
+      ]
+    },
+    {
+      "name": "gif0",
+      "mtu": 1280,
+      "hardwareAddr": "",
+      "flags": [
+        "pointtopoint",
+        "multicast"
+      ],
+      "addrs": [],
+      "multicastAddrs": []
+    },
+    {
+      "name": "stf0",
+      "mtu": 1280,
+      "hardwareAddr": "",
+      "flags": [
+        "0"
+      ],
+      "addrs": [],
+      "multicastAddrs": []
+    },
+    {
+      "name": "en5",
+      "mtu": 1500,
+      "hardwareAddr": "ac:de:48:00:11:22",
+      "flags": [
+        "up",
+        "broadcast",
+        "multicast"
+      ],
+      "addrs": [
+        "fe80::aede:48ff:fe00:1122/64"
+      ],
+      "multicastAddrs": [
+        "ff01::1",
+        "ff02::2:ff02:66ae",
+        "ff02::1",
+        "ff02::1:ff00:1122",
+        "ff02::fb"
+      ]
+    },
+    {
+      "name": "ap1",
+      "mtu": 1500,
+      "hardwareAddr": "36:7d:da:84:00:3e",
+      "flags": [
+        "broadcast",
+        "multicast"
+      ],
+      "addrs": [],
+      "multicastAddrs": []
+    },
+    {
+      "name": "en0",
+      "mtu": 1500,
+      "hardwareAddr": "14:7d:da:84:00:3e",
+      "flags": [
+        "up",
+        "broadcast",
+        "multicast"
+      ],
+      "addrs": [
+        "192.168.101.5/24"
+      ],
+      "multicastAddrs": [
+        "224.0.0.1",
+        "224.0.0.251",
+        "ff02::fb"
+      ]
+    },
+    {
+      "name": "p2p0",
+      "mtu": 2304,
+      "hardwareAddr": "06:7d:da:84:00:3e",
+      "flags": [
+        "up",
+        "broadcast",
+        "multicast"
+      ],
+      "addrs": [],
+      "multicastAddrs": []
+    },
+    {
+      "name": "awdl0",
+      "mtu": 1484,
+      "hardwareAddr": "f2:26:9f:40:0f:0d",
+      "flags": [
+        "up",
+        "broadcast",
+        "multicast"
+      ],
+      "addrs": [
+        "fe80::f026:9fff:fe40:f0d/64"
+      ],
+      "multicastAddrs": [
+        "ff01::1",
+        "ff02::1",
+        "ff02::2:ff02:66ae",
+        "ff02::1:ff40:f0d",
+        "ff02::fb"
+      ]
+    },
+    {
+      "name": "llw0",
+      "mtu": 1500,
+      "hardwareAddr": "f2:26:9f:40:0f:0d",
+      "flags": [
+        "up",
+        "broadcast",
+        "multicast"
+      ],
+      "addrs": [
+        "fe80::f026:9fff:fe40:f0d/64"
+      ],
+      "multicastAddrs": [
+        "ff01::1",
+        "ff02::1",
+        "ff02::2:ff02:66ae",
+        "ff02::1:ff40:f0d",
+        "ff02::fb"
+      ]
+    },
+    {
+      "name": "en1",
+      "mtu": 1500,
+      "hardwareAddr": "ee:49:b4:08:04:04",
+      "flags": [
+        "up",
+        "broadcast",
+        "multicast"
+      ],
+      "addrs": [],
+      "multicastAddrs": []
+    },
+    {
+      "name": "en2",
+      "mtu": 1500,
+      "hardwareAddr": "ee:49:b4:08:04:05",
+      "flags": [
+        "up",
+        "broadcast",
+        "multicast"
+      ],
+      "addrs": [],
+      "multicastAddrs": []
+    },
+    {
+      "name": "en3",
+      "mtu": 1500,
+      "hardwareAddr": "ee:49:b4:08:04:01",
+      "flags": [
+        "up",
+        "broadcast",
+        "multicast"
+      ],
+      "addrs": [],
+      "multicastAddrs": []
+    },
+    {
+      "name": "en4",
+      "mtu": 1500,
+      "hardwareAddr": "ee:49:b4:08:04:00",
+      "flags": [
+        "up",
+        "broadcast",
+        "multicast"
+      ],
+      "addrs": [],
+      "multicastAddrs": []
+    },
+    {
+      "name": "bridge0",
+      "mtu": 1500,
+      "hardwareAddr": "ee:49:b4:08:04:04",
+      "flags": [
+        "up",
+        "broadcast",
+        "multicast"
+      ],
+      "addrs": [],
+      "multicastAddrs": []
+    },
+    {
+      "name": "utun0",
+      "mtu": 1380,
+      "hardwareAddr": "",
+      "flags": [
+        "up",
+        "pointtopoint",
+        "multicast"
+      ],
+      "addrs": [
+        "fe80::5c4e:5009:f1c1:ed7d/64"
+      ],
+      "multicastAddrs": [
+        "ff02::fb",
+        "ff01::1",
+        "ff02::2:ff02:66ae",
+        "ff02::1",
+        "ff02::1:ffc1:ed7d"
+      ]
+    },
+    {
+      "name": "utun1",
+      "mtu": 2000,
+      "hardwareAddr": "",
+      "flags": [
+        "up",
+        "pointtopoint",
+        "multicast"
+      ],
+      "addrs": [
+        "fe80::b58c:330e:b1be:2785/64"
+      ],
+      "multicastAddrs": [
+        "ff02::fb",
+        "ff01::1",
+        "ff02::2:ff02:66ae",
+        "ff02::1",
+        "ff02::1:ffbe:2785"
+      ]
+    },
+    {
+      "name": "utun2",
+      "mtu": 1500,
+      "hardwareAddr": "",
+      "flags": [
+        "up",
+        "pointtopoint",
+        "multicast"
+      ],
+      "addrs": [
+        "10.8.0.2/24"
+      ],
+      "multicastAddrs": [
+        "224.0.0.1"
+      ]
+    }
+  ]
+}
+```
+
+#### OsInfo
+Operating system information for a running application.
+##### Fields
+| Element | Description | Default | JSON Key |
+| ------ | ------ | ------ | ------ |
+| Os | OS name. | based on system | os |
+| Arch | Architecture of OS. | based on system | arch |
+| Hostname | Hostname of OS. | based on system | hostname |
+
+##### Access OsInfo
+```go
+fmt.Println(rkcommon.ConvertStructToJSONPretty(rkentry.NewOsInfo()))
+```
+
+```json
+{
+  "os": "darwin",
+  "arch": "amd64",
+  "hostname": "rk-dev.local"
+}
+```
+
+#### GoEnvInfo
+Go environment information for a running application.
+##### Fields
+| Element | Description | Default | JSON Key |
+| ------ | ------ | ------ | ------ |
+| GOOS | OS name. | based on system | goos |
+| GOArch | Architecture of OS. | based on system | goArch |
+| StartTime | Represent start time of go process. | based on system | startTime |
+| UpTimeSec | Represent up time of go process in seconds. | based on system | upTimeSec |
+| UpTimeStr | Represent up time of go process as human readable string. | based on system | upTimeStr |
+| RoutinesCount | Number of go routines. | based on system | routinesCount |
+| Version | Version of GO. | based on system | version |
+
+##### Access OsInfo
+```go
+fmt.Println(rkcommon.ConvertStructToJSONPretty(rkentry.NewGoEnvInfo()))
+```
+
+```json
+{
+  "goos": "darwin",
+  "goArch": "amd64",
+  "startTime": "2021-05-14T03:18:04+08:00",
+  "upTimeSec": 0,
+  "upTimeStr": "3 milliseconds",
+  "routinesCount": 2,
+  "version": "go1.15.5"
 }
 ```
 
@@ -1019,22 +1609,16 @@ Request metrics to struct from prometheus summary collector.
 | Element | Description | Default | JSON key |
 | ------ | ------ | ------ | ------ |
 | Path | API path | Based on system | path |
-| ElapsedNanoP50 | Quantile of p50 with time elapsed | based on prometheus collector | elapsed_nano_p50 |
-| ElapsedNanoP90 | Quantile of p90 with time elapsed | based on prometheus collector | elapsed_nano_p90 |
-| ElapsedNanoP99 | Quantile of p99 with time elapsed | based on prometheus collector | elapsed_nano_p99 |
-| ElapsedNanoP999 | Quantile of p999 with time elapsed | based on prometheus collector | elapsed_nano_p99 |
+| ElapsedNanoP50 | Quantile of p50 with time elapsed | based on prometheus collector | elapsedNanoP50 |
+| ElapsedNanoP90 | Quantile of p90 with time elapsed | based on prometheus collector | elapsedNanoP90 |
+| ElapsedNanoP99 | Quantile of p99 with time elapsed | based on prometheus collector | elapsedNanoP99 |
+| ElapsedNanoP999 | Quantile of p999 with time elapsed | based on prometheus collector | elapsedNanoP999 |
 | Count | Total number of requests | based on prometheus collector | count |
-| ResCode | Response code labels | based on prometheus collector | res_code |
+| ResCode | Response code labels | based on prometheus collector | resCode |
 
 ##### Access PromMetricsInfo
 ```go
 fmt.Println(rkcommon.ConvertStructToJSONPretty(rkentry.NewPromMetricsInfo(<your prometheus summary vector>)))
-```
-
-**How to get request metrics?** 
-Access it via MemStatsToStruct() function 
-```go
-rk_metrics.GetRequestMetrics()
 ```
 
 ## Contributing

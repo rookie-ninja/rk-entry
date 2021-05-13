@@ -211,164 +211,166 @@ func TestWithEventLoggerEntryCert_HappyCase(t *testing.T) {
 	assert.Equal(t, loggerEntry, entry.EventLoggerEntry)
 }
 
-func TestWithCertRetrieverCert_WithoutRetrievers(t *testing.T) {
-	entry := &CertEntry{
-		Retrievers: map[string]CertRetriever{},
-	}
+func TestWithCertRetrieverCert_WithNilRetriever(t *testing.T) {
+	entry := &CertEntry{}
 
-	opt := WithCertRetrieverCert()
+	opt := WithCertRetrieverCert(nil)
 	opt(entry)
 
-	assert.Equal(t, 0, len(entry.Retrievers))
+	assert.Nil(t, entry.Retriever)
 }
 
 func TestWithCertRetrieverCert_HappyCase(t *testing.T) {
-	entry := &CertEntry{
-		Retrievers: map[string]CertRetriever{},
-	}
+	entry := &CertEntry{}
 
-	retrieverA := &CertRetrieverLocal{
-		Name: "A",
-	}
+	retriever := &CertRetrieverLocalFs{}
 
-	retrieverB := &CertRetrieverLocal{
-		Name: "B",
-	}
-
-	opt := WithCertRetrieverCert(retrieverA, retrieverB)
+	opt := WithCertRetrieverCert(retriever)
 	opt(entry)
 
-	assert.Equal(t, 2, len(entry.Retrievers))
+	assert.Equal(t, retriever, entry.Retriever)
 }
 
 func TestRegisterCertEntriesFromConfig_HappyCase(t *testing.T) {
 	bootConfig := `
 cert:
-  local:
-    - name: "ut-local"
-      locale: "*::*::*::*"
-      serverCertPath: "server.pem"
-      serverKeyPath: "server-key.pem"
-      clientCertPath: "client.pem"
-      clientKeyPath: "client-key.pem"
-  etcd:
-    - name: "ut-etcd"
-      locale: "*::*::*::*"
-      endpoint: "localhost:2379"
-      basicAuth: "root:etcd"
-      serverCertPath: "server.pem"
-      serverKeyPath: "server-key.pem"
-      clientCertPath: "client.pem"
-      clientKeyPath: "client-key.pem"
-  consul:
-    - name: "ut-consul"
-      locale: "*::*::*::*"
-      endpoint: "localhost:8500"
-      basicAuth: "root:consul"
-      datacenter: "rk"
-      token: "token"
-      serverCertPath: "server.pem"
-      serverKeyPath: "server-key.pem"
-      clientCertPath: "client.pem"
-      clientKeyPath: "client-key.pem"
-  remoteFileStore:
-    - name: "ut-remote-file-store"
-      locale: "*::*::*::*"
-      endpoint: "localhost:8080"
-      basicAuth: "root:remote"
-      serverCertPath: "server.pem"
-      serverKeyPath: "server-key.pem"
-      clientCertPath: "client.pem"
-      clientKeyPath: "client-key.pem"
+  - name: "ut-localFs"
+    provider: "localFs"
+    locale: "*::*::*::*"
+    serverCertPath: "server.pem"
+    serverKeyPath: "server-key.pem"
+    clientCertPath: "client.pem"
+    clientKeyPath: "client-key.pem"
+  - name: "ut-etcd"
+    provider: "etcd"
+    locale: "*::*::*::*"
+    endpoint: "localhost:2379"
+    basicAuth: "root:etcd"
+    serverCertPath: "server.pem"
+    serverKeyPath: "server-key.pem"
+    clientCertPath: "client.pem"
+    clientKeyPath: "client-key.pem"
+  - name: "ut-consul"
+    provider: "consul"
+    locale: "*::*::*::*"
+    endpoint: "localhost:8500"
+    basicAuth: "root:consul"
+    datacenter: "rk"
+    token: "token"
+    serverCertPath: "server.pem"
+    serverKeyPath: "server-key.pem"
+    clientCertPath: "client.pem"
+    clientKeyPath: "client-key.pem"
+  - name: "ut-remoteFs"
+    provider: "remoteFs"
+    locale: "*::*::*::*"
+    endpoint: "localhost:8080"
+    basicAuth: "root:remote"
+    serverCertPath: "server.pem"
+    serverKeyPath: "server-key.pem"
+    clientCertPath: "client.pem"
+    clientKeyPath: "client-key.pem"
 `
 
 	bootPath := createFileAtTestTempDir(t, bootConfig)
-	entries := RegisterCertEntriesFromConfig(bootPath)
 
-	assert.Equal(t, len(entries), 1)
+	assert.Equal(t, len(RegisterCertEntriesFromConfig(bootPath)), 4)
+	entries := GlobalAppCtx.ListCertEntries()
+	assert.Equal(t, len(entries), 4)
 
-	raw := entries[CertEntryName]
-	assert.NotNil(t, raw)
+	// localFS entry
+	localFSEntry := entries["ut-localFs"]
+	assert.NotNil(t, localFSEntry)
+	assert.Equal(t, "ut-localFs", localFSEntry.GetName())
+	assert.Equal(t, "localFs", localFSEntry.Retriever.GetProvider())
+	assert.Equal(t, "server.pem", localFSEntry.Retriever.GetServerCertPath())
+	assert.Equal(t, "server-key.pem", localFSEntry.Retriever.GetServerKeyPath())
+	assert.Equal(t, "client.pem", localFSEntry.Retriever.GetClientCertPath())
+	assert.Equal(t, "client-key.pem", localFSEntry.Retriever.GetClientKeyPath())
+	assert.Equal(t, "*::*::*::*", localFSEntry.Retriever.GetLocale())
 
-	entry := raw.(*CertEntry)
+	// etcd entry
+	etcdEntry := entries["ut-etcd"]
+	assert.NotNil(t, etcdEntry)
+	assert.Equal(t, "ut-etcd", etcdEntry.GetName())
+	assert.Equal(t, "etcd", etcdEntry.Retriever.GetProvider())
+	assert.Equal(t, "server.pem", etcdEntry.Retriever.GetServerCertPath())
+	assert.Equal(t, "server-key.pem", etcdEntry.Retriever.GetServerKeyPath())
+	assert.Equal(t, "client.pem", etcdEntry.Retriever.GetClientCertPath())
+	assert.Equal(t, "client-key.pem", etcdEntry.Retriever.GetClientKeyPath())
+	assert.Equal(t, "*::*::*::*", etcdEntry.Retriever.GetLocale())
+	assert.Equal(t, "localhost:2379", etcdEntry.Retriever.GetEndpoint())
+	assert.Equal(t, "root:etcd", etcdEntry.Retriever.(*CertRetrieverEtcd).BasicAuth)
 
-	// local
-	assert.NotNil(t, entry.Retrievers["ut-local"])
-	assert.Equal(t, "server.pem", entry.Retrievers["ut-local"].(*CertRetrieverLocal).ServerCertPath)
-	assert.Equal(t, "server-key.pem", entry.Retrievers["ut-local"].(*CertRetrieverLocal).ServerKeyPath)
-	assert.Equal(t, "client.pem", entry.Retrievers["ut-local"].(*CertRetrieverLocal).ClientCertPath)
-	assert.Equal(t, "client-key.pem", entry.Retrievers["ut-local"].(*CertRetrieverLocal).ClientKeyPath)
-	assert.Equal(t, "*::*::*::*", entry.Retrievers["ut-local"].(*CertRetrieverLocal).Locale)
+	// consul entry
+	consulEntry := entries["ut-consul"]
+	assert.NotNil(t, consulEntry)
+	assert.Equal(t, "ut-consul", consulEntry.GetName())
+	assert.Equal(t, "consul", consulEntry.Retriever.GetProvider())
+	assert.Equal(t, "server.pem", consulEntry.Retriever.GetServerCertPath())
+	assert.Equal(t, "server-key.pem", consulEntry.Retriever.GetServerKeyPath())
+	assert.Equal(t, "client.pem", consulEntry.Retriever.GetClientCertPath())
+	assert.Equal(t, "client-key.pem", consulEntry.Retriever.GetClientKeyPath())
+	assert.Equal(t, "*::*::*::*", consulEntry.Retriever.GetLocale())
+	assert.Equal(t, "localhost:8500", consulEntry.Retriever.GetEndpoint())
+	assert.Equal(t, "root:consul", consulEntry.Retriever.(*CertRetrieverConsul).BasicAuth)
+	assert.Equal(t, "token", consulEntry.Retriever.(*CertRetrieverConsul).Token)
 
-	// etcd
-	assert.NotNil(t, entry.Retrievers["ut-etcd"])
-	assert.Equal(t, "server.pem", entry.Retrievers["ut-etcd"].(*CertRetrieverETCD).ServerCertPath)
-	assert.Equal(t, "server-key.pem", entry.Retrievers["ut-etcd"].(*CertRetrieverETCD).ServerKeyPath)
-	assert.Equal(t, "client.pem", entry.Retrievers["ut-etcd"].(*CertRetrieverETCD).ClientCertPath)
-	assert.Equal(t, "client-key.pem", entry.Retrievers["ut-etcd"].(*CertRetrieverETCD).ClientKeyPath)
-	assert.Equal(t, "*::*::*::*", entry.Retrievers["ut-etcd"].(*CertRetrieverETCD).Locale)
-	assert.Equal(t, "root:etcd", entry.Retrievers["ut-etcd"].(*CertRetrieverETCD).BasicAuth)
-	assert.Equal(t, "localhost:2379", entry.Retrievers["ut-etcd"].(*CertRetrieverETCD).Endpoint)
+	// remote file store entry
+	remoteFsEntry := entries["ut-remoteFs"]
+	assert.NotNil(t, remoteFsEntry)
+	assert.Equal(t, "ut-remoteFs", remoteFsEntry.GetName())
+	assert.Equal(t, "remoteFs", remoteFsEntry.Retriever.GetProvider())
+	assert.Equal(t, "server.pem", remoteFsEntry.Retriever.GetServerCertPath())
+	assert.Equal(t, "server-key.pem", remoteFsEntry.Retriever.GetServerKeyPath())
+	assert.Equal(t, "client.pem", remoteFsEntry.Retriever.GetClientCertPath())
+	assert.Equal(t, "client-key.pem", remoteFsEntry.Retriever.GetClientKeyPath())
+	assert.Equal(t, "*::*::*::*", remoteFsEntry.Retriever.GetLocale())
+	assert.Equal(t, "localhost:8080", remoteFsEntry.Retriever.GetEndpoint())
+	assert.Equal(t, "root:remote", remoteFsEntry.Retriever.(*CertRetrieverRemoteFs).BasicAuth)
 
-	// consul
-	assert.NotNil(t, entry.Retrievers["ut-consul"])
-	assert.Equal(t, "server.pem", entry.Retrievers["ut-consul"].(*CertRetrieverConsul).ServerCertPath)
-	assert.Equal(t, "server-key.pem", entry.Retrievers["ut-consul"].(*CertRetrieverConsul).ServerKeyPath)
-	assert.Equal(t, "client.pem", entry.Retrievers["ut-consul"].(*CertRetrieverConsul).ClientCertPath)
-	assert.Equal(t, "client-key.pem", entry.Retrievers["ut-consul"].(*CertRetrieverConsul).ClientKeyPath)
-	assert.Equal(t, "*::*::*::*", entry.Retrievers["ut-consul"].(*CertRetrieverConsul).Locale)
-	assert.Equal(t, "root:consul", entry.Retrievers["ut-consul"].(*CertRetrieverConsul).BasicAuth)
-	assert.Equal(t, "localhost:8500", entry.Retrievers["ut-consul"].(*CertRetrieverConsul).Endpoint)
-	assert.Equal(t, "token", entry.Retrievers["ut-consul"].(*CertRetrieverConsul).Token)
-
-	// remote file store
-	assert.NotNil(t, entry.Retrievers["ut-remote-file-store"])
-	assert.Equal(t, "server.pem", entry.Retrievers["ut-remote-file-store"].(*CertRetrieverRemoteFileStore).ServerCertPath)
-	assert.Equal(t, "server-key.pem", entry.Retrievers["ut-remote-file-store"].(*CertRetrieverRemoteFileStore).ServerKeyPath)
-	assert.Equal(t, "client.pem", entry.Retrievers["ut-remote-file-store"].(*CertRetrieverRemoteFileStore).ClientCertPath)
-	assert.Equal(t, "client-key.pem", entry.Retrievers["ut-remote-file-store"].(*CertRetrieverRemoteFileStore).ClientKeyPath)
-	assert.Equal(t, "*::*::*::*", entry.Retrievers["ut-remote-file-store"].(*CertRetrieverRemoteFileStore).Locale)
-	assert.Equal(t, "root:remote", entry.Retrievers["ut-remote-file-store"].(*CertRetrieverRemoteFileStore).BasicAuth)
-	assert.Equal(t, "localhost:8080", entry.Retrievers["ut-remote-file-store"].(*CertRetrieverRemoteFileStore).Endpoint)
+	GlobalAppCtx.clearCertEntries()
 }
 
 func TestRegisterCertEntry_WithoutOptions(t *testing.T) {
 	entry := RegisterCertEntry()
 
 	assert.NotNil(t, entry)
-	assert.NotNil(t, GlobalAppCtx.GetCertEntry())
+	entries := GlobalAppCtx.ListCertEntries()
+
+	assert.Equal(t, len(entries), 1)
 
 	assert.NotNil(t, entry.EventLoggerEntry)
 	assert.NotNil(t, entry.ZapLoggerEntry)
-	assert.Equal(t, CertEntryName, entry.entryName)
-	assert.Equal(t, CertEntryType, entry.entryType)
-	assert.Equal(t, len(entry.Stores), 0)
-	assert.Equal(t, len(entry.Retrievers), 0)
+	assert.Equal(t, CertEntryName, entry.EntryName)
+	assert.Equal(t, CertEntryType, entry.EntryType)
+	assert.Nil(t, entry.Retriever)
+	assert.Nil(t, entry.Store)
+
+	GlobalAppCtx.clearCertEntries()
 }
 
 func TestRegisterCertEntry_HappyCase(t *testing.T) {
 	zapLoggerEntry := NoopZapLoggerEntry()
 	eventLoggerEntry := NoopEventLoggerEntry()
-	retriever := &CertRetrieverLocal{
-		Name: "ut",
-	}
+	retriever := &CertRetrieverLocalFs{}
 
 	entry := RegisterCertEntry(
+		WithNameCert("ut"),
 		WithZapLoggerEntryCert(zapLoggerEntry),
 		WithEventLoggerEntryCert(eventLoggerEntry),
 		WithCertRetrieverCert(retriever))
 
 	assert.NotNil(t, entry)
-	assert.NotNil(t, GlobalAppCtx.GetCertEntry())
 
 	assert.Equal(t, eventLoggerEntry, entry.EventLoggerEntry)
 	assert.Equal(t, zapLoggerEntry, entry.ZapLoggerEntry)
-	assert.Equal(t, CertEntryName, entry.entryName)
-	assert.Equal(t, CertEntryType, entry.entryType)
-	assert.Equal(t, len(entry.Stores), 0)
-	assert.Equal(t, len(entry.Retrievers), 1)
+	assert.Equal(t, "ut", entry.EntryName)
+	assert.Equal(t, CertEntryType, entry.EntryType)
+	assert.Equal(t, retriever, entry.Retriever)
+	assert.Nil(t, entry.Store)
 
-	delete(GlobalAppCtx.BasicEntries, "ut")
+	GlobalAppCtx.clearCertEntries()
 }
 
 func TestCertEntry_Bootstrap_HappyCase(t *testing.T) {
@@ -379,6 +381,8 @@ func TestCertEntry_Bootstrap_HappyCase(t *testing.T) {
 	entry.Bootstrap(context.Background())
 
 	assert.Equal(t, 1, retriever.called)
+
+	GlobalAppCtx.clearCertEntries()
 }
 
 func TestCertEntry_Interrupt_HappyCase(t *testing.T) {
@@ -393,16 +397,22 @@ func TestCertEntry_String_HappyCase(t *testing.T) {
 	entry := RegisterCertEntry()
 
 	assert.NotEmpty(t, entry.String())
+
+	GlobalAppCtx.clearCertEntries()
 }
 
 func TestCertEntry_GetName_HappyCase(t *testing.T) {
 	entry := RegisterCertEntry()
 	assert.Equal(t, CertEntryName, entry.GetName())
+
+	GlobalAppCtx.clearCertEntries()
 }
 
 func TestCertEntry_GetType_HappyCase(t *testing.T) {
 	entry := RegisterCertEntry()
 	assert.Equal(t, CertEntryType, entry.GetType())
+
+	GlobalAppCtx.clearCertEntries()
 }
 
 type FakeRetriever struct {
@@ -418,6 +428,30 @@ func (retriever *FakeRetriever) GetName() string {
 	return "fake-retriever"
 }
 
-func (retriever *FakeRetriever) GetType() string {
+func (retriever *FakeRetriever) GetProvider() string {
 	return "fake-retriever"
+}
+
+func (retriever *FakeRetriever) GetServerCertPath() string {
+	return "fake-server-cert-path"
+}
+
+func (retriever *FakeRetriever) GetServerKeyPath() string {
+	return "fake-server-key-path"
+}
+
+func (retriever *FakeRetriever) GetClientCertPath() string {
+	return "fake-client-cert-path"
+}
+
+func (retriever *FakeRetriever) GetClientKeyPath() string {
+	return "fake-client-key-path"
+}
+
+func (retriever *FakeRetriever) GetEndpoint() string {
+	return "fake-endpoint"
+}
+
+func (retriever *FakeRetriever) GetLocale() string {
+	return "fake-locale"
 }

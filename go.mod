@@ -12,9 +12,10 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/prometheus/client_golang v1.8.0
 	github.com/prometheus/client_model v0.2.0
-	github.com/rookie-ninja/rk-common v1.0.8
-	github.com/rookie-ninja/rk-logger v1.0.9
-	github.com/rookie-ninja/rk-query v1.0.12-0.20210421214407-9e7ec1d453d7
+	github.com/rookie-ninja/rk-common v1.0.9-0.20210512203920-9919edd253b8
+	github.com/rookie-ninja/rk-logger v1.0.10-0.20210504211402-09ce5e5e3697
+	github.com/rookie-ninja/rk-query v1.0.12-0.20210513195857-ad5b75649952
+	github.com/shirou/gopsutil/v3 v3.21.4
 	github.com/spf13/afero v1.3.3 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1
@@ -25,7 +26,6 @@ require (
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0 // indirect
 	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
 	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb // indirect
-	golang.org/x/sys v0.0.0-20201024232916-9f70ab9862d5 // indirect
 	golang.org/x/tools v0.0.0-20201014170642-d1624618ad65 // indirect
 	google.golang.org/grpc v1.37.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
