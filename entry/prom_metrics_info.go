@@ -165,7 +165,7 @@ func getPathAndResCode(metricsPB *dto.Metric) (string, string) {
 			path = metricsPB.Label[i].GetValue()
 		}
 
-		if metricsPB.Label[i].GetName() == "res_code" {
+		if metricsPB.Label[i].GetName() == "resCode" {
 			resCode = metricsPB.Label[i].GetValue()
 		}
 	}
