@@ -6,7 +6,6 @@ package rkentry
 
 import (
 	"context"
-	"fmt"
 	"github.com/rookie-ninja/rk-logger"
 	"github.com/rookie-ninja/rk-query"
 	"github.com/spf13/viper"
@@ -39,8 +38,6 @@ func TestGlobalAppCtx_init(t *testing.T) {
 	// validate config entries.
 	configEntries := GlobalAppCtx.ListConfigEntries()
 	assert.Equal(t, 0, len(configEntries))
-
-	fmt.Println(configEntries)
 
 	// validate zap logger entries.
 	zapEntries := GlobalAppCtx.ListZapLoggerEntries()

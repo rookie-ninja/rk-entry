@@ -7,7 +7,6 @@ package rkentry
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"os"
@@ -399,7 +398,6 @@ func assertPanic(t *testing.T) {
 func assertNotPanic(t *testing.T) {
 	if r := recover(); r != nil {
 		// Expect panic to be called with non nil error
-		fmt.Println(r)
 		assert.True(t, false)
 	} else {
 		// This should never be called in case of a bug
