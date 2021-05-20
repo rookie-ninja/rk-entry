@@ -158,11 +158,11 @@ func WithMaintainersAppInfo(maintainers ...string) AppInfoEntryOption {
 func RegisterAppInfoEntriesFromConfig(configFilePath string) map[string]Entry {
 	res := make(map[string]Entry)
 
-	// 1: unmarshal user provided config into boot config struct
+	// 1: Unmarshal user provided config into boot config struct
 	config := &BootConfigAppInfo{}
 	rkcommon.UnmarshalBootConfig(configFilePath, config)
 
-	// 2: init rk entry from config
+	// 2: Init rk entry from config
 	entry := RegisterAppInfoEntry(
 		WithAppNameAppInfo(config.RK.AppName),
 		WithVersionAppInfo(config.RK.Version),
@@ -206,7 +206,7 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 		opts[i](entry)
 	}
 
-	// override elements which should not be nil
+	// Override elements which should not be nil
 	if len(entry.Keywords) < 1 {
 		entry.Keywords = []string{}
 	}
@@ -219,7 +219,7 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 		entry.Maintainers = []string{}
 	}
 
-	// override elements which should not be empty
+	// Override elements which should not be empty
 	if len(entry.AppName) < 1 {
 		entry.AppName = AppNameDefault
 	}
@@ -238,7 +238,7 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 
 	GlobalAppCtx.SetAppInfoEntry(entry)
 
-	// override default event logger entry in order to use correct application name.
+	// Override default event logger entry in order to use correct application name.
 	// this is special case for default event logger entry.
 	eventLoggerConfig := GlobalAppCtx.GetEventLoggerEntryDefault().LoggerConfig
 	eventLogger, _ := eventLoggerConfig.Build()
@@ -254,32 +254,32 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 	return entry
 }
 
-// No op
+// No op.
 func (entry *AppInfoEntry) Bootstrap(context.Context) {
 	// no op
 }
 
-// No op
+// No op.
 func (entry *AppInfoEntry) Interrupt(context.Context) {
-	// no op
+	// No op
 }
 
-// Return name of entry
+// Return name of entry.
 func (entry *AppInfoEntry) GetName() string {
 	return entry.EntryName
 }
 
-// Return type of entry
+// Return type of entry.
 func (entry *AppInfoEntry) GetType() string {
 	return entry.EntryType
 }
 
-// Return description of entry
+// Return description of entry.
 func (entry *AppInfoEntry) GetDescription() string {
 	return entry.EntryDescription
 }
 
-// Return string of entry
+// Return string of entry.
 func (entry *AppInfoEntry) String() string {
 	if bytes, err := json.Marshal(entry); err != nil {
 		return "{}"

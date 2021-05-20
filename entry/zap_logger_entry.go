@@ -94,21 +94,21 @@ func WithLoggerZap(logger *zap.Logger, loggerConfig *zap.Config, lumberjackConfi
 func RegisterZapLoggerEntriesWithConfig(configFilePath string) map[string]Entry {
 	res := make(map[string]Entry)
 
-	// 1: unmarshal user provided config into boot config struct
+	// 1: Unmarshal user provided config into boot config struct
 	config := &BootConfigZapLogger{}
 	rkcommon.UnmarshalBootConfig(configFilePath, config)
 
-	// 2: init zap logger entries with boot config
+	// 2: Init zap logger entries with boot config
 	for i := range config.ZapLogger {
 		element := config.ZapLogger[i]
 
-		// assign default zap config and lumberjack config
+		// Assign default zap config and lumberjack config
 		appLoggerConfig := rklogger.NewZapStdoutConfig()
 		appLoggerLumberjackConfig := rklogger.NewLumberjackConfigDefault()
-		// override with user provided zap config and lumberjack config
+		// Override with user provided zap config and lumberjack config
 		rkcommon.OverrideZapConfig(appLoggerConfig, rklogger.TransformToZapConfig(element.Zap))
 		rkcommon.OverrideLumberjackConfig(appLoggerLumberjackConfig, element.Lumberjack)
-		// create app logger with config
+		// Create app logger with config
 		appLogger, err := rklogger.NewZapLoggerWithConf(appLoggerConfig, appLoggerLumberjackConfig)
 		if err != nil {
 			rkcommon.ShutdownWithError(err)
@@ -174,7 +174,7 @@ func (entry *ZapLoggerEntry) GetType() string {
 	return entry.EntryType
 }
 
-// Return description of entry
+// Return description of entry.
 func (entry *ZapLoggerEntry) GetDescription() string {
 	return entry.EntryDescription
 }

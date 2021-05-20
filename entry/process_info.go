@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// Process information for a running application
+// Process information for a running application.
 // 1: AppName - Name of current application set by user
 // 2: Version - Version of application set by user
 // 3: Description - Description of application set by user
@@ -20,7 +20,7 @@ import (
 // 5: HomeUrl - Home URL of application set by user
 // 6: IconUrl - Icon URL of application set by user
 // 7: DocsUrl; - Document URL list of application set by user
-// 8: Maintainers - Maintainers of applicaiton set by user
+// 8: Maintainers - Maintainers of application set by user
 // 9: UID - user id which runs process
 // 10: GID - group id which runs process
 // 11: Username - username which runs process
@@ -54,7 +54,7 @@ type ProcessInfo struct {
 
 func NewProcessInfo() *ProcessInfo {
 	u, err := user.Current()
-	// assign unknown value to user in order to prevent panic
+	// Assign unknown value to user in order to prevent panic
 	if err != nil {
 		u = &user.User{
 			Name: "unknown",

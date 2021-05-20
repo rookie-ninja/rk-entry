@@ -1608,7 +1608,10 @@ Request metrics to struct from prometheus summary collector.
 ##### Fields
 | Element | Description | Default | JSON key |
 | ------ | ------ | ------ | ------ |
-| Path | API path | Based on system | path |
+| RestPath | Restful API path | Based on user  | restPath |
+| RestMethod | Restful API method | Based on user  | restMethod |
+| GrpcService | Grpc service | Based on user  | grpcService |
+| GrpcMethod | Grpc method | Based on user  | grpcMethod |
 | ElapsedNanoP50 | Quantile of p50 with time elapsed | based on prometheus collector | elapsedNanoP50 |
 | ElapsedNanoP90 | Quantile of p90 with time elapsed | based on prometheus collector | elapsedNanoP90 |
 | ElapsedNanoP99 | Quantile of p99 with time elapsed | based on prometheus collector | elapsedNanoP99 |
@@ -1619,6 +1622,296 @@ Request metrics to struct from prometheus summary collector.
 ##### Access PromMetricsInfo
 ```go
 fmt.Println(rkcommon.ConvertStructToJSONPretty(rkentry.NewPromMetricsInfo(<your prometheus summary vector>)))
+```
+
+- Response from rk-gin
+```json
+{
+  "metrics": [
+    {
+      "restPath": "/sw/",
+      "restMethod": "GET",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 7789178,
+      "elapsedNanoP90": 7789178,
+      "elapsedNanoP99": 7789178,
+      "elapsedNanoP999": 7789178,
+      "count": 1,
+      "resCode": [
+        {
+          "resCode": "200",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "restPath": "/rk/v1/apis",
+      "restMethod": "",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "count": 0,
+      "resCode": []
+    },
+    {
+      "restPath": "/rk/v1/configs",
+      "restMethod": "",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "count": 0,
+      "resCode": []
+    },
+    {
+      "restPath": "/rk/v1/certs",
+      "restMethod": "",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "count": 0,
+      "resCode": []
+    },
+    {
+      "restPath": "/rk/v1/gc",
+      "restMethod": "",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "count": 0,
+      "resCode": []
+    },
+    {
+      "restPath": "/rk/v1/info",
+      "restMethod": "",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "count": 0,
+      "resCode": []
+    },
+    {
+      "restPath": "/rk/v1/sys",
+      "restMethod": "",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "count": 0,
+      "resCode": []
+    },
+    {
+      "restPath": "/rk/v1/req",
+      "restMethod": "",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "count": 0,
+      "resCode": []
+    },
+    {
+      "restPath": "/rk/v1/entries",
+      "restMethod": "",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "count": 0,
+      "resCode": []
+    },
+    {
+      "restPath": "/rk/v1/logs",
+      "restMethod": "",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "count": 0,
+      "resCode": []
+    },
+    {
+      "restPath": "/metrics",
+      "restMethod": "",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "count": 0,
+      "resCode": []
+    },
+    {
+      "restPath": "/  /healthy",
+      "restMethod": "",
+      "grpcService": "",
+      "grpcMethod": "",
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "count": 0,
+      "resCode": []
+    }
+  ]
+}
+```
+
+- Response from rk-grpc
+```json
+{
+  "metrics": [
+    {
+      "count": 1,
+      "elapsedNanoP50": 331538,
+      "elapsedNanoP90": 331538,
+      "elapsedNanoP99": 331538,
+      "elapsedNanoP999": 331538,
+      "grpcMethod": "Req",
+      "grpcService": "rk.api.v1.RkCommonService",
+      "resCode": [
+        {
+          "count": 1,
+          "resCode": "OK"
+        }
+      ],
+      "restMethod": "GET",
+      "restPath": "/rk/v1/req"
+    },
+    {
+      "count": 0,
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "grpcMethod": "Healthy",
+      "grpcService": "rk.api.v1.RkCommonService",
+      "resCode": [],
+      "restMethod": "",
+      "restPath": ""
+    },
+    {
+      "count": 0,
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "grpcMethod": "Apis",
+      "grpcService": "rk.api.v1.RkCommonService",
+      "resCode": [],
+      "restMethod": "",
+      "restPath": ""
+    },
+    {
+      "count": 0,
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "grpcMethod": "Logs",
+      "grpcService": "rk.api.v1.RkCommonService",
+      "resCode": [],
+      "restMethod": "",
+      "restPath": ""
+    },
+    {
+      "count": 0,
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "grpcMethod": "Gc",
+      "grpcService": "rk.api.v1.RkCommonService",
+      "resCode": [],
+      "restMethod": "",
+      "restPath": ""
+    },
+    {
+      "count": 0,
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "grpcMethod": "Info",
+      "grpcService": "rk.api.v1.RkCommonService",
+      "resCode": [],
+      "restMethod": "",
+      "restPath": ""
+    },
+    {
+      "count": 0,
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "grpcMethod": "Configs",
+      "grpcService": "rk.api.v1.RkCommonService",
+      "resCode": [],
+      "restMethod": "",
+      "restPath": ""
+    },
+    {
+      "count": 0,
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "grpcMethod": "Sys",
+      "grpcService": "rk.api.v1.RkCommonService",
+      "resCode": [],
+      "restMethod": "",
+      "restPath": ""
+    },
+    {
+      "count": 0,
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "grpcMethod": "Entries",
+      "grpcService": "rk.api.v1.RkCommonService",
+      "resCode": [],
+      "restMethod": "",
+      "restPath": ""
+    },
+    {
+      "count": 0,
+      "elapsedNanoP50": 0,
+      "elapsedNanoP90": 0,
+      "elapsedNanoP99": 0,
+      "elapsedNanoP999": 0,
+      "grpcMethod": "Certs",
+      "grpcService": "rk.api.v1.RkCommonService",
+      "resCode": [],
+      "restMethod": "",
+      "restPath": ""
+    }
+  ]
+}
 ```
 
 ## Contributing

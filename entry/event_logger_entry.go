@@ -110,11 +110,11 @@ func WithEventFactoryEvent(fac *rkquery.EventFactory) EventLoggerEntryOption {
 func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entry {
 	res := make(map[string]Entry)
 
-	// 1: unmarshal user provided config into boot config struct
+	// 1: Unmarshal user provided config into boot config struct
 	config := &BootConfigEventLogger{}
 	rkcommon.UnmarshalBootConfig(configFilePath, config)
 
-	// deal with application name specifically in case of empty string
+	// Deal with application name specifically in case of empty string
 	if len(config.RK.AppName) < 1 {
 		config.RK.AppName = AppNameDefault
 	}
@@ -123,17 +123,17 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 		config.RK.Version = "unknown"
 	}
 
-	// 2: init event logger entries with boot config
+	// 2: Init event logger entries with boot config
 	for i := range config.EventLogger {
 		element := config.EventLogger[i]
 
 		var eventFactory *rkquery.EventFactory
-		// assign default zap config and lumberjack config
+		// Assign default zap config and lumberjack config
 		eventLoggerConfig := rklogger.NewZapEventConfig()
 		eventLoggerLumberjackConfig := rklogger.NewLumberjackConfigDefault()
-		// override with user provided zap config and lumberjack config
+		// Override with user provided zap config and lumberjack config
 		rkcommon.OverrideLumberjackConfig(eventLoggerLumberjackConfig, element.Lumberjack)
-		// if output paths were provided by user, we will override it which means <stdout> would be omitted
+		// If output paths were provided by user, we will override it which means <stdout> would be omitted
 		if len(element.OutputPaths) > 0 {
 			eventLoggerConfig.OutputPaths = element.OutputPaths
 		}
@@ -249,12 +249,12 @@ func (entry *EventLoggerEntry) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// Not supported
+// Not supported.
 func (entry *EventLoggerEntry) UnmarshalJSON([]byte) error {
 	return nil
 }
 
-// Return description of entry
+// Return description of entry.
 func (entry *EventLoggerEntry) GetDescription() string {
 	return entry.EntryDescription
 }

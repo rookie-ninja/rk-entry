@@ -34,36 +34,36 @@ var (
 		shutdownHooks:      make(map[string]ShutdownHook),
 		userValues:         make(map[string]interface{}),
 	}
-	// list of entry registration function
+	// List of entry registration function
 	entryRegFuncList = make([]EntryRegFunc, 0)
 
-	// list of internal entry registration function
+	// List of internal entry registration function
 	internalEntryRegFuncList = make([]EntryRegFunc, 0)
 )
 
 type ShutdownHook func()
 
-// init global app context with bellow fields.
+// Init global app context with bellow fields.
 // 1: Default zap logger entry with name of "zap-logger-default" whose output path is stdout.
 //    Please refer to rklogger.NewZapStdoutConfig.
 // 2: Default event logger entry with name of "event-logger-default" whose output path is stdout with RK format.
 //    Please refer to rkquery.NewZapEventConfig.
 // 3: RK Entry registration function would be registered.
 func init() {
-	// init application logger with zap logger.
+	// Init application logger with zap logger.
 	defaultZapLoggerConfig := rklogger.NewZapStdoutConfig()
 	defaultZapLogger, _ := defaultZapLoggerConfig.Build()
 
-	// add application logger of zap logger into GlobalAppCtx.
+	// Add application logger of zap logger into GlobalAppCtx.
 	RegisterZapLoggerEntry(
 		WithNameZap(DefaultZapLoggerEntryName),
 		WithLoggerZap(defaultZapLogger, defaultZapLoggerConfig, nil))
 
-	// init event logger.
+	// Init event logger.
 	defaultEventLoggerConfig := rklogger.NewZapEventConfig()
 	defaultEventLogger, _ := defaultEventLoggerConfig.Build()
 
-	// add event logger with zap logger injected into GlobalAppCtx.
+	// Add event logger with zap logger injected into GlobalAppCtx.
 	eventLoggerEntry := RegisterEventLoggerEntry(
 		WithNameEvent(DefaultEventLoggerEntryName),
 		WithEventFactoryEvent(
@@ -72,7 +72,7 @@ func init() {
 
 	eventLoggerEntry.LoggerConfig = defaultEventLoggerConfig
 
-	// register rk style entries here including RKEntry which contains basic information,
+	// Register rk style entries here including RKEntry which contains basic information,
 	// and application logger and event logger, otherwise, we will have import cycle
 	internalEntryRegFuncList = append(internalEntryRegFuncList,
 		RegisterAppInfoEntriesFromConfig,

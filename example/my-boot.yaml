@@ -1,6 +1,6 @@
 ---
 rk: # NOT required
-  appName: rk-example-entry           # Optional, default: "rkapp"
+  appName: rk-example-entry           # Optional, default: "rkApp"
   version: v0.0.1                     # Optional, default: "v0.0.0"
   description: "this is description"  # Optional, default: ""
   keywords: ["rk", "golang"]          # Optional, default: []
@@ -64,22 +64,22 @@ config:
     description: "Description of entry"   # Optional
     path: example/my-config.yaml          # Required
 cert:
-#  - name: "etcd-cert"                       # Required
-#    description: "Description of entry"     # Optional
-#    provider: "etcd"                        # Required, etcd, consul, localFs, remoteFs are supported options
-#    locale: "*::*::*::*"                    # Optional, default: *::*::*::*
-#    endpoint: "localhost:2379"              # Required, http://x.x.x.x or x.x.x.x both acceptable.
-#    basicAuth: "root:etcd"                  # Optional, default: "", basic auth for Consul server, like <user:pass>
-#    serverCertPath: "serverCert"            # Optional, default: "", key of value in etcd
-#    serverKeyPath: "serverKey"              # Optional, default: "", key of value in etcd
-#    clientCertPath: "clientCert"            # Optional, default: "", key of value in etcd
-#    clientKeyPath: "clientKey"              # Optional, default: "", key of value in etcd
-  - name: "local-cert"                       # Required
-    description: "Description of entry"      # Optional
-    provider: "localFs"                      # Required, etcd, consul, localFs, remoteFs are supported options
-    locale: "*::*::*::*"                     # Optional, default: *::*::*::*
-    serverCertPath: "example/server.pem"     # Optional, default: "", path of certificate on local FS
-    serverKeyPath: "example/server-key.pem"  # Optional, default: "", path of certificate on local FS
+#  - name: "etcd-cert"                        # Required
+#    description: "Description of entry"      # Optional
+#    provider: "etcd"                         # Required, etcd, consul, localFs, remoteFs are supported options
+#    locale: "*::*::*::*"                     # Optional, default: *::*::*::*
+#    endpoint: "localhost:2379"               # Required, http://x.x.x.x or x.x.x.x both acceptable.
+#    basicAuth: "root:etcd"                   # Optional, default: "", basic auth for Consul server, like <user:pass>
+#    serverCertPath: "serverCert"             # Optional, default: "", key of value in etcd
+#    serverKeyPath: "serverKey"               # Optional, default: "", key of value in etcd
+#    clientCertPath: "clientCert"             # Optional, default: "", key of value in etcd
+#    clientKeyPath: "clientKey"               # Optional, default: "", key of value in etcd
+  - name: "local-cert"                        # Required
+    description: "Description of entry"       # Optional
+    provider: "localFs"                       # Required, etcd, consul, localFs, remoteFs are supported options
+    locale: "*::*::*::*"                      # Optional, default: *::*::*::*
+    serverCertPath: "example/server.pem"      # Optional, default: "", path of certificate on local FS
+    serverKeyPath: "example/server-key.pem"   # Optional, default: "", path of certificate on local FS
 #    clientCertPath: "example/client.pem"     # Optional, default: "", path of certificate on local FS
 #    clientKeyPath: "example/client.pem"      # Optional, default: "", path of certificate on local FS
 #  - name: "consul-cert"                      # Required

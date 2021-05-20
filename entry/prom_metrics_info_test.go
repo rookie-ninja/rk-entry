@@ -18,7 +18,7 @@ var (
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001, 0.999: 0.0001},
 	}
 
-	labelKeys   = []string{"path", "resCode"}
+	labelKeys   = []string{"restMethod", "resCode"}
 	summaryVec  = prometheus.NewSummaryVec(opts, labelKeys)
 	observer, _ = summaryVec.GetMetricWithLabelValues("GET", "200")
 )
@@ -32,7 +32,7 @@ func TestNewPromMetricsInfo_HappyCase(t *testing.T) {
 	metric := metrics[0]
 
 	assert.Equal(t, uint64(2), metric.Count)
-	assert.Equal(t, "GET", metric.Path)
+	assert.Equal(t, "GET", metric.RestMethod)
 	assert.Len(t, metric.ResCode, 1)
 	assert.Equal(t, "200", metric.ResCode[0].ResCode)
 	assert.Equal(t, uint64(2), metric.ResCode[0].Count)

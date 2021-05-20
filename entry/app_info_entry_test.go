@@ -18,7 +18,7 @@ import (
 func TestAppInfoEntryDefault_HappyCase(t *testing.T) {
 	entry := AppInfoEntryDefault()
 
-	// assert default values
+	// Assert default values
 	assert.NotNil(t, entry)
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
@@ -166,9 +166,9 @@ rk:
   maintainers: ["ut-maintainer"]
   docsUrl: ["ut-docUrl"]
 `
-	// create bootstrap config file at ut temp dir
+	// Create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
-	// register entries with config file
+	// Register entries with config file
 	entries := RegisterAppInfoEntriesFromConfig(configFilePath)
 
 	assert.Len(t, entries, 1)
@@ -200,9 +200,9 @@ rk:
   maintainers: ["ut-maintainer"]
   docsUrl: ["ut-docsUrl"]
 `
-	// create bootstrap config file at ut temp dir
+	// Create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
-	// register entries with config file
+	// Register entries with config file
 	RegisterAppInfoEntriesFromConfig(configFilePath)
 }
 
@@ -213,9 +213,9 @@ func TestRegisterAppInfoEntriesFromConfig_WithoutElements(t *testing.T) {
 ---
 rk:
 `
-	// create bootstrap config file at ut temp dir
+	// Create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
-	// register entries with config file
+	// Register entries with config file
 	entries := RegisterAppInfoEntriesFromConfig(configFilePath)
 
 	assert.Len(t, entries, 1)
@@ -238,9 +238,9 @@ func TestRegisterAppInfoEntriesFromConfig_WithoutRKSection(t *testing.T) {
 	configFile := `
 ---
 `
-	// create bootstrap config file at ut temp dir
+	// Create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
-	// register entries with config file
+	// Register entries with config file
 	entries := RegisterAppInfoEntriesFromConfig(configFilePath)
 
 	assert.Len(t, entries, 1)
@@ -272,9 +272,9 @@ rk:
   maintainers:
   docsURL:
 `
-	// create bootstrap config file at ut temp dir
+	// Create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
-	// register entries with config file
+	// Register entries with config file
 	entries := RegisterAppInfoEntriesFromConfig(configFilePath)
 
 	assert.Len(t, entries, 1)
@@ -370,7 +370,7 @@ func TestAppInfoEntry_String_HappyCase(t *testing.T) {
 
 	m := make(map[string]interface{})
 
-	// assert unmarshalling without error
+	// Assert unmarshalling without error
 	assert.Nil(t, json.Unmarshal([]byte(str), &m))
 
 	assert.Equal(t, AppInfoEntryName, m["entryName"])
@@ -398,11 +398,11 @@ func assertPanic(t *testing.T) {
 
 func assertNotPanic(t *testing.T) {
 	if r := recover(); r != nil {
-		// expect panic to be called with non nil error
+		// Expect panic to be called with non nil error
 		fmt.Println(r)
 		assert.True(t, false)
 	} else {
-		// this should never be called in case of a bug
+		// This should never be called in case of a bug
 		assert.True(t, true)
 	}
 }

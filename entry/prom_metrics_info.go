@@ -7,18 +7,25 @@ package rkentry
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
+	"path"
 )
 
 // Request metrics to struct from prometheus collector
-// 1: Path - API path
-// 2: ElapsedNanoP50 - quantile of p50 with time elapsed
-// 3: ElapsedNanoP90 - quantile of p90 with time elapsed
-// 4: ElapsedNanoP99 - quantile of p99 with time elapsed
-// 5: ElapsedNanoP999 - quantile of p999 with time elapsed
-// 6: Count - total number of requests
-// 7: ResCode - response code labels
+// 1: RestPath - API path of restful service
+// 2: RestMethod - API method of restful service
+// 3: GrpcService - Grpc service
+// 4: GrpcMethod - Grpc method
+// 5: ElapsedNanoP50 - quantile of p50 with time elapsed
+// 6: ElapsedNanoP90 - quantile of p90 with time elapsed
+// 7: ElapsedNanoP99 - quantile of p99 with time elapsed
+// 8: ElapsedNanoP999 - quantile of p999 with time elapsed
+// 9: Count - total number of requests
+// 10: ResCode - response code labels
 type ReqMetricsRK struct {
-	Path            string       `json:"path" yaml:"path"`
+	RestPath        string       `json:"restPath" yaml:"restPath"`
+	RestMethod      string       `json:"restMethod" yaml:"restMethod"`
+	GrpcService     string       `json:"grpcService" yaml:"grpcService"`
+	GrpcMethod      string       `json:"grpcMethod" yaml:"grpcMethod"`
 	ElapsedNanoP50  float64      `json:"elapsedNanoP50" yaml:"elapsedNanoP50"`
 	ElapsedNanoP90  float64      `json:"elapsedNanoP90" yaml:"elapsedNanoP90"`
 	ElapsedNanoP99  float64      `json:"elapsedNanoP99" yaml:"elapsedNanoP99"`
@@ -37,37 +44,38 @@ type ResCodeRK struct {
 func NewPromMetricsInfo(sumCollector *prometheus.SummaryVec) []*ReqMetricsRK {
 	res := make([]*ReqMetricsRK, 0)
 
-	// request total by path
-	// why we need this? since prometheus will record each summary by label
+	// Request total by path.
+	// Why we need this? since prometheus will record each summary by label
 	// and path will occur multiple times with other labels like res_code
 	var reqMetricsMap = make(map[string]*ReqMetricsRK)
 
-	// get counters from rk_gin_log interceptor
+	// Get counters from interceptor
 	// counters would be empty if metrics option was turned off
 	// from config file
 	channel := make(chan prometheus.Metric)
 
-	// collect metrics from prometheus client
+	// Collect metrics from prometheus client
 	go func() {
 		sumCollector.Collect(channel)
 		close(channel)
 	}()
 
-	// iterate metrics
+	// Iterate metrics
 	for element := range channel {
-		// write to family
+		// Write to family
 		metricsPB := &dto.Metric{}
 		if err := element.Write(metricsPB); err != nil {
 			continue
 		}
 
-		// iterate labels
-		path, code := getPathAndResCode(metricsPB)
-		// we got path, let's continue
-		if len(path) > 0 {
+		// Iterate labels
+		grpcService, grpcMethod, restPath, restMethod, resCode := getPathMethodAndResCode(metricsPB)
+		key := path.Join(grpcService, grpcMethod, restMethod, restPath)
+		// We got path, let's continue
+		if len(key) > 0 {
 			// contains the same path?
-			if val, ok := reqMetricsMap[path]; ok {
-				// 1: we meet request summary with same path add value to it
+			if val, ok := reqMetricsMap[key]; ok {
+				// 1: We meet request summary with same path add value to it
 				for j := range metricsPB.GetSummary().GetQuantile() {
 					switch quantile := metricsPB.GetSummary().Quantile[j].GetQuantile(); quantile {
 					case 0.5:
@@ -99,15 +107,15 @@ func NewPromMetricsInfo(sumCollector *prometheus.SummaryVec) []*ReqMetricsRK {
 					}
 				}
 
-				// 2: add total count
+				// 2: Add total count
 				val.Count += metricsPB.GetSummary().GetSampleCount()
 
-				// 3: add res code
+				// 3: Add res code
 				for i := range val.ResCode {
-					if val.ResCode[i].ResCode != code {
+					if val.ResCode[i].ResCode != resCode {
 						// add it if different
 						val.ResCode = append(val.ResCode, &ResCodeRK{
-							ResCode: code,
+							ResCode: resCode,
 							Count:   metricsPB.GetSummary().GetSampleCount(),
 						})
 					} else {
@@ -116,13 +124,16 @@ func NewPromMetricsInfo(sumCollector *prometheus.SummaryVec) []*ReqMetricsRK {
 				}
 			} else {
 				rk := &ReqMetricsRK{
-					Path:    path,
-					ResCode: make([]*ResCodeRK, 0),
+					GrpcService: grpcService,
+					GrpcMethod:  grpcMethod,
+					RestMethod:  restMethod,
+					RestPath:    restPath,
+					ResCode:     make([]*ResCodeRK, 0),
 				}
-				// 1: record count of request
+				// 1: Record count of request
 				rk.Count += metricsPB.GetSummary().GetSampleCount()
 
-				// 2: iterate summary and extract quantile for P50, P90 and P99
+				// 2: Iterate summary and extract quantile for P50, P90 and P99
 				for j := range metricsPB.Summary.Quantile {
 					switch quantile := metricsPB.GetSummary().Quantile[j].GetQuantile(); quantile {
 					case 0.5:
@@ -138,13 +149,13 @@ func NewPromMetricsInfo(sumCollector *prometheus.SummaryVec) []*ReqMetricsRK {
 					}
 				}
 
-				// 3: add res code
+				// 3: Add res code
 				rk.ResCode = append(rk.ResCode, &ResCodeRK{
-					ResCode: code,
+					ResCode: resCode,
 					Count:   metricsPB.GetSummary().GetSampleCount(),
 				})
 
-				reqMetricsMap[path] = rk
+				reqMetricsMap[key] = rk
 			}
 		}
 	}
@@ -156,24 +167,27 @@ func NewPromMetricsInfo(sumCollector *prometheus.SummaryVec) []*ReqMetricsRK {
 	return res
 }
 
-// parse out path and response code
-func getPathAndResCode(metricsPB *dto.Metric) (string, string) {
-	var path = ""
-	var resCode = ""
+// Parse out path and response code.
+func getPathMethodAndResCode(metricsPB *dto.Metric) (grpcService, grpcMethod, restPath, restMethod, resCode string) {
 	for i := range metricsPB.Label {
-		if metricsPB.Label[i].GetName() == "path" {
-			path = metricsPB.Label[i].GetValue()
-		}
-
-		if metricsPB.Label[i].GetName() == "resCode" {
+		switch metricsPB.Label[i].GetName() {
+		case "grpcService":
+			grpcService = metricsPB.Label[i].GetValue()
+		case "restMethod":
+			restMethod = metricsPB.Label[i].GetValue()
+		case "restPath":
+			restPath = metricsPB.Label[i].GetValue()
+		case "grpcMethod":
+			grpcMethod = metricsPB.Label[i].GetValue()
+		case "resCode":
 			resCode = metricsPB.Label[i].GetValue()
 		}
 	}
 
-	return path, resCode
+	return grpcService, grpcMethod, restPath, restMethod, resCode
 }
 
-// calculate new quantile based on number
+// Calculate new quantile based on number.
 // formula:
 // newQuantile = oldQuantile*oldFraction + newQuantile*newFraction
 func calcNewQuantile(oldCount, newCount uint64, oldQuantile, newQuantile float64) float64 {
