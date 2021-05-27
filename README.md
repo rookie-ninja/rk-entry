@@ -842,15 +842,25 @@ Each viper instance combined with one configuration file.
 | EntryName | Name of entry. |
 | EntryType | Type of entry which is EventEntry. |
 | EntryDescription | Description of entry. |
+| Locale | <realm>::<region>::<az>::<domain> |
 | Path | File path of config file, could be either relative or absolute path. |
 | vp | Viper instance. |
 
 ##### YAML Hierarchy
 
-| Name | Description | Default |
-| ------ | ------ | ------ |
-| config.name | Name of config entry. | config-<random string> |
-| config.path | File path of config file, could be either relative or absolute path | "" | 
+| Name | Description | Required | Default |
+| ------ | ------ | ------ | ------ |
+| config.name | Name of config entry. | required | config-<random string> |
+| config.path | File path of config file, could be either relative or absolute path | required | "" | 
+| config.locale | <realm>::<region>::<az>::<domain> | required | "" |
+
+```yaml
+config:
+  - name: my-config                       # Required
+    locale: "*::*::*::*"                  # Required
+    path: example/my-config.yaml          # Required
+    description: "Description of entry"   # Optional
+```
 
 ##### Access ConfigEntry
 ```go
@@ -869,6 +879,7 @@ Assuming we have config YAML as bellow:
 config:
   - name: my-config
     path: example/my-config.yaml
+    locale: "*::*::*::*"
 ```
 
 ```go
@@ -881,6 +892,7 @@ Process information could be printed either.
     "entryName":"my-config",
     "entryType":"ConfigEntry",
     "entryDescription":"Description of entry",
+    "locale":"*::*::*::*",
     "path":"/usr/rk/example/my-config.yaml",
     "viper":{
         "key":"value"

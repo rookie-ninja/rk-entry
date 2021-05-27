@@ -60,9 +60,9 @@ eventLogger:
       compress: true                      # Optional, default: true
 config:
   - name: my-config                       # Required
-    locale: "*::*::*::*"                  # Optional, default: *::*::*::*
-    description: "Description of entry"   # Optional
+    locale: "*::*::*::*"                  # Required
     path: example/my-config.yaml          # Required
+    description: "Description of entry"   # Optional
 cert:
 #  - name: "etcd-cert"                        # Required
 #    description: "Description of entry"      # Optional
