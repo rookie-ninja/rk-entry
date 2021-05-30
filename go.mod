@@ -12,7 +12,7 @@ require (
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/prometheus/client_golang v1.8.0
 	github.com/prometheus/client_model v0.2.0
-	github.com/rookie-ninja/rk-common v1.0.9-0.20210512203920-9919edd253b8
+	github.com/rookie-ninja/rk-common v1.0.9-0.20210530171126-79321c44dfc3
 	github.com/rookie-ninja/rk-logger v1.0.10-0.20210527055114-0f92ffe223bd
 	github.com/rookie-ninja/rk-query v1.0.12-0.20210527055238-1903a9f7266e
 	github.com/shirou/gopsutil/v3 v3.21.4

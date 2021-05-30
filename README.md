@@ -853,6 +853,7 @@ Each viper instance combined with one configuration file.
 | config.name | Name of config entry. | required | config-<random string> |
 | config.path | File path of config file, could be either relative or absolute path | required | "" | 
 | config.locale | <realm>::<region>::<az>::<domain> | required | "" |
+| config.description | Description of config entry. | "" |
 
 ```yaml
 config:

@@ -12,8 +12,6 @@ import (
 	"github.com/rookie-ninja/rk-query"
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"os"
-	"strings"
 )
 
 const (
@@ -141,20 +139,11 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 		if eventLogger, err := rklogger.NewZapLoggerWithConf(eventLoggerConfig, eventLoggerLumberjackConfig); err != nil {
 			rkcommon.ShutdownWithError(err)
 		} else {
-			elements := []string{
-				rkcommon.GetDefaultIfEmptyString(os.Getenv("REALM"), "unknown"),
-				rkcommon.GetDefaultIfEmptyString(os.Getenv("REGION"), "unknown"),
-				rkcommon.GetDefaultIfEmptyString(os.Getenv("AZ"), "unknown"),
-				rkcommon.GetDefaultIfEmptyString(os.Getenv("DOMAIN"), "unknown"),
-			}
-
-			locale := strings.Join(elements, "::")
-
 			eventFactory = rkquery.NewEventFactory(
 				rkquery.WithLogger(eventLogger),
 				rkquery.WithAppName(config.RK.AppName),
 				rkquery.WithAppVersion(config.RK.Version),
-				rkquery.WithLocale(locale),
+				rkquery.WithLocale(rkcommon.GetLocale()),
 				rkquery.WithFormat(rkquery.ToFormat(element.Format)))
 		}
 
