@@ -30,7 +30,7 @@ type ReqMetricsRK struct {
 	ElapsedNanoP90  float64      `json:"elapsedNanoP90" yaml:"elapsedNanoP90"`
 	ElapsedNanoP99  float64      `json:"elapsedNanoP99" yaml:"elapsedNanoP99"`
 	ElapsedNanoP999 float64      `json:"elapsedNanoP999" yaml:"elapsedNanoP999"`
-	Count           uint64       `json:"count" yaml:"count""`
+	Count           uint64       `json:"count" yaml:"count"`
 	ResCode         []*ResCodeRK `json:"resCode" yaml:"resCode"`
 }
 
@@ -40,7 +40,7 @@ type ResCodeRK struct {
 	Count   uint64 `json:"count" yaml:"count"`
 }
 
-// Parse metrics in prometheus client into rk style metrics for common servic.
+// Parse metrics in prometheus client into rk style metrics for common service.
 func NewPromMetricsInfo(sumCollector *prometheus.SummaryVec) []*ReqMetricsRK {
 	res := make([]*ReqMetricsRK, 0)
 
