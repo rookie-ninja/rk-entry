@@ -5,12 +5,16 @@
 package rkentry
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/tools/go/packages"
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"testing"
 )
 
@@ -383,6 +387,63 @@ func TestAppInfoEntry_String_HappyCase(t *testing.T) {
 	assert.Empty(t, entry.Keywords, m["keywords"])
 	assert.Empty(t, entry.DocsUrl, m["docsUrl"])
 	assert.Empty(t, entry.Maintainers, m["maintainers"])
+}
+
+func TestAppInfoEntry_readDepBlock_HappyCase(t *testing.T) {
+	jsonStr := `{
+  "key": "value"
+}`
+	entry := AppInfoEntry{}
+	scanner := bufio.NewScanner(
+		strings.NewReader(jsonStr))
+
+	// read first character of { first
+	scanner.Scan()
+	scanner.Text()
+
+	// indent result in order to compare with original one
+	res := entry.readDepBlock(scanner)
+	buffer := bytes.NewBuffer([]byte{})
+
+	json.Indent(buffer, []byte(res), "", "  ")
+
+	assert.Equal(t, jsonStr, buffer.String())
+}
+
+func TestAppInfoEntry_readAndParseDependencyFile_HappyCase(t *testing.T) {
+	jsonStr := `
+{
+	"Path": "cloud.google.com/go",
+	"Version": "v0.65.0",
+	"Time": "2020-08-27T15:11:30Z",
+	"Indirect": true,
+	"Dir": "xxx/go@v0.65.0",
+	"GoMod": "xxx/v0.65.0.mod",
+	"GoVersion": "1.11"
+}
+{
+	"Path": "cloud.google.com/go/bigquery",
+	"Version": "v1.8.0",
+	"Time": "2020-05-19T17:02:07Z",
+	"Indirect": true,
+	"Dir": "xxx/bigquery@v1.8.0",
+	"GoMod": "xxx/@v/v1.8.0.mod",
+	"GoVersion": "1.11"
+}
+`
+	// Create dependency file at ut temp dir
+	depFilePath := createFileAtTestTempDir(t, jsonStr)
+
+	entry := AppInfoEntry{
+		dependencyFilePath: depFilePath,
+		Dependencies:       []*packages.Module{},
+	}
+
+	entry.readAndParseDependencyFile()
+
+	assert.Len(t, entry.Dependencies, 2)
+	// Pick one field to assert
+	assert.Equal(t, "v0.65.0", entry.Dependencies[0].Version)
 }
 
 func assertPanic(t *testing.T) {

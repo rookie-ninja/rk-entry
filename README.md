@@ -437,18 +437,20 @@ AppInfoEntry contains bellow fields which could be overridden via YAML file or c
 | IconUrl | Application Icon URL. | iconURL | "" |
 | DocsUrl | A set of URLs of documentations of application. | docsURL | [] |
 | Maintainers | Maintainers of application. | maintainers | [] |
+| Dependencies | Application dependencies which is parsed from result of go list -json all | depDocPath | [] |
 
 ##### YAML Hierarchy
 ```yaml
 rk:
-  AppName: rk-example-entry           # Optional, default: "rkApp"
-  Version: v0.0.1                     # Optional, default: "v0.0.0"
-  Description: "this is description"  # Optional, default: ""
-  Keywords: ["rk", "golang"]          # Optional, default: []
-  HomeUrl: "http://example.com"       # Optional, default: ""
-  IconUrl: "http://example.com"       # Optional, default: ""
-  DocsUrl: ["http://example.com"]     # Optional, default: []
-  Maintainers: ["rk-dev"]             # Optional, default: []
+  appName: rk-example-entry           # Optional, default: "rkApp"
+  version: v0.0.1                     # Optional, default: "v0.0.0"
+  description: "this is description"  # Optional, default: ""
+  keywords: ["rk", "golang"]          # Optional, default: []
+  homeUrl: "http://example.com"       # Optional, default: ""
+  iconUrl: "http://example.com"       # Optional, default: ""
+  docsUrl: ["http://example.com"]     # Optional, default: []
+  maintainers: ["rk-dev"]             # Optional, default: []
+  depDocPath: ""                      # Optional, default: ""
 ```
 
 ##### Access AppInfoEntry
@@ -471,6 +473,7 @@ rkentry.GlobalAppCtx.GetAppInfoEntry().HomeUrl
 rkentry.GlobalAppCtx.GetAppInfoEntry().IconUrl
 rkentry.GlobalAppCtx.GetAppInfoEntry().DocsUrl
 rkentry.rkentry.GlobalAppCtx.GetAppInfoEntry().Maintainers
+rkentry.rkentry.GlobalAppCtx.GetAppInfoEntry().Dependencies
 ```
 
 ##### Stringfy AppInfoEntry
@@ -487,6 +490,7 @@ rk:
   iconUrl: "http://example.com"       # Optional, default: ""
   docsUrl: ["http://example.com"]     # Optional, default: []
   maintainers: ["rk-dev"]             # Optional, default: []
+  depDocPath: ""                      # Optional, default: ""
 ```
 
 ```go
