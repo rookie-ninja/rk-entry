@@ -117,3 +117,18 @@ type LogsResponse_Entry struct {
 type ReqResponse struct {
 	Metrics []*ReqMetricsRK `json:"metrics" yaml:"metrics"`
 }
+
+// Response of /dep
+type DepResponse struct {
+	GoMod string `json:"goMod" yaml:"goMod"`
+}
+
+// Response of /license
+type LicenseResponse struct {
+	License string `json:"license" yaml:"license"`
+}
+
+// Response of /readme
+type ReadmeResponse struct {
+	Readme string `json:"readme" yaml:"readme"`
+}
