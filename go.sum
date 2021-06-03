@@ -408,8 +408,6 @@ github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqn
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
-github.com/rookie-ninja/rk-common v1.0.9-0.20210530171126-79321c44dfc3 h1:TN+JNyzZW4lZJ5g94gTwTS6EBCwZeVElYjaUQiFMbbI=
-github.com/rookie-ninja/rk-common v1.0.9-0.20210530171126-79321c44dfc3/go.mod h1:1q4fwESQm1wnYeuUm7dJR2XVrVOCgfybQcAzocfo9oM=
 github.com/rookie-ninja/rk-common v1.0.9-0.20210602174956-0d8f06f467bf h1:Mvus9BL8So+CLly2dsirZh1Hag0hbXjXgZ6MfvjcjBs=
 github.com/rookie-ninja/rk-common v1.0.9-0.20210602174956-0d8f06f467bf/go.mod h1:1q4fwESQm1wnYeuUm7dJR2XVrVOCgfybQcAzocfo9oM=
 github.com/rookie-ninja/rk-logger v1.0.10-0.20210527055114-0f92ffe223bd h1:7EAo8jPqrQ95d5f1v27PRd3shnEBkf6k+UlZw8E5cIU=
