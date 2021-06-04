@@ -132,3 +132,16 @@ type LicenseResponse struct {
 type ReadmeResponse struct {
 	Readme string `json:"readme" yaml:"readme"`
 }
+
+// Response of /gwErrorMapping
+type GwErrorMappingResponse struct {
+	Mapping map[int32]*GwErrorMappingResponse_Mapping `json:"mapping" yaml:"mapping"`
+}
+
+// Element of mapping of grpc code to restful code with grpc-gateway
+type GwErrorMappingResponse_Mapping struct {
+	GrpcCode int32  `json:"grpcCode" yaml:"grpcCode"`
+	GrpcText string `json:"grpcText" yaml:"grpcText"`
+	RestCode int32  `json:"restCode" yaml:"restCode"`
+	RestText string `json:"restText" yaml:"restText"`
+}
