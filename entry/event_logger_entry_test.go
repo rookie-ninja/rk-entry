@@ -71,7 +71,6 @@ eventLogger:
 	entry := convertToEventLoggerEntry(t, entries["ut-event-logger"])
 	// validate event factory
 	assert.NotNil(t, entry.EventFactory)
-	assert.Equal(t, AppNameDefault, entry.EventFactory.CreateEvent().GetAppName())
 }
 
 func TestRegisterEventLoggerEntriesWithConfig_WithoutElement(t *testing.T) {
@@ -123,7 +122,6 @@ eventLogger:
 
 	// validate event factory
 	assert.NotNil(t, entry.EventFactory)
-	assert.Equal(t, "ut-app", entry.EventFactory.CreateEvent().GetAppName())
 
 	// validate zap logger config in event factory
 	assert.NotNil(t, entry.LoggerConfig)
@@ -150,7 +148,6 @@ func TestRegisterEventLoggerEntry_WithoutOptions(t *testing.T) {
 
 	// validate event factory
 	assert.NotNil(t, entry.EventFactory)
-	assert.Equal(t, "unknown", entry.EventFactory.CreateEvent().GetAppName())
 }
 
 func TestRegisterEventLoggerEntry_HappyCase(t *testing.T) {
@@ -167,7 +164,6 @@ func TestRegisterEventLoggerEntry_HappyCase(t *testing.T) {
 
 	// validate event factory
 	assert.Equal(t, fac, entry.EventFactory)
-	assert.Equal(t, "unknown", entry.EventFactory.CreateEvent().GetAppName())
 }
 
 func TestEventLoggerEntry_Bootstrap_HappyCase(t *testing.T) {

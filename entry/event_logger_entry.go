@@ -27,7 +27,7 @@ func NoopEventLoggerEntry() *EventLoggerEntry {
 	entry := &EventLoggerEntry{
 		EntryName:    EventLoggerNameNoop,
 		EntryType:    EventLoggerEntryType,
-		EventFactory: rkquery.NewEventFactory(rkquery.WithLogger(rklogger.NoopLogger)),
+		EventFactory: rkquery.NewEventFactory(rkquery.WithZapLogger(rklogger.NoopLogger)),
 	}
 
 	entry.EventHelper = rkquery.NewEventHelper(entry.EventFactory)
@@ -140,10 +140,9 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 			rkcommon.ShutdownWithError(err)
 		} else {
 			eventFactory = rkquery.NewEventFactory(
-				rkquery.WithLogger(eventLogger),
+				rkquery.WithZapLogger(eventLogger),
 				rkquery.WithAppName(config.RK.AppName),
 				rkquery.WithAppVersion(config.RK.Version),
-				rkquery.WithLocale(rkcommon.GetLocale()),
 				rkquery.WithFormat(rkquery.ToFormat(element.Format)))
 		}
 

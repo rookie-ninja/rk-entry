@@ -68,7 +68,7 @@ func init() {
 		WithNameEvent(DefaultEventLoggerEntryName),
 		WithEventFactoryEvent(
 			rkquery.NewEventFactory(
-				rkquery.WithLogger(defaultEventLogger))))
+				rkquery.WithZapLogger(defaultEventLogger))))
 
 	eventLoggerEntry.LoggerConfig = defaultEventLoggerConfig
 
