@@ -54,7 +54,7 @@ type BootConfigEventLogger struct {
 	EventLogger []struct {
 		Name        string             `yaml:"name" json:"name"`
 		Description string             `yaml:"description" json:"description"`
-		Format      string             `yaml:"format" json:"format"`
+		Encoding    string             `yaml:"encoding" json:"encoding"`
 		OutputPaths []string           `yaml:"outputPaths" json:"outputPaths"`
 		Lumberjack  *lumberjack.Logger `yaml:"lumberjack" json:"lumberjack"`
 	} `yaml:"eventLogger json:"eventLogger"`
@@ -143,7 +143,7 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 				rkquery.WithZapLogger(eventLogger),
 				rkquery.WithAppName(config.RK.AppName),
 				rkquery.WithAppVersion(config.RK.Version),
-				rkquery.WithFormat(rkquery.ToFormat(element.Format)))
+				rkquery.WithEncoding(rkquery.ToEncoding(element.Encoding)))
 		}
 
 		entry := RegisterEventLoggerEntry(

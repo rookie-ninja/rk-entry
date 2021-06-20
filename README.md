@@ -545,7 +545,7 @@ Otherwise, default application name would be assigned.
 | rk.appName | Application name which refers to go process. | rkapp | 
 | eventLogger.name | Required. Name of event logger entry. | N/A |
 | eventLogger.description | Description of event logger entry. | N/A |
-| eventLogger.format | Format of event logger, RK & JSON is supported. Please refer rkquery.RK & rkquery.JSON. | RK | 
+| eventLogger.encoding | Encoding of event logger, console & json is supported. Please refer rkquery.CONSOLE & rkquery.JSON. | console | 
 | eventLogger.outputPaths | Output paths of event logger, stdout would be the default one if not provided. If one of output path was provided, then stdout would be omitted. Output path could be relative or absolute paths either. | stdout |
 | eventLogger.lumberjack.filename | Filename is the file to write logs to | It uses <processname>-lumberjack.log in os.TempDir() if empty. |
 | eventLogger.lumberjack.maxsize | MaxSize is the maximum size in megabytes of the log file before it gets rotated. | 1024 |
@@ -561,7 +561,7 @@ rk:
 eventLogger:
   - name: event-logger                 # Required
     description: "This is description" # Optional
-    format: RK                         # Optional, default: RK, options: RK and JSON
+    encoding: console                  # Optional, default: console, options: console and json
     outputPaths: ["stdout"]            # Optional
     lumberjack:                        # Optional
       filename: "rkapp-event.log"      # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
@@ -597,7 +597,7 @@ rk:
 eventLogger:
   - name: event-logger                    # Required
     description: "Description of entry"   # Optional
-    format: RK                            # Optional, default: RK, options: RK and JSON
+    encoding: console                     # Optional, default: console, options: console and json
     outputPaths: ["stdout"]               # Optional
     lumberjack:                           # Optional
       filename: "rkapp-event.log"         # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
