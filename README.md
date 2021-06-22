@@ -428,7 +428,7 @@ AppInfoEntry contains bellow fields which could be overridden via YAML file or c
 | EntryName | Name of entry. | N/A | AppInfoDefault |
 | EntryType | Type of entry which is EventEntry. | N/A | AppInfoEntry |
 | EntryDescription | Description of entry. | N/A | Internal RK entry which describes application with fields of appName, version and etc. |
-| AppName | Application name which refers to go process. | appName | rkApp |
+| AppName | Application name which refers to go process. | appName | rk |
 | Version | Application version. | version | v0.0.0 |
 | Lang | Programming language <NOT configurable!> .| N/A | golang |
 | Description | Description of application itself. | description | "" |
@@ -442,7 +442,7 @@ AppInfoEntry contains bellow fields which could be overridden via YAML file or c
 ##### YAML Hierarchy
 ```yaml
 rk:
-  appName: rk-example-entry           # Optional, default: "rkApp"
+  appName: rk-example-entry           # Optional, default: "rk"
   version: v0.0.1                     # Optional, default: "v0.0.0"
   description: "this is description"  # Optional, default: ""
   keywords: ["rk", "golang"]          # Optional, default: []
@@ -482,7 +482,7 @@ Assuming we have application info YAML as bellow:
 ```yaml
 ---
 rk: 
-  appName: rk-example-entry           # Optional, default: "rkApp"
+  appName: rk-example-entry           # Optional, default: "rk"
   version: v0.0.1                     # Optional, default: "v0.0.0"
   description: "this is description"  # Optional, default: ""
   keywords: ["rk", "golang"]          # Optional, default: []
@@ -542,7 +542,7 @@ Otherwise, default application name would be assigned.
 
 | Name | Description | Default |
 | ------ | ------ | ------ |
-| rk.appName | Application name which refers to go process. | rkapp | 
+| rk.appName | Application name which refers to go process. | rk | 
 | eventLogger.name | Required. Name of event logger entry. | N/A |
 | eventLogger.description | Description of event logger entry. | N/A |
 | eventLogger.encoding | Encoding of event logger, console & json is supported. Please refer rkquery.CONSOLE & rkquery.JSON. | console | 
@@ -557,7 +557,7 @@ Otherwise, default application name would be assigned.
 ```yaml
 ---
 rk:
-  appName: rk-example-entry            # Optional, default: "rkapp"
+  appName: rk-example-entry            # Optional, default: "rk"
 eventLogger:
   - name: event-logger                 # Required
     description: "This is description" # Optional
@@ -593,7 +593,7 @@ Assuming we have event logger YAML as bellow:
 ```yaml
 ---
 rk:
-  appName: rk-example-entry            # Optional, default: "rkapp"
+  appName: rk-example-entry            # Optional, default: "rk"
 eventLogger:
   - name: event-logger                    # Required
     description: "Description of entry"   # Optional

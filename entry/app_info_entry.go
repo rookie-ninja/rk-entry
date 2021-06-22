@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	AppNameDefault          = "rkApp"
+	AppNameDefault          = "rk"
 	VersionDefault          = "v0.0.0"
 	LangDefault             = "golang"
 	DescriptionDefault      = "rk application"

@@ -1,6 +1,6 @@
 ---
 rk: # NOT required
-  appName: rk-example-entry           # Optional, default: "rkApp"
+  appName: rk-example-entry           # Optional, default: "rk"
   version: v0.0.1                     # Optional, default: "v0.0.0"
   description: "this is description"  # Optional, default: ""
   keywords: ["rk", "golang"]          # Optional, default: []
@@ -41,7 +41,7 @@ zapLogger:
       initialFields:                      # Optional, default: empty map
         key: "value"
     lumberjack:                           # Optional
-      filename: "rkapp-event.log"         # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
+      filename: "rkapp.log"               # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
       maxsize: 1024                       # Optional, default: 1024 (MB)
       maxage: 7                           # Optional, default: 7 (days)
       maxbackups: 3                       # Optional, default: 3 (days)
@@ -50,7 +50,7 @@ zapLogger:
 eventLogger:
   - name: event-logger                    # Required
     description: "Description of entry"   # Optional
-    format: RK                            # Optional, default: RK, options: RK and JSON
+    encoding: console                     # Optional, default: console, options: console and json
     outputPaths: ["stdout"]               # Optional
     lumberjack:                           # Optional
       filename: "rkapp-event.log"         # Optional, default: It uses <processname>-lumberjack.log in os.TempDir() if empty.
