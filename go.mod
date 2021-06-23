@@ -16,7 +16,7 @@ require (
 	github.com/prometheus/common v0.22.0 // indirect
 	github.com/rookie-ninja/rk-common v1.0.9-0.20210616200134-31f33f039a54
 	github.com/rookie-ninja/rk-logger v1.0.10-0.20210527055114-0f92ffe223bd
-	github.com/rookie-ninja/rk-query v1.0.12-0.20210620173653-b520ef659dd2
+	github.com/rookie-ninja/rk-query v1.0.12-0.20210623102313-b61067b3abf5
 	github.com/shirou/gopsutil/v3 v3.21.4
 	github.com/spf13/afero v1.3.3 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
