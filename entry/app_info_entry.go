@@ -81,9 +81,9 @@ type AppInfoEntry struct {
 	IconUrl          string   `json:"iconUrl" yaml:"iconUrl"`
 	DocsUrl          []string `json:"docsUrl" yaml:"docsUrl"`
 	Maintainers      []string `json:"maintainers" yaml:"maintainers"`
-	License          string   `json:"license" yaml:"license"`
-	Readme           string   `json:"readme" yaml:"readme"`
-	GoMod            string   `json:"goMod" yaml:"goMod"`
+	License          string   `json:"-" yaml:"-"`
+	Readme           string   `json:"-" yaml:"-"`
+	GoMod            string   `json:"-" yaml:"-"`
 }
 
 // Generate a AppInfo entry with default fields.

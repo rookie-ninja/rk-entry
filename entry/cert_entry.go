@@ -389,8 +389,6 @@ func (entry *CertEntry) MarshalJSON() ([]byte, error) {
 		"entryName":        entry.EntryName,
 		"entryType":        entry.EntryType,
 		"entryDescription": entry.EntryDescription,
-		"eventLoggerEntry": entry.EventLoggerEntry.GetName(),
-		"zapLoggerEntry":   entry.ZapLoggerEntry.GetName(),
 		"store":            entry.Store,
 		"retriever":        entry.Retriever,
 	}
