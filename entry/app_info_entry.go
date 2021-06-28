@@ -20,7 +20,7 @@ const (
 	AppInfoEntryName        = "AppInfoDefault"
 	AppInfoEntryType        = "AppInfoEntry"
 	AppInfoEntryDescription = "Internal RK entry which describes application with fields of appName, version and etc."
-	AppMetaDir              = "gen/rk/"
+	AppMetaDir              = "docs"
 	AppMetaLicenseFileName  = "LICENSE"
 	AppMetaGoModFileName    = "go.mod"
 	AppMetaReadmeFileName   = "README.md"
