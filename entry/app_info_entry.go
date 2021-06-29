@@ -280,7 +280,8 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 		WithEventFactoryEvent(
 			rkquery.NewEventFactory(
 				rkquery.WithZapLogger(eventLogger),
-				rkquery.WithAppName(entry.AppName))))
+				rkquery.WithAppName(entry.AppName),
+				rkquery.WithAppVersion(entry.Version))))
 
 	eventLoggerEntry.LoggerConfig = eventLoggerConfig
 
