@@ -27,7 +27,7 @@ func TestGlobalAppCtx_init(t *testing.T) {
 	assert.NotNil(t, GlobalAppCtx.GetEventLoggerEntryDefault())
 
 	// validate basic entry reg functions.
-	assert.Len(t, internalEntryRegFuncList, 5)
+	assert.Len(t, internalEntryRegFuncList, 6)
 
 	// validate user entries.
 	assert.Empty(t, entryRegFuncList)

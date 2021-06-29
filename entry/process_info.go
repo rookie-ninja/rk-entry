@@ -66,7 +66,7 @@ func NewProcessInfo() *ProcessInfo {
 	return &ProcessInfo{
 		AppName:     GlobalAppCtx.GetAppInfoEntry().AppName,
 		Version:     GlobalAppCtx.GetAppInfoEntry().Version,
-		Description: GlobalAppCtx.GetAppInfoEntry().Description,
+		Description: GlobalAppCtx.GetAppInfoEntry().EntryDescription,
 		Keywords:    GlobalAppCtx.GetAppInfoEntry().Keywords,
 		HomeUrl:     GlobalAppCtx.GetAppInfoEntry().HomeUrl,
 		IconUrl:     GlobalAppCtx.GetAppInfoEntry().IconUrl,

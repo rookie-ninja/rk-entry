@@ -22,7 +22,7 @@ func TestAppInfoEntryDefault_HappyCase(t *testing.T) {
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
 	assert.Equal(t, LangDefault, entry.Lang)
-	assert.Equal(t, DescriptionDefault, entry.Description)
+	assert.Equal(t, AppInfoEntryDescription, entry.EntryDescription)
 	assert.Empty(t, entry.Keywords)
 	assert.Empty(t, entry.HomeUrl)
 	assert.Empty(t, entry.IconUrl)
@@ -59,14 +59,14 @@ func TestWithVersionAppInfo_HappyCase(t *testing.T) {
 func TestWithDescriptionAppInfo_WithEmptyString(t *testing.T) {
 	entry := RegisterAppInfoEntry(WithDescriptionAppInfo(""))
 	assert.NotNil(t, entry)
-	assert.Equal(t, DescriptionDefault, entry.Description)
+	assert.Equal(t, AppInfoEntryDescription, entry.EntryDescription)
 }
 
 func TestWithDescriptionAppInfo_HappyCase(t *testing.T) {
 	description := "unit-test-description"
 	entry := RegisterAppInfoEntry(WithDescriptionAppInfo(description))
 	assert.NotNil(t, entry)
-	assert.Equal(t, description, entry.Description)
+	assert.Equal(t, description, entry.EntryDescription)
 }
 
 func TestWithKeywordsAppInfo_WithEmptySlice(t *testing.T) {
@@ -156,8 +156,6 @@ func TestRegisterAppInfoEntriesFromConfig_HappyCase(t *testing.T) {
 	configFile := `
 ---
 rk:
-  appName: ut-app
-  version: ut-version
   description: ut-description
   homeUrl: ut-homeUrl
   iconUrl: ut-iconUrl
@@ -174,9 +172,7 @@ rk:
 
 	entry := convertToAppInfoEntry(t, entries[AppInfoEntryName])
 
-	assert.Equal(t, "ut-app", entry.AppName)
-	assert.Equal(t, "ut-version", entry.Version)
-	assert.Equal(t, "ut-description", entry.Description)
+	assert.Equal(t, "ut-description", entry.EntryDescription)
 	assert.Equal(t, "ut-homeUrl", entry.HomeUrl)
 	assert.Equal(t, "ut-iconUrl", entry.IconUrl)
 	assert.Contains(t, entry.Keywords, "ut-keyword")
@@ -223,7 +219,7 @@ rk:
 
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
-	assert.Equal(t, DescriptionDefault, entry.Description)
+	assert.Equal(t, AppInfoEntryDescription, entry.EntryDescription)
 	assert.Empty(t, entry.HomeUrl)
 	assert.Empty(t, entry.IconUrl)
 	assert.Empty(t, entry.Keywords)
@@ -248,7 +244,7 @@ func TestRegisterAppInfoEntriesFromConfig_WithoutRKSection(t *testing.T) {
 
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
-	assert.Equal(t, DescriptionDefault, entry.Description)
+	assert.Equal(t, AppInfoEntryDescription, entry.EntryDescription)
 	assert.Empty(t, entry.HomeUrl)
 	assert.Empty(t, entry.IconUrl)
 	assert.Empty(t, entry.Keywords)
@@ -262,8 +258,6 @@ func TestRegisterAppInfoEntriesFromConfig_WithEmptyElements(t *testing.T) {
 	configFile := `
 ---
 rk:
-  appName:
-  version:
   description:
   homeURL:
   iconURL:
@@ -282,7 +276,7 @@ rk:
 
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
-	assert.Equal(t, DescriptionDefault, entry.Description)
+	assert.Equal(t, AppInfoEntryDescription, entry.EntryDescription)
 	assert.Empty(t, entry.HomeUrl)
 	assert.Empty(t, entry.IconUrl)
 	assert.Empty(t, entry.Keywords)
@@ -296,7 +290,7 @@ func TestRegisterAppInfoEntry_WithoutOptions(t *testing.T) {
 
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
-	assert.Equal(t, DescriptionDefault, entry.Description)
+	assert.Equal(t, AppInfoEntryDescription, entry.EntryDescription)
 	assert.Empty(t, entry.HomeUrl)
 	assert.Empty(t, entry.IconUrl)
 	assert.Empty(t, entry.Keywords)
@@ -314,7 +308,7 @@ func TestRegisterAppInfoEntry_WithEmptyElements(t *testing.T) {
 
 	assert.Equal(t, AppNameDefault, entry.AppName)
 	assert.Equal(t, VersionDefault, entry.Version)
-	assert.Equal(t, DescriptionDefault, entry.Description)
+	assert.Equal(t, AppInfoEntryDescription, entry.EntryDescription)
 	assert.Empty(t, entry.HomeUrl)
 	assert.Empty(t, entry.IconUrl)
 	assert.Empty(t, entry.Keywords)
@@ -337,7 +331,7 @@ func TestRegisterAppInfoEntry_HappyCase(t *testing.T) {
 
 	assert.Equal(t, "ut-app", entry.AppName)
 	assert.Equal(t, "ut-version", entry.Version)
-	assert.Equal(t, "ut-description", entry.Description)
+	assert.Equal(t, "ut-description", entry.EntryDescription)
 	assert.Equal(t, "ut-homeUrl", entry.HomeUrl)
 	assert.Equal(t, "ut-iconUrl", entry.IconUrl)
 	assert.Contains(t, entry.Keywords, "ut-keyword")
@@ -377,7 +371,6 @@ func TestAppInfoEntry_String_HappyCase(t *testing.T) {
 	assert.Equal(t, entry.AppName, m["appName"])
 	assert.Equal(t, entry.Version, m["version"])
 	assert.Equal(t, entry.Lang, m["lang"])
-	assert.Equal(t, entry.Description, m["description"])
 	assert.Equal(t, entry.HomeUrl, m["homeUrl"])
 	assert.Equal(t, entry.IconUrl, m["iconUrl"])
 	assert.Empty(t, entry.Keywords, m["keywords"])

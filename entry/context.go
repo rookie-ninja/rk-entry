@@ -75,6 +75,7 @@ func init() {
 	// Register rk style entries here including RKEntry which contains basic information,
 	// and application logger and event logger, otherwise, we will have import cycle
 	internalEntryRegFuncList = append(internalEntryRegFuncList,
+		RegisterGitInfoEntriesFromConfig,
 		RegisterAppInfoEntriesFromConfig,
 		RegisterZapLoggerEntriesWithConfig,
 		RegisterEventLoggerEntriesWithConfig,
@@ -104,6 +105,7 @@ type appContext struct {
 	// at beginning of go process in init() function.
 	startTime          time.Time               `json:"startTime" yaml:"startTime"`
 	appInfoEntry       Entry                   `json:"appInfoEntry" yaml:"appInfoEntry"`
+	gitInfoEntry       Entry                   `json:"gitInfoEntry" yaml:"gitInfoEntry"`
 	zapLoggerEntries   map[string]Entry        `json:"zapLoggerEntries" yaml:"zapLoggerEntries"`
 	eventLoggerEntries map[string]Entry        `json:"eventLoggerEntries" yaml:"eventLoggerEntries"`
 	configEntries      map[string]Entry        `json:"configEntries" yaml:"configEntries"`
@@ -465,6 +467,38 @@ func (ctx *appContext) GetUpTime() time.Duration {
 // Get start time of application.
 func (ctx *appContext) GetStartTime() time.Time {
 	return ctx.startTime
+}
+
+// ************************************
+// ****** Git info Entry related ******
+// ************************************
+
+// Returns entry name if entry is not nil, otherwise, return an empty string.
+// Entry will be added into map of appContext.BasicEntries in order to distinguish between user entries
+// and RK default entries.
+//
+// Please do NOT add other entries by calling this function although it would do no harm to context.
+func (ctx *appContext) SetGitInfoEntry(entry Entry) string {
+	if entry == nil {
+		return ""
+	}
+
+	ctx.gitInfoEntry = entry
+	return entry.GetName()
+}
+
+// Get rkentry.AppInfoEntry.
+func (ctx *appContext) GetGitInfoEntry() *GitInfoEntry {
+	if ctx.gitInfoEntry != nil {
+		return ctx.gitInfoEntry.(*GitInfoEntry)
+	}
+
+	return nil
+}
+
+// Get rkentry.AppInfoEntry.
+func (ctx *appContext) GetGitInfoEntryRaw() Entry {
+	return ctx.gitInfoEntry
 }
 
 // **********************************

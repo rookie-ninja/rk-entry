@@ -145,3 +145,17 @@ type GwErrorMappingResponse_Mapping struct {
 	RestCode int32  `json:"restCode" yaml:"restCode"`
 	RestText string `json:"restText" yaml:"restText"`
 }
+
+// Response of /git
+type GitResponse struct {
+	Package        string `json:"package" yaml:"package"`
+	Url            string `json:"url" yaml:"url"`
+	Branch         string `yaml:"branch" json:"branch"`
+	Tag            string `yaml:"tag" json:"tag"`
+	CommitId       string `yaml:"commitId" json:"commitId"`
+	CommitIdAbbr   string `yaml:"commitIdAbbr" json:"commitIdAbbr"`
+	CommitDate     string `yaml:"commitDate" json:"commitDate"`
+	CommitSub      string `yaml:"commitSub" json:"commitSub"`
+	CommitterName  string `yaml:"committerName" json:"committerName"`
+	CommitterEmail string `yaml:"committerEmail" json:"committerEmail"`
+}

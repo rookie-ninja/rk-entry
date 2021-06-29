@@ -14,9 +14,8 @@ import (
 
 const (
 	AppNameDefault          = "rk"
-	VersionDefault          = "v0.0.0"
+	VersionDefault          = ""
 	LangDefault             = "golang"
-	DescriptionDefault      = "rk application"
 	AppInfoEntryName        = "AppInfoDefault"
 	AppInfoEntryType        = "AppInfoEntry"
 	AppInfoEntryDescription = "Internal RK entry which describes application with fields of appName, version and etc."
@@ -41,8 +40,6 @@ const (
 // 13: GoMod: go.mod file contents.
 type BootConfigAppInfo struct {
 	RK struct {
-		AppName      string   `yaml:"appName" json:"appName"`
-		Version      string   `yaml:"version" json:"version"`
 		Description  string   `yaml:"description" json:"description"`
 		Keywords     []string `yaml:"keywords" json:"keywords"`
 		HomeUrl      string   `yaml:"homeUrl" json:"homeUrl"`
@@ -72,7 +69,6 @@ type AppInfoEntry struct {
 	EntryName        string   `json:"entryName" yaml:"entryName"`
 	EntryType        string   `json:"entryType" yaml:"entryType"`
 	EntryDescription string   `json:"entryDescription" yaml:"entryDescription"`
-	Description      string   `json:"description" yaml:"description"`
 	AppName          string   `json:"appName" yaml:"appName"`
 	Version          string   `json:"version" yaml:"version"`
 	Lang             string   `json:"lang" yaml:"lang"`
@@ -108,7 +104,6 @@ func AppInfoEntryDefault() *AppInfoEntry {
 		AppName:          AppNameDefault,
 		Version:          VersionDefault,
 		Lang:             LangDefault,
-		Description:      DescriptionDefault,
 		Keywords:         []string{},
 		HomeUrl:          "",
 		IconUrl:          "",
@@ -124,9 +119,9 @@ func AppInfoEntryDefault() *AppInfoEntry {
 type AppInfoEntryOption func(*AppInfoEntry)
 
 // Provide application name.
-func WithAppNameAppInfo(AppName string) AppInfoEntryOption {
+func WithAppNameAppInfo(name string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
-		entry.AppName = AppName
+		entry.AppName = name
 	}
 }
 
@@ -140,7 +135,7 @@ func WithVersionAppInfo(version string) AppInfoEntryOption {
 // Provide description.
 func WithDescriptionAppInfo(description string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
-		entry.Description = description
+		entry.EntryDescription = description
 	}
 }
 
@@ -189,8 +184,6 @@ func RegisterAppInfoEntriesFromConfig(configFilePath string) map[string]Entry {
 
 	// 2: Init rk entry from config
 	entry := RegisterAppInfoEntry(
-		WithAppNameAppInfo(config.RK.AppName),
-		WithVersionAppInfo(config.RK.Version),
 		WithDescriptionAppInfo(config.RK.Description),
 		WithKeywordsAppInfo(config.RK.Keywords...),
 		WithHomeUrlAppInfo(config.RK.HomeUrl),
@@ -219,7 +212,6 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 		AppName:          AppNameDefault,
 		Version:          VersionDefault,
 		Lang:             LangDefault,
-		Description:      DescriptionDefault,
 		Keywords:         []string{},
 		HomeUrl:          "",
 		IconUrl:          "",
@@ -232,6 +224,19 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 
 	for i := range opts {
 		opts[i](entry)
+	}
+
+	// Read git info to retrieve package name
+	gitInfoEntry := GlobalAppCtx.GetGitInfoEntry()
+	if gitInfoEntry != nil {
+		if len(gitInfoEntry.Package) > 0 {
+			entry.AppName = gitInfoEntry.Package
+		}
+
+		versionFromGit := gitInfoEntry.ConstructAppVersion()
+		if len(versionFromGit) > 0 {
+			entry.Version = versionFromGit
+		}
 	}
 
 	// Override elements which should not be nil
@@ -260,8 +265,8 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 		entry.Lang = LangDefault
 	}
 
-	if len(entry.Description) < 1 {
-		entry.Description = DescriptionDefault
+	if len(entry.EntryDescription) < 1 {
+		entry.EntryDescription = AppInfoEntryDescription
 	}
 
 	GlobalAppCtx.SetAppInfoEntry(entry)

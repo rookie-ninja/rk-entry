@@ -47,10 +47,6 @@ func NoopEventLoggerEntry() *EventLoggerEntry {
 //                             Output path could be relative or absolute paths either.
 // 7: EventLogger.Lumberjack: Lumberjack config which follows lumberjack.Logger style.
 type BootConfigEventLogger struct {
-	RK struct {
-		AppName string `yaml:"appName" json:"appName"`
-		Version string `yaml:"version" json:"version"`
-	} `yaml:"rk" json:"rk"`
 	EventLogger []struct {
 		Name        string             `yaml:"name" json:"name"`
 		Description string             `yaml:"description" json:"description"`
@@ -112,15 +108,6 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 	config := &BootConfigEventLogger{}
 	rkcommon.UnmarshalBootConfig(configFilePath, config)
 
-	// Deal with application name specifically in case of empty string
-	if len(config.RK.AppName) < 1 {
-		config.RK.AppName = AppNameDefault
-	}
-
-	if len(config.RK.Version) < 1 {
-		config.RK.Version = "unknown"
-	}
-
 	// 2: Init event logger entries with boot config
 	for i := range config.EventLogger {
 		element := config.EventLogger[i]
@@ -141,8 +128,8 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 		} else {
 			eventFactory = rkquery.NewEventFactory(
 				rkquery.WithZapLogger(eventLogger),
-				rkquery.WithAppName(config.RK.AppName),
-				rkquery.WithAppVersion(config.RK.Version),
+				rkquery.WithAppName(GlobalAppCtx.GetAppInfoEntry().AppName),
+				rkquery.WithAppVersion(GlobalAppCtx.GetAppInfoEntry().Version),
 				rkquery.WithEncoding(rkquery.ToEncoding(element.Encoding)))
 		}
 

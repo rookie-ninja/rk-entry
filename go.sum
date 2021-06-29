@@ -426,6 +426,8 @@ github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6L
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rookie-ninja/rk-common v1.0.9-0.20210616200134-31f33f039a54 h1:MVgpYLZqf4R72fGWVlfmkpsKstUeFKoyiiA3NZ42UCA=
 github.com/rookie-ninja/rk-common v1.0.9-0.20210616200134-31f33f039a54/go.mod h1:wwHfy8ZyIINk5Yh9R0qf7UDOjcKk2+fu7m/OhX6hn+g=
+github.com/rookie-ninja/rk-common v1.0.9-0.20210629184244-e150f7bd8027 h1:BmXs9HrPA5aU04siri9WPxdqLtUVsaYD5jM323y/jCM=
+github.com/rookie-ninja/rk-common v1.0.9-0.20210629184244-e150f7bd8027/go.mod h1:3gLO6A54hCH3t84JoaE530jUoUG9qhxe0L/s+Vfd6fk=
 github.com/rookie-ninja/rk-logger v1.0.10-0.20210527055114-0f92ffe223bd h1:7EAo8jPqrQ95d5f1v27PRd3shnEBkf6k+UlZw8E5cIU=
 github.com/rookie-ninja/rk-logger v1.0.10-0.20210527055114-0f92ffe223bd/go.mod h1:NDRMGnXMO/PBsFQc+N4LQgTmIxOKaFE1c7pDRmQUGjc=
 github.com/rookie-ninja/rk-query v1.0.12-0.20210616160424-c77bc641742c h1:I9NywkFuS+hDhBBWCfHQQrfwdzBAACS/bZOA8/FrlgU=
