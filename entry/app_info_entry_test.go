@@ -155,7 +155,7 @@ func TestRegisterAppInfoEntriesFromConfig_HappyCase(t *testing.T) {
 
 	configFile := `
 ---
-rk:
+app:
   description: ut-description
   homeUrl: ut-homeUrl
   iconUrl: ut-iconUrl
@@ -185,7 +185,7 @@ func TestRegisterAppInfoEntriesFromConfig_WithInvalidElementType(t *testing.T) {
 
 	configFile := `
 ---
-rk:
+app:
   appName: ut-app
   version: ut-version
   description: ut-description
@@ -206,7 +206,7 @@ func TestRegisterAppInfoEntriesFromConfig_WithoutElements(t *testing.T) {
 
 	configFile := `
 ---
-rk:
+app:
 `
 	// Create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
@@ -257,7 +257,7 @@ func TestRegisterAppInfoEntriesFromConfig_WithEmptyElements(t *testing.T) {
 
 	configFile := `
 ---
-rk:
+app:
   description:
   homeURL:
   iconURL:

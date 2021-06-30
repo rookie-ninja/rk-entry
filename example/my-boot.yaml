@@ -1,7 +1,5 @@
 ---
-rk: # NOT required
-  appName: rk-example-entry           # Optional, default: "rk"
-  version: v0.0.1                     # Optional, default: "v0.0.0"
+app: # NOT required
   description: "this is description"  # Optional, default: ""
   keywords: ["rk", "golang"]          # Optional, default: []
   homeUrl: "http://example.com"       # Optional, default: ""

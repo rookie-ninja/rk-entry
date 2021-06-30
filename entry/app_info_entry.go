@@ -39,14 +39,14 @@ const (
 // 12: Readme: README.md file contents.
 // 13: GoMod: go.mod file contents.
 type BootConfigAppInfo struct {
-	RK struct {
+	App struct {
 		Description  string   `yaml:"description" json:"description"`
 		Keywords     []string `yaml:"keywords" json:"keywords"`
 		HomeUrl      string   `yaml:"homeUrl" json:"homeUrl"`
 		IconUrl      string   `yaml:"iconUrl" json:"iconUrl"`
 		DocsUrl      []string `yaml:"docsUrl" json:"docsUrl"`
 		Maintainers  []string `yaml:"maintainers" json:"maintainers"`
-		Dependencies string   `yaml:"dependencies" jaon:"dependencies"`
+		Dependencies string   `yaml:"dependencies" json:"dependencies"`
 		License      string   `yaml:"-" json:"-"`
 		Readme       string   `yaml:"-" json:"-"`
 		GoMod        string   `yaml:"-" json:"-"`
@@ -68,7 +68,7 @@ type BootConfigAppInfo struct {
 type AppInfoEntry struct {
 	EntryName        string   `json:"entryName" yaml:"entryName"`
 	EntryType        string   `json:"entryType" yaml:"entryType"`
-	EntryDescription string   `json:"entryDescription" yaml:"entryDescription"`
+	EntryDescription string   `json:"description" yaml:"description"`
 	AppName          string   `json:"appName" yaml:"appName"`
 	Version          string   `json:"version" yaml:"version"`
 	Lang             string   `json:"lang" yaml:"lang"`
@@ -80,6 +80,7 @@ type AppInfoEntry struct {
 	License          string   `json:"-" yaml:"-"`
 	Readme           string   `json:"-" yaml:"-"`
 	GoMod            string   `json:"-" yaml:"-"`
+	UtHtml           string   `json:"-" yaml:"-"`
 }
 
 // Generate a AppInfo entry with default fields.
@@ -184,12 +185,12 @@ func RegisterAppInfoEntriesFromConfig(configFilePath string) map[string]Entry {
 
 	// 2: Init rk entry from config
 	entry := RegisterAppInfoEntry(
-		WithDescriptionAppInfo(config.RK.Description),
-		WithKeywordsAppInfo(config.RK.Keywords...),
-		WithHomeUrlAppInfo(config.RK.HomeUrl),
-		WithIconUrlAppInfo(config.RK.IconUrl),
-		WithDocsUrlAppInfo(config.RK.DocsUrl...),
-		WithMaintainersAppInfo(config.RK.Maintainers...))
+		WithDescriptionAppInfo(config.App.Description),
+		WithKeywordsAppInfo(config.App.Keywords...),
+		WithHomeUrlAppInfo(config.App.HomeUrl),
+		WithIconUrlAppInfo(config.App.IconUrl),
+		WithDocsUrlAppInfo(config.App.DocsUrl...),
+		WithMaintainersAppInfo(config.App.Maintainers...))
 
 	res[AppInfoEntryName] = entry
 
@@ -227,16 +228,10 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 	}
 
 	// Read git info to retrieve package name
-	gitInfoEntry := GlobalAppCtx.GetGitInfoEntry()
-	if gitInfoEntry != nil {
-		if len(gitInfoEntry.Package) > 0 {
-			entry.AppName = gitInfoEntry.Package
-		}
-
-		versionFromGit := gitInfoEntry.ConstructAppVersion()
-		if len(versionFromGit) > 0 {
-			entry.Version = versionFromGit
-		}
+	rkMetaEntry := GlobalAppCtx.GetRkMetaEntry()
+	if rkMetaEntry != nil {
+		entry.AppName = rkMetaEntry.RkMeta.Name
+		entry.Version = rkMetaEntry.RkMeta.Version
 	}
 
 	// Override elements which should not be nil
@@ -289,11 +284,11 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 }
 
 // Read license file.
-func (entry *AppInfoEntry) readMetaFile(fileName string) string {
+func (entry *AppInfoEntry) readRkMetaFile(filePath string) string {
 	// read file from gen/rk directory
-	if bytes := rkcommon.TryReadFile(path.Join(AppMetaDir, fileName)); len(bytes) < 1 {
+	if bytes := rkcommon.TryReadFile(filePath); len(bytes) < 1 {
 		// read from current working directory as backoff, since user may run program from IDE directory.
-		return string(rkcommon.TryReadFile(fileName))
+		return string(rkcommon.TryReadFile(path.Base(filePath)))
 	} else {
 		return string(bytes)
 	}
@@ -302,11 +297,13 @@ func (entry *AppInfoEntry) readMetaFile(fileName string) string {
 // No op.
 func (entry *AppInfoEntry) Bootstrap(context.Context) {
 	// read license file
-	entry.License = entry.readMetaFile(AppMetaLicenseFileName)
+	entry.License = entry.readRkMetaFile(rkcommon.RkLicenseFilePath)
 	// read readme file
-	entry.Readme = entry.readMetaFile(AppMetaReadmeFileName)
+	entry.Readme = entry.readRkMetaFile(rkcommon.RkReadmeFilePath)
 	// read go.mod file
-	entry.GoMod = entry.readMetaFile(AppMetaGoModFileName)
+	entry.GoMod = entry.readRkMetaFile(rkcommon.RkDepFilePath)
+	// read ut coverage report as HTML
+	entry.UtHtml = entry.readRkMetaFile(rkcommon.RkUtHtmlFilePath)
 }
 
 // No op.

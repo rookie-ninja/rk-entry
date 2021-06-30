@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"github.com/rookie-ninja/rk-common/common"
 	"github.com/rookie-ninja/rk-entry/entry"
+	"github.com/rookie-ninja/rk-query"
 	"os"
 )
 
@@ -152,7 +153,10 @@ type MyEntry struct {
 }
 
 func (entry *MyEntry) Bootstrap(context.Context) {
-	event := entry.EventLoggerEntry.GetEventHelper().Start("bootstrap")
+	event := entry.EventLoggerEntry.GetEventHelper().Start(
+		"bootstrap",
+		rkquery.WithEntryName(entry.GetName()),
+		rkquery.WithEntryType(entry.GetType()))
 	event.AddPair("key", entry.Key)
 	entry.EventLoggerEntry.GetEventHelper().Finish(event)
 }

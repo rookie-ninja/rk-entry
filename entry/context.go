@@ -75,7 +75,7 @@ func init() {
 	// Register rk style entries here including RKEntry which contains basic information,
 	// and application logger and event logger, otherwise, we will have import cycle
 	internalEntryRegFuncList = append(internalEntryRegFuncList,
-		RegisterGitInfoEntriesFromConfig,
+		RegisterRkMetaEntriesFromConfig,
 		RegisterAppInfoEntriesFromConfig,
 		RegisterZapLoggerEntriesWithConfig,
 		RegisterEventLoggerEntriesWithConfig,
@@ -92,20 +92,21 @@ func init() {
 // Application context which contains bellow fields.
 // 1: startTime - Application start time.
 // 2: appInfoEntry - AppInfoEntry.
-// 3: zapLoggerEntries - List of ZapLoggerEntry.
-// 4: eventLoggerEntries - List of EventLoggerEntry.
-// 5: configEntries - List of ConfigEntry.
-// 6: certEntries - List of ConfigEntry.
-// 7: externalEntries - User entries registered from user code.
-// 8: userValues - User K/V registered from code.
-// 9: shutdownSig - Shutdown signals which contains syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT.
-// 10: shutdownHooks - Shutdown hooks registered from user code.
+// 3: rkMetaEntry - RkMetaEntry.
+// 4: zapLoggerEntries - List of ZapLoggerEntry.
+// 5: eventLoggerEntries - List of EventLoggerEntry.
+// 6: configEntries - List of ConfigEntry.
+// 7: certEntries - List of ConfigEntry.
+// 8: externalEntries - User entries registered from user code.
+// 9: userValues - User K/V registered from code.
+// 10: shutdownSig - Shutdown signals which contains syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT.
+// 11: shutdownHooks - Shutdown hooks registered from user code.
 type appContext struct {
 	// It is not recommended to override this value since StartTime would be assigned to current time
 	// at beginning of go process in init() function.
 	startTime          time.Time               `json:"startTime" yaml:"startTime"`
 	appInfoEntry       Entry                   `json:"appInfoEntry" yaml:"appInfoEntry"`
-	gitInfoEntry       Entry                   `json:"gitInfoEntry" yaml:"gitInfoEntry"`
+	rkMetaEntry        Entry                   `json:"rkMetaEntry" yaml:"rkMetaEntry"`
 	zapLoggerEntries   map[string]Entry        `json:"zapLoggerEntries" yaml:"zapLoggerEntries"`
 	eventLoggerEntries map[string]Entry        `json:"eventLoggerEntries" yaml:"eventLoggerEntries"`
 	configEntries      map[string]Entry        `json:"configEntries" yaml:"configEntries"`
@@ -469,36 +470,36 @@ func (ctx *appContext) GetStartTime() time.Time {
 	return ctx.startTime
 }
 
-// ************************************
-// ****** Git info Entry related ******
-// ************************************
+// ***********************************
+// ****** Rk Meta Entry related ******
+// ***********************************
 
 // Returns entry name if entry is not nil, otherwise, return an empty string.
 // Entry will be added into map of appContext.BasicEntries in order to distinguish between user entries
 // and RK default entries.
 //
 // Please do NOT add other entries by calling this function although it would do no harm to context.
-func (ctx *appContext) SetGitInfoEntry(entry Entry) string {
+func (ctx *appContext) SetRkMetaEntry(entry Entry) string {
 	if entry == nil {
 		return ""
 	}
 
-	ctx.gitInfoEntry = entry
+	ctx.rkMetaEntry = entry
 	return entry.GetName()
 }
 
-// Get rkentry.AppInfoEntry.
-func (ctx *appContext) GetGitInfoEntry() *GitInfoEntry {
-	if ctx.gitInfoEntry != nil {
-		return ctx.gitInfoEntry.(*GitInfoEntry)
+// Get rkentry.RkMetaEntry.
+func (ctx *appContext) GetRkMetaEntry() *RkMetaEntry {
+	if ctx.rkMetaEntry != nil {
+		return ctx.rkMetaEntry.(*RkMetaEntry)
 	}
 
 	return nil
 }
 
-// Get rkentry.AppInfoEntry.
-func (ctx *appContext) GetGitInfoEntryRaw() Entry {
-	return ctx.gitInfoEntry
+// Get rkentry.RkMetaEntry.
+func (ctx *appContext) GetRkMetaEntryRaw() Entry {
+	return ctx.rkMetaEntry
 }
 
 // **********************************
