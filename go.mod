@@ -14,7 +14,7 @@ require (
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.22.0 // indirect
-	github.com/rookie-ninja/rk-common v1.0.9-0.20210707090853-df41fd8feab9
+	github.com/rookie-ninja/rk-common v1.0.9-0.20210707164337-7a2637394810
 	github.com/rookie-ninja/rk-logger v1.0.10-0.20210527055114-0f92ffe223bd
 	github.com/rookie-ninja/rk-query v1.0.12-0.20210707092918-fda347faf939
 	github.com/shirou/gopsutil/v3 v3.21.4

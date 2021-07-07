@@ -6,7 +6,6 @@ app: # NOT required
   iconUrl: "http://example.com"       # Optional, default: ""
   docsUrl: ["http://example.com"]     # Optional, default: []
   maintainers: ["rk-dev"]             # Optional, default: []
-  depDocPath: ""                      # Optional, default: ""
 zapLogger:
   - name: zap-logger                      # Required
     description: "Description of entry"   # Optional

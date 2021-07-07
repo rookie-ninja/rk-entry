@@ -19,52 +19,40 @@ const (
 	AppInfoEntryName        = "AppInfoDefault"
 	AppInfoEntryType        = "AppInfoEntry"
 	AppInfoEntryDescription = "Internal RK entry which describes application with fields of appName, version and etc."
-	AppMetaDir              = "docs"
-	AppMetaLicenseFileName  = "LICENSE"
-	AppMetaGoModFileName    = "go.mod"
-	AppMetaReadmeFileName   = "README.md"
 )
 
 // Bootstrap config of application's basic information.
-// 1: AppName: Application name which refers to go process.
-// 2: Version: Application version.
-// 3: Description: Description of application itself.
-// 5: Keywords: A set of words describe application.
-// 6: HomeUrl: Home page URL.
-// 7: IconUrl: Application Icon URL.
-// 8: Maintainers: Maintainers of application.
-// 9: DocsUrl: A set of URLs of documentations of application.
-// 10: Dependencies: Go mod file contents.
-// 11: License: License file contents.
-// 12: Readme: README.md file contents.
-// 13: GoMod: go.mod file contents.
+// 1: Description: Description of application itself.
+// 2: Keywords: A set of words describe application.
+// 3: HomeUrl: Home page URL.
+// 4: IconUrl: Application Icon URL.
+// 5: Maintainers: Maintainers of application.
+// 6: DocsUrl: A set of URLs of documentations of application.
 type BootConfigAppInfo struct {
 	App struct {
-		Description  string   `yaml:"description" json:"description"`
-		Keywords     []string `yaml:"keywords" json:"keywords"`
-		HomeUrl      string   `yaml:"homeUrl" json:"homeUrl"`
-		IconUrl      string   `yaml:"iconUrl" json:"iconUrl"`
-		DocsUrl      []string `yaml:"docsUrl" json:"docsUrl"`
-		Maintainers  []string `yaml:"maintainers" json:"maintainers"`
-		Dependencies string   `yaml:"dependencies" json:"dependencies"`
-		License      string   `yaml:"-" json:"-"`
-		Readme       string   `yaml:"-" json:"-"`
-		GoMod        string   `yaml:"-" json:"-"`
-	} `yaml:"rk"`
+		Description string   `yaml:"description" json:"description"`
+		Keywords    []string `yaml:"keywords" json:"keywords"`
+		HomeUrl     string   `yaml:"homeUrl" json:"homeUrl"`
+		IconUrl     string   `yaml:"iconUrl" json:"iconUrl"`
+		DocsUrl     []string `yaml:"docsUrl" json:"docsUrl"`
+		Maintainers []string `yaml:"maintainers" json:"maintainers"`
+	} `yaml:"app"`
 }
 
 // AppInfo Entry contains bellow fields.
 // 1: AppName: Application name which refers to go process
 // 2: Version: Application version
 // 3: Lang: Programming language <NOT configurable!>
-// 4: Description: Description of application itself
+// 4: EntryDescription: Description of application itself
 // 5: Keywords: A set of words describe application
 // 6: HomeUrl: Home page URL
 // 7: IconUrl: Application Icon URL
 // 8: DocsUrl: A set of URLs of documentations of application
 // 9: Maintainers: Maintainers of application
-// 10: Dependencies: A list of go dependencies.
-// 11: License: License of current application.
+// 10: License: License of current application.
+// 11: Readme: README.md file of current application.
+// 11: GoMod: go.mod file of current application.
+// 12: UtHtml: cov.html file of current application.
 type AppInfoEntry struct {
 	EntryName        string   `json:"entryName" yaml:"entryName"`
 	EntryType        string   `json:"entryType" yaml:"entryType"`
@@ -84,19 +72,6 @@ type AppInfoEntry struct {
 }
 
 // Generate a AppInfo entry with default fields.
-// 1: AppName: rkApp
-// 2: Version: v0.0.0
-// 4: Description: rk application
-// 3: Lang: golang
-// 5: Keywords: []
-// 6: HomeURL: ""
-// 7: IconURL: ""
-// 8: Maintainers: []
-// 9: DocsURL: []
-// 10: Dependencies: []
-// 11: License: ""
-// 12: Readme: ""
-// 13: GoMod: ""
 func AppInfoEntryDefault() *AppInfoEntry {
 	return &AppInfoEntry{
 		EntryName:        AppInfoEntryName,

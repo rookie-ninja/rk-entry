@@ -57,9 +57,9 @@ func NewProcessInfo() *ProcessInfo {
 	// Assign unknown value to user in order to prevent panic
 	if err != nil {
 		u = &user.User{
-			Name: "unknown",
-			Uid:  "unknown",
-			Gid:  "unknown",
+			Name: "",
+			Uid:  "",
+			Gid:  "",
 		}
 	}
 
@@ -78,9 +78,9 @@ func NewProcessInfo() *ProcessInfo {
 		StartTime:   GlobalAppCtx.GetStartTime().Format(time.RFC3339),
 		UpTimeSec:   int64(GlobalAppCtx.GetUpTime().Seconds()),
 		UpTimeStr:   durafmt.ParseShort(GlobalAppCtx.GetUpTime()).String(),
-		Realm:       rkcommon.GetDefaultIfEmptyString(os.Getenv("REALM"), "unknown"),
-		Region:      rkcommon.GetDefaultIfEmptyString(os.Getenv("REGION"), "unknown"),
-		AZ:          rkcommon.GetDefaultIfEmptyString(os.Getenv("AZ"), "unknown"),
-		Domain:      rkcommon.GetDefaultIfEmptyString(os.Getenv("DOMAIN"), "unknown"),
+		Realm:       rkcommon.GetDefaultIfEmptyString(os.Getenv("REALM"), ""),
+		Region:      rkcommon.GetDefaultIfEmptyString(os.Getenv("REGION"), ""),
+		AZ:          rkcommon.GetDefaultIfEmptyString(os.Getenv("AZ"), ""),
+		Domain:      rkcommon.GetDefaultIfEmptyString(os.Getenv("DOMAIN"), ""),
 	}
 }

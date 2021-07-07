@@ -438,7 +438,10 @@ AppInfoEntry contains bellow fields which could be overridden via YAML file or c
 | IconUrl | Application Icon URL. | iconURL | "" |
 | DocsUrl | A set of URLs of documentations of application. | docsURL | [] |
 | Maintainers | Maintainers of application. | maintainers | [] |
-| Dependencies | Application dependencies which is parsed from result of go list -json all | depDocPath | [] |
+| License | License of current application | N/A | "" |
+| Readme | README.md file of current application | N/A | "" |
+| GoMod | go.mod file of current application | N/A | "" |
+| UtHtml | cov.html file of current application | N/A | "" |
 
 ##### YAML Hierarchy
 ```yaml
@@ -449,7 +452,6 @@ app:
   iconUrl: "http://example.com"       # Optional, default: ""
   docsUrl: ["http://example.com"]     # Optional, default: []
   maintainers: ["rk-dev"]             # Optional, default: []
-  depDocPath: ""                      # Optional, default: ""
 ```
 
 ##### Access AppInfoEntry
@@ -1232,9 +1234,9 @@ fmt.Println(rkcommon.ConvertStructToJSONPretty(rkentry.NewProcessInfo()))
   "startTime": "2021-05-14T02:59:51+08:00",
   "upTimeSec": 0,
   "upTimeStr": "12 milliseconds",
-  "region": "unknown",
-  "az": "unknown",
-  "realm": "unknown",
+  "region": "",
+  "az": "",
+  "realm": "",
   "domain": "dev"
 }
 ```
