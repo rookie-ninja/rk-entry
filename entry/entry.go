@@ -32,7 +32,7 @@ import (
 // Register your reg function in init() in order to register your entry while application starts
 //
 // How entry interact with rk-boot.Bootstrapper?
-// 1: Entry will be created and registered into rk_ctx.GlobalAppCtx
+// 1: Entry will be created and registered into rkentry.GlobalAppCtx
 // 2: Bootstrap will be called from Bootstrapper.Bootstrap() function
 // 3: Application will wait for shutdown signal
 // 4: Interrupt will be called from Bootstrapper.Interrupt() function
