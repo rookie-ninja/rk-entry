@@ -37,6 +37,11 @@ The entry library mainly used by rk-boot.
       - [Access CertEntry](#access-certentry)
       - [Stringfy CertEntry](#stringfy-certentry)
       - [Select cert entry dynamically based on environment](#select-cert-entry-dynamically-based-on-environment)
+    - [CredEntry](#credentry)
+      - [YAML Hierarchy](#yaml-hierarchy-5)
+      - [Access CredEntry](#access-credentry)
+      - [Stringfy CredEntry](#stringfy-credentry)
+      - [Select cred entry dynamically based on environment](#select-cred-entry-dynamically-based-on-environment)
   - [Info Utility](#info-utility)
     - [ProcessInfo](#processinfo)
       - [Fields](#fields)
@@ -220,8 +225,9 @@ GlobalAppCtx
 | zapLoggerEntries | See ZapLoggerEntry for detail. | zapLoggerEntries | Includes zap logger entity initiated by user or system by default. |
 | eventLoggerEntries | See EventLoggerEntry for detail. | eventLoggerEntries | Includes query logger entity initiated by user or system by default. |
 | configEntries | See ConfigEntry for detail. | configEntries | Includes viper config entity initiated by user or system by default. |
-| certEntries | See CertEntry for detail. | configEntries | Includes certificates retrieved while bootstrapping with configuration initiated by user. |
-| externalEntries | User implemented Entry. | configEntries | Includes user implemented Entry configuration initiated by user. |
+| certEntries | See CertEntry for detail. | certEntries | Includes certificates retrieved while bootstrapping with configuration initiated by user. |
+| credEntries | See CredEntry for detail. | credEntries | Includes credentials retrieved while bootstrapping with configuration initiated by user. |
+| externalEntries | User implemented Entry. | externalEntries | Includes user implemented Entry configuration initiated by user. |
 | userValues | User K/V registered from code. | userValues | empty map |
 | shutdownSig | Shutdown signals which includes syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT. | shutdown_sig | channel includes syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT |
 | shutdownHooks | Shutdown hooks registered from user code. | shutdown_hooks | empty list |
@@ -325,6 +331,24 @@ success := rkentry.GlobalAppCtx.RemoveCertEntry("entry name")
 
 // Add CertEntry
 entryName := rkentry.GlobalAppCtx.AddCertEntry(<CertEntry>)
+```
+
+- Access CredEntry
+```go
+// Get CredEntry from GlobalAppCtx
+credEntry := rkentry.GlobalAppCtx.GetCredEntry("entry name")
+
+// List CredEntry as map[<entry name>]*CredEntry
+credEntries := rkentry.GlobalAppCtx.ListCertEntries()
+
+// List CredEntry as map[<entry name>]*Entry
+credEntriesRaw := rkentry.GlobalAppCtx.ListCredEntriesRaw()
+
+// Remove CredEntry
+success := rkentry.GlobalAppCtx.RemoveCredEntry("entry name")
+
+// Add CredEntry
+entryName := rkentry.GlobalAppCtx.AddCredEntry(<CredEntry>)
 ```
 
 - Access ConfigEntry
@@ -1179,6 +1203,150 @@ DB:
     locale: "*::*::*::prod"
     addr: "176.0.0.1:6379"
 ```
+
+
+
+
+
+
+#### CredEntry
+CredEntry provides a convenient way to retrieve credentials from local or remote services.
+Supported services listed bellow:
+- localFs
+- remoteFs
+- etcd
+- consul
+
+| Name | Description |
+| ------ | ------ |
+| Stores | Map of CredStore which contains server & client keys retrieved from service |
+| Retrievers | Map of Retriever specified in YAML file |
+
+##### YAML Hierarchy
+
+| Name | Description | Default |
+| ------ | ------ | ------ |
+| cert.consul.name | Name of consul retriever | "" |
+| cert.consul.locale | Represent environment of current process follows schema of \<realm\>::\<region\>::\<az\>::\<domain\> | \*::\*::\*::\* | 
+| cert.consul.endpoint | Endpoint of Consul server, http://x.x.x.x or x.x.x.x both acceptable. | N/A |
+| cert.consul.datacenter | consul datacenter. | "" |
+| cert.consul.token | Token for access consul. | "" |
+| cert.consul.basicAuth | Basic auth for consul server, like <user:pass>. | "" |
+| cert.consul.paths | Paths of credentials in Consul server. | "" |
+| cert.etcd.name | Name of etcd retriever | "" |
+| cert.etcd.locale | Represent environment of current process follows schema of \<realm\>::\<region\>::\<az\>::\<domain\> | \*::\*::\*::\* | 
+| cert.etcd.endpoint | Endpoint of etcd server, http://x.x.x.x or x.x.x.x both acceptable. | N/A |
+| cert.etcd.basicAuth | Basic auth for etcd server, like <user:pass>. | "" |
+| cert.etcd.paths | Path of credentials in etcd server. | "" |
+| cert.localFs.name | Name of localFs retriever | "" |
+| cert.localFs.locale | Represent environment of current process follows schema of \<realm\>::\<region\>::\<az\>::\<domain\> | \*::\*::\*::\* | 
+| cert.localFs.paths | Path of credentials in etcd server. | "" |
+| cert.remoteFs.name | Name of remoteFileStore retriever | "" |
+| cert.remoteFs.locale | Represent environment of current process follows schema of \<realm\>::\<region\>::\<az\>::\<domain\> | \*::\*::\*::\* | 
+| cert.remoteFs.endpoint | Endpoint of remoteFileStore server, http://x.x.x.x or x.x.x.x both acceptable. | N/A |
+| cert.remoteFs.basicAuth | Basic auth for remoteFileStore server, like <user:pass>. | "" |
+| cert.remoteFs.paths | Path of credentials in etcd server. | "" |
+
+
+##### Access CredEntry
+```go
+// Access entry
+credEntry := rkentry.GlobalAppCtx.GetCredEntry("name of cred entry")
+
+// Access cred stores which contains credentials as byte array
+cred := credEntry.Store.GetCred("your path of cred")
+```
+
+##### Stringfy CredEntry
+Assuming we have cred YAML as bellow:
+
+```yaml
+---
+mysql:
+ user: admin
+ pass: pass
+```
+
+```go
+fmt.Println(rkentry.GlobalAppCtx.GetCredEntry("local-cred").String())
+```
+
+Process information could be printed either.
+```json
+{
+    "entryDescription":"Description of entry",
+    "entryName":"local-cred",
+    "entryType":"CredEntry",
+    "retriever":{
+        "provider":"localFs",
+        "locale":"*::*::*::*",
+        "paths":[
+            "example/my-cred.yaml"
+        ]
+    },
+    "store":{
+        "example/my-cred.yaml":"Sensitive data!"
+    }
+}
+```
+
+##### Select cred entry dynamically based on environment
+We are using <locale> in yaml config and OS environment variable to distinguish different cred entries.
+
+```
+RK use <realm>::<region>::<az>::<domain> to distinguish different environment.
+Variable of <locale> could be composed as form of <realm>::<region>::<az>::<domain>
+- realm: It could be a company, department and so on, like RK-Corp.
+         Environment variable: REALM
+         Eg: RK-Corp
+         Wildcard: supported
+
+- region: Please see AWS web site: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
+          Environment variable: REGION
+          Eg: us-east
+          Wildcard: supported
+
+- az: Availability zone, please see AWS web site for details: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
+      Environment variable: AZ
+      Eg: us-east-1
+      Wildcard: supported
+
+- domain: Stands for different environment, like dev, test, prod and so on, users can define it by themselves.
+          Environment variable: DOMAIN
+          Eg: prod
+          Wildcard: supported
+
+How it works?
+First, we will split locale with "::" and extract realm, region, az and domain.
+Second, get environment variable named as REALM, REGION, AZ and DOMAIN.
+Finally, compare every element in locale variable and environment variable.
+If variables in locale represented as wildcard(*), we will ignore comparison step.
+
+Example:
+# let's assuming we are going to define DB address which is different based on environment.
+# Then, user can distinguish DB address based on locale.
+# We recommend to include locale with wildcard.
+---
+DB:
+  - name: redis-default
+    locale: "*::*::*::*"
+    addr: "192.0.0.1:6379"
+  - name: redis-in-test
+    locale: "*::*::*::test"
+    addr: "192.0.0.1:6379"
+  - name: redis-in-prod
+    locale: "*::*::*::prod"
+    addr: "176.0.0.1:6379"
+```
+
+
+
+
+
+
+
+
+
 
 ### Info Utility
 #### ProcessInfo

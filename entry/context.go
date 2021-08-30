@@ -29,6 +29,7 @@ var (
 		eventLoggerEntries: make(map[string]Entry), // internal entry
 		configEntries:      make(map[string]Entry), // internal entry
 		certEntries:        make(map[string]Entry), // internal entry
+		credEntries:        make(map[string]Entry), // internal entry
 		externalEntries:    make(map[string]Entry), // external entry
 		shutdownSig:        make(chan os.Signal),
 		shutdownHooks:      make(map[string]ShutdownHook),
@@ -80,7 +81,8 @@ func init() {
 		RegisterZapLoggerEntriesWithConfig,
 		RegisterEventLoggerEntriesWithConfig,
 		RegisterConfigEntriesWithConfig,
-		RegisterCertEntriesFromConfig)
+		RegisterCertEntriesFromConfig,
+		RegisterCredEntriesFromConfig)
 
 	signal.Notify(GlobalAppCtx.shutdownSig,
 		syscall.SIGHUP,
@@ -111,6 +113,7 @@ type appContext struct {
 	eventLoggerEntries map[string]Entry        `json:"eventLoggerEntries" yaml:"eventLoggerEntries"`
 	configEntries      map[string]Entry        `json:"configEntries" yaml:"configEntries"`
 	certEntries        map[string]Entry        `json:"certEntries" yaml:"certEntries"`
+	credEntries        map[string]Entry        `json:"credEntries" yaml:"credEntries"`
 	externalEntries    map[string]Entry        `json:"externalEntries" yaml:"externalEntries"`
 	userValues         map[string]interface{}  `json:"userValues" yaml:"userValues"`
 	shutdownSig        chan os.Signal          `json:"shutdownSig" yaml:"shutdownSig"`
@@ -366,6 +369,70 @@ func (ctx *appContext) GetEventHelper(name string) *rkquery.EventHelper {
 // Get default rkentry.EventLoggerEntry from GlobalAppCtx.
 func (ctx *appContext) GetEventLoggerEntryDefault() *EventLoggerEntry {
 	return ctx.GetEventLoggerEntry(DefaultEventLoggerEntryName)
+}
+
+// ************************************
+// ******** Cred Entry related ********
+// ************************************
+
+// Returns entry name if entry is not nil, otherwise, return an empty string.
+// Entry will be added into map of appContext.BasicEntries in order to distinguish between user entries
+// and RK default entries.
+//
+// Please do NOT add other entries by calling this function although it would do no harm to context.
+func (ctx *appContext) AddCredEntry(entry *CredEntry) string {
+	if entry == nil {
+		return ""
+	}
+
+	ctx.credEntries[entry.GetName()] = entry
+	return entry.GetName()
+}
+
+// Get event logger entry from GlobalAppCtx with name.
+// If entry retrieved with provided name was not type of rkentry.CredEntry, we will just return nil.
+func (ctx *appContext) GetCredEntry(name string) *CredEntry {
+	if val, ok := GlobalAppCtx.credEntries[name]; ok {
+		if res, ok := val.(*CredEntry); ok {
+			return res
+		}
+	}
+
+	return nil
+}
+
+// Remove cred entry.
+func (ctx *appContext) RemoveCredEntry(name string) bool {
+	if val, ok := GlobalAppCtx.credEntries[name]; ok {
+		if _, ok := val.(*CredEntry); ok {
+			delete(GlobalAppCtx.credEntries, name)
+			return true
+		}
+	}
+
+	return false
+}
+
+// Returns map of cred entries.
+func (ctx *appContext) ListCredEntries() map[string]*CredEntry {
+	res := make(map[string]*CredEntry)
+	for k, v := range ctx.credEntries {
+		res[k] = v.(*CredEntry)
+	}
+
+	return res
+}
+
+// Returns map of cred entries as Entry.
+func (ctx *appContext) ListCredEntriesRaw() map[string]Entry {
+	return GlobalAppCtx.credEntries
+}
+
+// Internal use only.
+func (ctx *appContext) clearCredEntries() {
+	for k := range ctx.credEntries {
+		delete(ctx.credEntries, k)
+	}
 }
 
 // ************************************
