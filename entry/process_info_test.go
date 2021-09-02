@@ -19,9 +19,6 @@ func TestBasicInfoToStruct_HappyCase(t *testing.T) {
 	info := NewProcessInfo()
 	assert.NotNil(t, info)
 
-	assert.NotEmpty(t, info.Username)
-	assert.NotEmpty(t, info.UID)
-	assert.NotEmpty(t, info.GID)
 	assert.NotEmpty(t, info.StartTime)
 	assert.True(t, info.UpTimeSec >= 0)
 	assert.NotEmpty(t, info.UpTimeStr)
