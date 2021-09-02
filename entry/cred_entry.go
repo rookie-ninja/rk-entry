@@ -333,17 +333,17 @@ func (retriever *CredRetrieverEtcd) Retrieve(context.Context) *CredStore {
 		Password:    rkcommon.GetPasswordFromBasicAuthString(retriever.BasicAuth),
 	})
 
-	if err != nil {
-		retriever.ZapLoggerEntry.GetLogger().Warn("failed to create etcd client v3",
-			zap.Error(err))
-		return nil
-	}
-
-	defer client.Close()
-
 	store := &CredStore{
 		Cred: make(map[string][]byte, 0),
 	}
+
+	if err != nil {
+		retriever.ZapLoggerEntry.GetLogger().Warn("failed to create etcd client v3",
+			zap.Error(err))
+		return store
+	}
+
+	defer client.Close()
 
 	for i := range retriever.Paths {
 		path := retriever.Paths[i]
@@ -444,16 +444,16 @@ func (retriever *CredRetrieverConsul) Retrieve(context.Context) *CredStore {
 		config.HttpAuth = auth
 	}
 
+	store := &CredStore{
+		Cred: make(map[string][]byte, 0),
+	}
+
 	// Get a new client
 	client, err := api.NewClient(config)
 	if err != nil {
 		retriever.ZapLoggerEntry.GetLogger().Warn("failed to create consul client v3",
 			zap.Error(err))
-		return nil
-	}
-
-	store := &CredStore{
-		Cred: make(map[string][]byte, 0),
+		return store
 	}
 
 	for i := range retriever.Paths {
@@ -547,7 +547,7 @@ func (retriever *CredRetrieverLocalFs) Retrieve(context.Context) *CredStore {
 			retriever.ZapLoggerEntry.GetLogger().Warn("failed to read credential from localFs",
 				zap.Error(err),
 				zap.String("path", localPath))
-			return nil
+			continue
 		}
 
 		store.Cred[retriever.Paths[i]] = value
