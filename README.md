@@ -1,6 +1,7 @@
 # rk-entry
 [![build](https://github.com/rookie-ninja/rk-entry/actions/workflows/ci.yml/badge.svg)](https://github.com/rookie-ninja/rk-entry/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/rookie-ninja/rk-entry/branch/master/graph/badge.svg?token=KGKHKIWOEQ)](https://codecov.io/gh/rookie-ninja/rk-entry)
+[![Go Report Card](https://goreportcard.com/badge/github.com/rookie-ninja/rk-entry)](https://goreportcard.com/report/github.com/rookie-ninja/rk-entry)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 The entry library mainly used by rk-boot.
