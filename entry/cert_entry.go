@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -15,12 +16,13 @@ import (
 )
 
 const (
-	CertEntryName        = "CertDefault"
-	CertEntryType        = "CertEntry"
+	CertEntryName = "CertDefault" // CertEntryName name of default entry
+	CertEntryType = "CertEntry"   // CertEntryType type name of CertEntry
+	// CertEntryDescription is defualt description of CertEntry
 	CertEntryDescription = "Internal RK entry which retrieves certificates from localFs, remoteFs, etcd or consul."
 )
 
-// Bootstrap config of CertEntry.
+// BootConfigCert is bootstrap config of CertEntry.
 // etcd:
 // 1: Cert.Name: Name of section, required.
 // 2: Cert.Provider: etcd.
@@ -93,7 +95,7 @@ type BootConfigCert struct {
 	} `yaml:"cert" json:"cert"`
 }
 
-// Stores certificate as byte array.
+// CertStore stores certificate as byte array.
 // ServerCert: Server certificate.
 // ServerKey: Private key of server certificate.
 // ClientCert: Client certificate.
@@ -109,7 +111,7 @@ type CertStore struct {
 	ClientKey []byte `json:"-" yaml:"-"`
 }
 
-// Parse server certificate to human readable string.
+// SeverCertString parse server certificate to human readable string.
 func (store *CertStore) SeverCertString() string {
 	if len(store.ServerCert) < 1 {
 		return ""
@@ -128,9 +130,9 @@ func (store *CertStore) SeverCertString() string {
 	return res
 }
 
-// Parse client certificate to human readable string.
+// ClientCertString parse client certificate to human readable string.
 func (store *CertStore) ClientCertString() string {
-	if len(store.ServerCert) < 1 {
+	if len(store.ClientCert) < 1 {
 		return ""
 	}
 
@@ -162,7 +164,7 @@ func (store *CertStore) parseCert(bytes []byte) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-// Marshal entry
+// MarshalJSON marshal entry
 func (store *CertStore) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"serverCert": store.SeverCertString(),
@@ -172,7 +174,7 @@ func (store *CertStore) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&m)
 }
 
-// Unmarshal entry
+// UnmarshalJSON unmarshal entry
 func (store *CertStore) UnmarshalJSON([]byte) error {
 	return nil
 }
@@ -202,21 +204,21 @@ type CertEntry struct {
 // CertEntryOption Option which used while registering entry from codes.
 type CertEntryOption func(entry *CertEntry)
 
-// Provide name.
+// WithNameCert provide name.
 func WithNameCert(name string) CertEntryOption {
 	return func(entry *CertEntry) {
 		entry.EntryName = name
 	}
 }
 
-// Provide description.
+// WithDescriptionCert provide description.
 func WithDescriptionCert(description string) CertEntryOption {
 	return func(entry *CertEntry) {
 		entry.EntryDescription = description
 	}
 }
 
-// Provide ZapLoggerEntry.
+// WithZapLoggerEntryCert provide ZapLoggerEntry.
 func WithZapLoggerEntryCert(logger *ZapLoggerEntry) CertEntryOption {
 	return func(entry *CertEntry) {
 		if logger != nil {
@@ -225,7 +227,7 @@ func WithZapLoggerEntryCert(logger *ZapLoggerEntry) CertEntryOption {
 	}
 }
 
-// Provide EventLoggerEntry.
+// WithEventLoggerEntryCert provide EventLoggerEntry.
 func WithEventLoggerEntryCert(logger *EventLoggerEntry) CertEntryOption {
 	return func(entry *CertEntry) {
 		if logger != nil {
@@ -234,42 +236,42 @@ func WithEventLoggerEntryCert(logger *EventLoggerEntry) CertEntryOption {
 	}
 }
 
-// Provide Retriever.
+// WithRetrieverCert provide Retriever.
 func WithRetrieverCert(retriever Retriever) CertEntryOption {
 	return func(entry *CertEntry) {
 		entry.Retriever = retriever
 	}
 }
 
-// Provide server key path.
+// WithServerKeyPath provide server key path.
 func WithServerKeyPath(serverKeyPath string) CertEntryOption {
 	return func(entry *CertEntry) {
 		entry.ServerKeyPath = serverKeyPath
 	}
 }
 
-// Provide server cert path.
+// WithServerCertPath provide server cert path.
 func WithServerCertPath(serverCertPath string) CertEntryOption {
 	return func(entry *CertEntry) {
 		entry.ServerCertPath = serverCertPath
 	}
 }
 
-// Provide client key path.
+// WithClientKeyPath provide client key path.
 func WithClientKeyPath(clientKeyPath string) CertEntryOption {
 	return func(entry *CertEntry) {
 		entry.ClientKeyPath = clientKeyPath
 	}
 }
 
-// Provide client cert path.
+// WithClientCertPath provide client cert path.
 func WithClientCertPath(clientCertPath string) CertEntryOption {
 	return func(entry *CertEntry) {
 		entry.ClientCertPath = clientCertPath
 	}
 }
 
-// Implements rkentry.EntryRegFunc which generate Entry based on boot configuration file.
+// RegisterCertEntriesFromConfig implements rkentry.EntryRegFunc which generate Entry based on boot configuration file.
 // Currently, only YAML file is supported.
 // File path could be either relative or absolute.
 func RegisterCertEntriesFromConfig(configFilePath string) map[string]Entry {
@@ -378,7 +380,7 @@ func RegisterCertEntriesFromConfig(configFilePath string) map[string]Entry {
 	return res
 }
 
-// Create cert entry with options.
+// RegisterCertEntry create cert entry with options.
 func RegisterCertEntry(opts ...CertEntryOption) *CertEntry {
 	entry := &CertEntry{
 		EventLoggerEntry: GlobalAppCtx.GetEventLoggerEntryDefault(),
@@ -398,7 +400,7 @@ func RegisterCertEntry(opts ...CertEntryOption) *CertEntry {
 	return entry
 }
 
-// Iterate retrievers and call Retrieve() for each of them.
+// Bootstrap iterate retrievers and call Retrieve() for each of them.
 func (entry *CertEntry) Bootstrap(ctx context.Context) {
 	credStore := entry.Retriever.Retrieve(ctx)
 
@@ -413,13 +415,13 @@ func (entry *CertEntry) Interrupt(context.Context) {
 	// no op
 }
 
-// Return string of entry.
+// String return string of entry.
 func (entry *CertEntry) String() string {
 	bytes, _ := json.Marshal(entry)
 	return string(bytes)
 }
 
-// Marshal entry
+// MarshalJSON marshal entry
 func (entry *CertEntry) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"entryName":        entry.EntryName,
@@ -432,22 +434,22 @@ func (entry *CertEntry) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&m)
 }
 
-// Unmarshal entry
+// UnmarshalJSON unmarshal entry
 func (entry *CertEntry) UnmarshalJSON([]byte) error {
 	return nil
 }
 
-// Get name of entry.
+// GetName return name of entry.
 func (entry *CertEntry) GetName() string {
 	return entry.EntryName
 }
 
-// Get type of entry.
+// GetType return type of entry.
 func (entry *CertEntry) GetType() string {
 	return entry.EntryType
 }
 
-// Return description of entry
+// GetDescription return description of entry
 func (entry *CertEntry) GetDescription() string {
 	return entry.EntryDescription
 }

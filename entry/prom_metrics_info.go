@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -10,7 +11,7 @@ import (
 	"path"
 )
 
-// Request metrics to struct from prometheus collector
+// ReqMetricsRK request metrics to struct from prometheus collector
 // 1: RestPath - API path of restful service
 // 2: RestMethod - API method of restful service
 // 3: GrpcService - Grpc service
@@ -34,13 +35,13 @@ type ReqMetricsRK struct {
 	ResCode         []*ResCodeRK `json:"resCode" yaml:"resCode"`
 }
 
-// Labels and request count
+// ResCodeRK defines labels and request count
 type ResCodeRK struct {
 	ResCode string `json:"resCode" yaml:"resCode"`
 	Count   uint64 `json:"count" yaml:"count"`
 }
 
-// Parse metrics in prometheus client into rk style metrics for common service.
+// NewPromMetricsInfo parse metrics in prometheus client into rk style metrics for common service.
 func NewPromMetricsInfo(sumCollector *prometheus.SummaryVec) []*ReqMetricsRK {
 	res := make([]*ReqMetricsRK, 0)
 
@@ -167,7 +168,7 @@ func NewPromMetricsInfo(sumCollector *prometheus.SummaryVec) []*ReqMetricsRK {
 	return res
 }
 
-// Parse out path and response code.
+// getPathMethodAndResCode parse out path and response code.
 func getPathMethodAndResCode(metricsPB *dto.Metric) (grpcService, grpcMethod, restPath, restMethod, resCode string) {
 	for i := range metricsPB.Label {
 		switch metricsPB.Label[i].GetName() {

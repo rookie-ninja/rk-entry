@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -268,6 +269,10 @@ func TestZapLoggerEntry_GetLumberjackConfig_HappyCase(t *testing.T) {
 
 	// default logger and logger config would be assigned
 	assert.Equal(t, lumberjackConfig, entry.GetLumberjackConfig())
+}
+
+func TestZapLoggerEntry_UnmarshalJSON(t *testing.T) {
+	assert.Nil(t, NoopZapLoggerEntry().UnmarshalJSON(nil))
 }
 
 func convertToZapLoggerEntry(t *testing.T, raw Entry) *ZapLoggerEntry {

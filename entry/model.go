@@ -2,21 +2,22 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
-// Response of /healthy
+// HealthyResponse response of /healthy
 type HealthyResponse struct {
 	Healthy bool `json:"healthy" yaml:"healthy"`
 }
 
-// Response of /gc
+// GcResponse response of /gc
 // Returns memory stats of GC before and after.
 type GcResponse struct {
 	MemStatBeforeGc *MemInfo `json:"memStatBeforeGc" yaml:"memStatBeforeGc"`
 	MemStatAfterGc  *MemInfo `json:"memStatAfterGc" yaml:"memStatAfterGc"`
 }
 
-// Entry for ConfigsResponse
+// ConfigsResponse_ConfigEntry Entry for ConfigsResponse
 type ConfigsResponse_ConfigEntry struct {
 	EntryName        string                 `json:"entryName" yaml:"entryName"`
 	EntryType        string                 `json:"entryType" yaml:"entryType"`
@@ -25,22 +26,24 @@ type ConfigsResponse_ConfigEntry struct {
 	Path             string                 `json:"path" yaml:"path"`
 }
 
-// Response of /configs
+// ConfigsResponse response of /configs
 type ConfigsResponse struct {
 	Entries []*ConfigsResponse_ConfigEntry `json:"entries" yaml:"entries"`
 }
 
-// Response for path of /apis
+// ApisResponse response for path of /apis
 type ApisResponse struct {
 	Entries []*ApisResponse_Entry `json:"entries" yaml:"entries"`
 }
 
+// ApisResponse_Entry Entry for /apis
 type ApisResponse_Entry struct {
 	EntryName string             `json:"entryName" yaml:"entryName"`
 	Grpc      *ApisResponse_Grpc `json:"grpc" yaml:"grpc"`
 	Rest      *ApisResponse_Rest `json:"rest" yaml:"rest"`
 }
 
+// ApisResponse_Grpc Entry for /apis
 type ApisResponse_Grpc struct {
 	Service string             `json:"service" yaml:"service"`
 	Method  string             `json:"method" yaml:"method"`
@@ -49,6 +52,7 @@ type ApisResponse_Grpc struct {
 	Gw      *ApisResponse_Rest `json:"gw" yaml:"gw"`
 }
 
+// ApisResponse_Rest Entry for /apis
 type ApisResponse_Rest struct {
 	Port    uint64 `json:"port" yaml:"port"`
 	Pattern string `json:"pattern" yaml:"pattern"`
@@ -56,7 +60,7 @@ type ApisResponse_Rest struct {
 	SwUrl   string `json:"swUrl" yaml:"swUrl"`
 }
 
-// Response of /sys
+// SysResponse response of /sys
 type SysResponse struct {
 	CpuInfo   *CpuInfo   `json:"cpuInfo" yaml:"cpuInfo"`
 	MemInfo   *MemInfo   `json:"memInfo" yaml:"memInfo"`
@@ -65,12 +69,12 @@ type SysResponse struct {
 	GoEnvInfo *GoEnvInfo `json:"goEnvInfo" yaml:"goEnvInfo"`
 }
 
-// Response of /entries
+// EntriesResponse response of /entries
 type EntriesResponse struct {
 	Entries map[string][]*EntriesResponse_Entry `json:"entries" yaml:"entries"`
 }
 
-// Entry element which specifies name, type and description.
+// EntriesResponse_Entry Entry element which specifies name, type and description.
 type EntriesResponse_Entry struct {
 	EntryName        string `json:"entryName" yaml:"entryName"`
 	EntryType        string `json:"entryType" yaml:"entryType"`
@@ -78,11 +82,12 @@ type EntriesResponse_Entry struct {
 	EntryMeta        Entry  `json:"entryMeta" yaml:"entryMeta"`
 }
 
-// Response of /certs
+// CertsResponse response of /certs
 type CertsResponse struct {
 	Entries []*CertsResponse_Entry `json:"entries" yaml:"entries"`
 }
 
+// CertsResponse_Entry Entry for /certs
 type CertsResponse_Entry struct {
 	EntryName        string `json:"entryName" yaml:"entryName"`
 	EntryType        string `json:"entryType" yaml:"entryType"`
@@ -98,12 +103,12 @@ type CertsResponse_Entry struct {
 	ClientCert       string `json:"clientCert" yaml:"clientCert"`
 }
 
-// Response of /logs.
+// LogsResponse response of /logs.
 type LogsResponse struct {
 	Entries map[string][]*LogsResponse_Entry `json:"entries" yaml:"entries"`
 }
 
-// Entry element which specifies name, type. description, output path and error output path.
+// LogsResponse_Entry Entry element which specifies name, type. description, output path and error output path.
 type LogsResponse_Entry struct {
 	EntryName        string   `json:"entryName" yaml:"entryName"`
 	EntryType        string   `json:"entryType" yaml:"entryType"`
@@ -113,32 +118,32 @@ type LogsResponse_Entry struct {
 	ErrorOutputPaths []string `json:"errorOutputPaths" yaml:"errorOutputPaths"`
 }
 
-// Response of /req
+// ReqResponse response of /req
 type ReqResponse struct {
 	Metrics []*ReqMetricsRK `json:"metrics" yaml:"metrics"`
 }
 
-// Response of /dep
+// DepResponse response of /dep
 type DepResponse struct {
 	GoMod string `json:"goMod" yaml:"goMod"`
 }
 
-// Response of /license
+// LicenseResponse response of /license
 type LicenseResponse struct {
 	License string `json:"license" yaml:"license"`
 }
 
-// Response of /readme
+// ReadmeResponse response of /readme
 type ReadmeResponse struct {
 	Readme string `json:"readme" yaml:"readme"`
 }
 
-// Response of /gwErrorMapping
+// GwErrorMappingResponse response of /gwErrorMapping
 type GwErrorMappingResponse struct {
 	Mapping map[int32]*GwErrorMappingResponse_Mapping `json:"mapping" yaml:"mapping"`
 }
 
-// Element of mapping of grpc code to restful code with grpc-gateway
+// GwErrorMappingResponse_Mapping element of mapping of grpc code to restful code with grpc-gateway
 type GwErrorMappingResponse_Mapping struct {
 	GrpcCode int32  `json:"grpcCode" yaml:"grpcCode"`
 	GrpcText string `json:"grpcText" yaml:"grpcText"`
@@ -146,7 +151,7 @@ type GwErrorMappingResponse_Mapping struct {
 	RestText string `json:"restText" yaml:"restText"`
 }
 
-// Response of /git
+// GitResponse response of /git
 type GitResponse struct {
 	Package        string `json:"package" yaml:"package"`
 	Url            string `json:"url" yaml:"url"`

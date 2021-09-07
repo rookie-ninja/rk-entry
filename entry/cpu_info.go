@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -32,6 +33,7 @@ func initCpuInfos() *CpuInfo {
 	return res
 }
 
+// CpuInfo defines CPU information read from system
 type CpuInfo struct {
 	CpuUsedPercentage float64 `json:"cpuUsedPercentage" yaml:"cpuUsedPercentage"`
 	LogicalCoreCount  int     `json:"logicalCoreCount" yaml:"logicalCoreCount"`
@@ -42,6 +44,7 @@ type CpuInfo struct {
 	CacheSize         int32   `json:"cacheSize" yaml:"cacheSize"`
 }
 
+// NewCpuInfo creates a new CpuInfo instance
 func NewCpuInfo() *CpuInfo {
 	var cpuUsedPercentage float64
 	cpuStat, _ := cpu.Percent(0, false)

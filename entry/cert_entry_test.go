@@ -112,10 +112,10 @@ oxU=
 `
 
 	store := CertStore{
-		ServerCert: []byte(cert),
+		ClientCert: []byte(cert),
 	}
 
-	assert.NotEmpty(t, store.SeverCertString())
+	assert.NotEmpty(t, store.ClientCertString())
 }
 
 func TestParseCert_WithNilInput(t *testing.T) {
@@ -171,6 +171,11 @@ oxU=
 
 	assert.Nil(t, err)
 	assert.NotNil(t, cert)
+}
+
+func TestCredStore_UnmarshalJSON(t *testing.T) {
+	store := CertStore{}
+	assert.Nil(t, store.UnmarshalJSON(nil))
 }
 
 func TestWithZapLoggerEntryCert_WithNilLogger(t *testing.T) {
@@ -394,6 +399,8 @@ func TestCertEntry_Interrupt_HappyCase(t *testing.T) {
 	entry := RegisterCertEntry()
 
 	entry.Interrupt(context.Background())
+
+	GlobalAppCtx.clearCertEntries()
 }
 
 func TestCertEntry_String_HappyCase(t *testing.T) {
@@ -415,6 +422,20 @@ func TestCertEntry_GetName_HappyCase(t *testing.T) {
 func TestCertEntry_GetType_HappyCase(t *testing.T) {
 	entry := RegisterCertEntry()
 	assert.Equal(t, CertEntryType, entry.GetType())
+
+	GlobalAppCtx.clearCertEntries()
+}
+
+func TestCertEntry_GetDescription_HappyCase(t *testing.T) {
+	entry := RegisterCertEntry(WithDescriptionCert("ut-description"))
+	assert.Equal(t, "ut-description", entry.GetDescription())
+
+	GlobalAppCtx.clearCertEntries()
+}
+
+func TestCertEntry_UnmarshalJSON(t *testing.T) {
+	entry := RegisterCertEntry()
+	assert.Nil(t, entry.UnmarshalJSON(nil))
 
 	GlobalAppCtx.clearCertEntries()
 }

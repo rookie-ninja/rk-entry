@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -16,11 +17,12 @@ import (
 )
 
 const (
-	ConfigEntryType        = "ConfigEntry"
+	ConfigEntryType = "ConfigEntry" // ConfigEntryType is entry type of ConfigEntry
+	// ConfigEntryDescription is default description of ConfigEntry
 	ConfigEntryDescription = "Internal RK entry which read user config file into viper instance."
 )
 
-// Bootstrap config of ConfigEntry information.
+// BootConfigConfig is bootstrap config of ConfigEntry information.
 // 1: Config.Name: Name of viper entry.
 // 2: Config.Description: Description of viper entry.
 // 3: Config.Locale: <realm>::<region>::<az>::<domain>
@@ -35,7 +37,7 @@ type BootConfigConfig struct {
 	} `yaml:"config" json:"config"`
 }
 
-// ViperEntry contains bellow fields.
+// ConfigEntry contains bellow fields.
 // 1: EntryName: Name of entry.
 // 2: EntryType: Type of entry which is ConfigEntryType.
 // 3: EntryDescription: Description of ConfigEntry.
@@ -52,10 +54,10 @@ type ConfigEntry struct {
 	vp               *viper.Viper `yaml:"-" json:"-"`
 }
 
-// ViperEntry Option which used while registering entry from codes.
+// ConfigEntryOption which used while registering entry from codes.
 type ConfigEntryOption func(*ConfigEntry)
 
-// Provide name of entry.
+// WithNameConfig provide name of entry.
 func WithNameConfig(name string) ConfigEntryOption {
 	return func(entry *ConfigEntry) {
 		if len(name) > 0 {
@@ -64,7 +66,7 @@ func WithNameConfig(name string) ConfigEntryOption {
 	}
 }
 
-// Provide description of entry.
+// WithDescriptionConfig provide description of entry.
 func WithDescriptionConfig(description string) ConfigEntryOption {
 	return func(entry *ConfigEntry) {
 		if len(description) > 0 {
@@ -73,7 +75,7 @@ func WithDescriptionConfig(description string) ConfigEntryOption {
 	}
 }
 
-// Provide description of entry.
+// WithLocaleConfig provide description of entry.
 func WithLocaleConfig(locale string) ConfigEntryOption {
 	return func(entry *ConfigEntry) {
 		if len(locale) > 0 {
@@ -82,14 +84,14 @@ func WithLocaleConfig(locale string) ConfigEntryOption {
 	}
 }
 
-// Provide path of entry.
+// WithPathConfig provide path of entry.
 func WithPathConfig(path string) ConfigEntryOption {
 	return func(entry *ConfigEntry) {
 		entry.Path = path
 	}
 }
 
-// Provide viper instance of entry.
+// WithViperInstanceConfig provide viper instance of entry.
 func WithViperInstanceConfig(vp *viper.Viper) ConfigEntryOption {
 	return func(entry *ConfigEntry) {
 		if vp != nil {
@@ -98,7 +100,7 @@ func WithViperInstanceConfig(vp *viper.Viper) ConfigEntryOption {
 	}
 }
 
-// Create viper entries with config file.
+// RegisterConfigEntriesWithConfig create config entries with config file.
 // Currently, only YAML file is supported.
 // File path could be either relative or absolute.
 func RegisterConfigEntriesWithConfig(configFilePath string) map[string]Entry {
@@ -126,7 +128,7 @@ func RegisterConfigEntriesWithConfig(configFilePath string) map[string]Entry {
 	return res
 }
 
-// Crate viper entry with options.
+// RegisterConfigEntry create ConfigEntry with options.
 func RegisterConfigEntry(opts ...ConfigEntryOption) *ConfigEntry {
 	entry := &ConfigEntry{
 		EntryType:        ConfigEntryType,
@@ -176,23 +178,23 @@ func (entry *ConfigEntry) Interrupt(context.Context) {
 	// no op
 }
 
-// Get name of entry.
+// GetName returns name of entry.
 func (entry *ConfigEntry) GetName() string {
 	return entry.EntryName
 }
 
-// Get type of entry.
+// GetType returns type of entry.
 func (entry *ConfigEntry) GetType() string {
 	return entry.EntryType
 }
 
-// Convert entry into JSON style string.
+// String convert entry into JSON style string.
 func (entry *ConfigEntry) String() string {
 	bytes, _ := json.Marshal(entry)
 	return string(bytes)
 }
 
-// Marshal entry.
+// MarshalJSON marshal entry.
 func (entry *ConfigEntry) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"entryName":        entry.EntryName,
@@ -206,27 +208,27 @@ func (entry *ConfigEntry) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&m)
 }
 
-// Not supported.
+// UnmarshalJSON is not supported.
 func (entry *ConfigEntry) UnmarshalJSON([]byte) error {
 	return nil
 }
 
-// Return description of entry.
+// GetDescription return description of entry.
 func (entry *ConfigEntry) GetDescription() string {
 	return entry.EntryDescription
 }
 
-// Get viper instance.
+// GetViper returns viper instance.
 func (entry *ConfigEntry) GetViper() *viper.Viper {
 	return entry.vp
 }
 
-// Convert values in viper instance into map.
+// GetViperAsMap convert values in viper instance into map.
 func (entry *ConfigEntry) GetViperAsMap() map[string]interface{} {
 	return rkcommon.GeneralizeMapKeyToString(entry.GetViper().AllSettings()).(map[string]interface{})
 }
 
-// Get locale.
+// GetLocale returns locale.
 func (entry *ConfigEntry) GetLocale() string {
 	return entry.Locale
 }

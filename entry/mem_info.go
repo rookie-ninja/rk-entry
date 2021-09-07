@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -10,7 +11,7 @@ import (
 	"time"
 )
 
-// Memory stats of current running process
+// MemInfo memory stats of current running process
 type MemInfo struct {
 	MemUsedPercentage float64 `json:"memUsedPercentage" yaml:"memUsedPercentage"`
 	MemUsedMb         uint64  `json:"memUsedMb" yaml:"memUsedMb"`
@@ -21,6 +22,7 @@ type MemInfo struct {
 	ForceGcCount      uint32  `json:"forceGcCount" yaml:"forceGcCount"`
 }
 
+// NewMemInfo creates a new MemInfo
 func NewMemInfo() *MemInfo {
 	var stats runtime.MemStats
 	runtime.ReadMemStats(&stats)

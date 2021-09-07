@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -20,16 +21,25 @@ import (
 )
 
 const (
-	CredEntryName        = "CredDefault"
-	CredEntryType        = "CredEntry"
+	// CredEntryName name of entry
+	CredEntryName = "CredDefault"
+	// CredEntryType type of entry
+	CredEntryType = "CredEntry"
+	// CredEntryDescription description of entry
 	CredEntryDescription = "Internal RK entry which retrieves credentials from localFs, remoteFs, etcd or consul."
-	DefaultTimeout       = 3 * time.Second
-	ProviderEtcd         = "etcd"
-	ProviderConsul       = "consul"
-	ProviderLocalFs      = "localFs"
-	ProviderRemoteFs     = "remoteFs"
+	// DefaultTimeout default timeout while connecting to retriever
+	DefaultTimeout = 3 * time.Second
+	// ProviderEtcd retriever type of etcd
+	ProviderEtcd = "etcd"
+	// ProviderEtcd retriever type of consul
+	ProviderConsul = "consul"
+	// ProviderEtcd retriever type of localFs
+	ProviderLocalFs = "localFs"
+	// ProviderEtcd retriever type of RemoteFs
+	ProviderRemoteFs = "remoteFs"
 )
 
+// BootConfigCred defines bootstrapper config
 type BootConfigCred struct {
 	Cred []struct {
 		Name        string   `yaml:"name" json:"name"`
@@ -52,15 +62,17 @@ type BootConfigCred struct {
 	} `yaml:"cred" json:"cred"`
 }
 
+// CredStore is storage stores credentials retrieve via retriever
 type CredStore struct {
 	Cred map[string][]byte `json:"-" yaml:"-"`
 }
 
+// GetCred returns credential with name
 func (store *CredStore) GetCred(path string) []byte {
 	return store.Cred[path]
 }
 
-// Marshal entry
+// MarshalJSON marshal entry
 func (store *CredStore) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{}
 
@@ -71,11 +83,12 @@ func (store *CredStore) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&m)
 }
 
-// Unmarshal entry
+// UnmarshalJSON unmarshal entry
 func (store *CredStore) UnmarshalJSON([]byte) error {
 	return nil
 }
 
+// CredEntry defines credential entry
 type CredEntry struct {
 	EntryName        string            `json:"entryName" yaml:"entryName"`
 	EntryType        string            `json:"entryType" yaml:"entryType"`
@@ -89,21 +102,21 @@ type CredEntry struct {
 // CredEntryOption Option which used while registering entry from codes.
 type CredEntryOption func(entry *CredEntry)
 
-// Provide name.
+// WithNameCred provide name.
 func WithNameCred(name string) CredEntryOption {
 	return func(entry *CredEntry) {
 		entry.EntryName = name
 	}
 }
 
-// Provide description.
+// WithDescriptionCred provide description.
 func WithDescriptionCred(description string) CredEntryOption {
 	return func(entry *CredEntry) {
 		entry.EntryDescription = description
 	}
 }
 
-// Provide ZapLoggerEntry.
+// WithZapLoggerEntryCred provide ZapLoggerEntry.
 func WithZapLoggerEntryCred(logger *ZapLoggerEntry) CredEntryOption {
 	return func(entry *CredEntry) {
 		if logger != nil {
@@ -112,7 +125,7 @@ func WithZapLoggerEntryCred(logger *ZapLoggerEntry) CredEntryOption {
 	}
 }
 
-// Provide EventLoggerEntry.
+// WithEventLoggerEntryCred provide EventLoggerEntry.
 func WithEventLoggerEntryCred(logger *EventLoggerEntry) CredEntryOption {
 	return func(entry *CredEntry) {
 		if logger != nil {
@@ -121,14 +134,14 @@ func WithEventLoggerEntryCred(logger *EventLoggerEntry) CredEntryOption {
 	}
 }
 
-// Provide Retriever.
+// WithRetrieverCred provide Retriever.
 func WithRetrieverCred(retriever Retriever) CredEntryOption {
 	return func(entry *CredEntry) {
 		entry.Retriever = retriever
 	}
 }
 
-// Implements rkentry.EntryRegFunc which generate Entry based on boot configuration file.
+// RegisterCredEntriesFromConfig implements rkentry.EntryRegFunc which generate Entry based on boot configuration file.
 // Currently, only YAML file is supported.
 // File path could be either relative or absolute.
 func RegisterCredEntriesFromConfig(configFilePath string) map[string]Entry {
@@ -213,7 +226,7 @@ func RegisterCredEntriesFromConfig(configFilePath string) map[string]Entry {
 	return res
 }
 
-// Create cred entry with options.
+// RegisterCredEntry create cred entry with options.
 func RegisterCredEntry(opts ...CredEntryOption) *CredEntry {
 	entry := &CredEntry{
 		EventLoggerEntry: GlobalAppCtx.GetEventLoggerEntryDefault(),
@@ -235,7 +248,7 @@ func RegisterCredEntry(opts ...CredEntryOption) *CredEntry {
 	return entry
 }
 
-// Iterate retrievers and call Retrieve() for each of them.
+// Bootstrap iterate retrievers and call Retrieve() for each of them.
 func (entry *CredEntry) Bootstrap(ctx context.Context) {
 	entry.Store = entry.Retriever.Retrieve(ctx)
 }
@@ -245,13 +258,13 @@ func (entry *CredEntry) Interrupt(context.Context) {
 	// no op
 }
 
-// Return string of entry.
+// String return string of entry.
 func (entry *CredEntry) String() string {
 	bytes, _ := json.Marshal(entry)
 	return string(bytes)
 }
 
-// Marshal entry
+// MarshalJSON marshal entry
 func (entry *CredEntry) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"entryName":        entry.EntryName,
@@ -264,27 +277,27 @@ func (entry *CredEntry) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&m)
 }
 
-// Unmarshal entry
+// UnmarshalJSON unmarshal entry
 func (entry *CredEntry) UnmarshalJSON([]byte) error {
 	return nil
 }
 
-// Get name of entry.
+// GetName returns name of entry.
 func (entry *CredEntry) GetName() string {
 	return entry.EntryName
 }
 
-// Get type of entry.
+// GetType returns type of entry.
 func (entry *CredEntry) GetType() string {
 	return entry.EntryType
 }
 
-// Return description of entry
+// GetDescription returns description of entry
 func (entry *CredEntry) GetDescription() string {
 	return entry.EntryDescription
 }
 
-// Interface for retrieving credentials.
+// Retriever is an interface for retrieving credentials.
 type Retriever interface {
 	// Read credential files into byte array and store it into CredStore.
 	Retrieve(context.Context) *CredStore
@@ -306,6 +319,7 @@ type Retriever interface {
 // ************ etcd ************
 // ******************************
 
+// CredRetrieverEtcd is retriever read from ETCD
 // 1: Name: Name of section, required.
 // 2: Provider: Provider of retriever, required.
 // 3: Locale: <realm>::<region>::<az>::<domain>
@@ -323,7 +337,7 @@ type CredRetrieverEtcd struct {
 	Paths            []string          `yaml:"paths" json:"paths"`
 }
 
-// Call ETCD server and retrieve values based on keys.
+// Retrieve call ETCD server and retrieve values based on keys.
 func (retriever *CredRetrieverEtcd) Retrieve(context.Context) *CredStore {
 	client, err := clientv3.New(clientv3.Config{
 		Endpoints:   []string{retriever.Endpoint},
@@ -374,22 +388,22 @@ func (retriever *CredRetrieverEtcd) getValueFromEtcd(client *clientv3.Client, ke
 	}
 }
 
-// Return list of paths
+// ListPaths return list of paths
 func (retriever *CredRetrieverEtcd) ListPaths() []string {
 	return retriever.Paths
 }
 
-// Get provider of retriever.
+// GetProvider returns provider of retriever.
 func (retriever *CredRetrieverEtcd) GetProvider() string {
 	return retriever.Provider
 }
 
-// Return endpoint.
+// GetEndpoint returns endpoint.
 func (retriever *CredRetrieverEtcd) GetEndpoint() string {
 	return retriever.Endpoint
 }
 
-// Return locale.
+// GetLocale returns locale.
 func (retriever *CredRetrieverEtcd) GetLocale() string {
 	return retriever.Locale
 }
@@ -398,6 +412,7 @@ func (retriever *CredRetrieverEtcd) GetLocale() string {
 // ************ consul ************
 // ********************************
 
+// CredRetrieverConsul is retriever read from Consul
 // 1: Provider: Provider of retriever, required.
 // 2: Locale: <realm>::<region>::<az>::<domain>
 // 3: Endpoint: Endpoint of consul server, http://x.x.x.x or x.x.x.x both acceptable.
@@ -417,7 +432,7 @@ type CredRetrieverConsul struct {
 	Paths            []string          `yaml:"paths" json:"paths"`
 }
 
-// Call Consul server/agent and retrieve values based on keys.
+// Retrieve call Consul server/agent and retrieve values based on keys.
 func (retriever *CredRetrieverConsul) Retrieve(context.Context) *CredStore {
 	scheme := rkcommon.ExtractSchemeFromURL(retriever.Endpoint)
 	endpoint := retriever.Endpoint
@@ -464,22 +479,22 @@ func (retriever *CredRetrieverConsul) Retrieve(context.Context) *CredStore {
 	return store
 }
 
-// Return list of paths
+// ListPaths return list of paths
 func (retriever *CredRetrieverConsul) ListPaths() []string {
 	return retriever.Paths
 }
 
-// Get provider of retriever.
+// GetProvider return provider of retriever.
 func (retriever *CredRetrieverConsul) GetProvider() string {
 	return retriever.Provider
 }
 
-// Return endpoint.
+// GetEndpoint return endpoint.
 func (retriever *CredRetrieverConsul) GetEndpoint() string {
 	return retriever.Endpoint
 }
 
-// Return locale.
+// GetLocale return locale.
 func (retriever *CredRetrieverConsul) GetLocale() string {
 	return retriever.Locale
 }
@@ -507,6 +522,7 @@ func (retriever *CredRetrieverConsul) getValueFromConsul(client *api.Client, key
 // ************ localFs ************
 // *********************************
 
+// CredRetrieverLocalFs is retriever read from local file system
 // 1: Provider: Type of retriever, required.
 // 2: Locale: <realm>::<region>::<az>::<domain>
 // 3: Paths: Key of value need to retrieve from localFs.
@@ -518,7 +534,7 @@ type CredRetrieverLocalFs struct {
 	Paths            []string          `yaml:"paths" json:"paths"`
 }
 
-// Read files from local file system and retrieve values based on keys.
+// Retrieve read files from local file system and retrieve values based on keys.
 func (retriever *CredRetrieverLocalFs) Retrieve(context.Context) *CredStore {
 	wd, err := os.Getwd()
 
@@ -556,22 +572,22 @@ func (retriever *CredRetrieverLocalFs) Retrieve(context.Context) *CredStore {
 	return store
 }
 
-// Return list of paths
+// ListPaths return list of paths
 func (retriever *CredRetrieverLocalFs) ListPaths() []string {
 	return retriever.Paths
 }
 
-// Get provider of retriever.
+// GetProvider returns provider of retriever.
 func (retriever *CredRetrieverLocalFs) GetProvider() string {
 	return retriever.Provider
 }
 
-// Return endpoint.
+// GetEndpoint returns endpoint.
 func (retriever *CredRetrieverLocalFs) GetEndpoint() string {
 	return "local"
 }
 
-// Return locale.
+// GetLocale returns locale.
 func (retriever *CredRetrieverLocalFs) GetLocale() string {
 	return retriever.Locale
 }
@@ -580,6 +596,7 @@ func (retriever *CredRetrieverLocalFs) GetLocale() string {
 // ************ remoteFs ************
 // **********************************
 
+// CredRetrieverRemoteFs is retriever read from remote file system
 // 1: Provider: Provider of retriever, required.
 // 2: Locale: <realm>::<region>::<az>::<domain>
 // 3: Endpoint: Endpoint of RemoteFileStore server, http://x.x.x.x or x.x.x.x both acceptable.
@@ -595,7 +612,7 @@ type CredRetrieverRemoteFs struct {
 	Paths            []string          `yaml:"paths" json:"paths"`
 }
 
-// Call remote file store and retrieve values based on keys.
+// CredRetrieverRemoteFs call remote file store and retrieve values based on keys.
 func (retriever *CredRetrieverRemoteFs) Retrieve(context.Context) *CredStore {
 	client := &http.Client{
 		Timeout: DefaultTimeout,
@@ -662,22 +679,22 @@ func (retriever *CredRetrieverRemoteFs) getValueFromRemoteFs(client *http.Client
 	return res
 }
 
-// Return list of paths
+// ListPaths return list of paths
 func (retriever *CredRetrieverRemoteFs) ListPaths() []string {
 	return retriever.Paths
 }
 
-// Get provider of retriever.
+// GetProvider returns provider of retriever.
 func (retriever *CredRetrieverRemoteFs) GetProvider() string {
 	return retriever.Provider
 }
 
-// Return endpoint.
+// GetEndpoint returns endpoint.
 func (retriever *CredRetrieverRemoteFs) GetEndpoint() string {
 	return retriever.Endpoint
 }
 
-// Return locale.
+// GetLocale returns locale.
 func (retriever *CredRetrieverRemoteFs) GetLocale() string {
 	return retriever.Locale
 }

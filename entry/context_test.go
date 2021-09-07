@@ -6,12 +6,15 @@ package rkentry
 
 import (
 	"context"
+	"fmt"
 	"github.com/rookie-ninja/rk-logger"
 	"github.com/rookie-ninja/rk-query"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"os"
+	"syscall"
 	"testing"
+	"time"
 )
 
 func TestGlobalAppCtx_init(t *testing.T) {
@@ -34,6 +37,7 @@ func TestGlobalAppCtx_init(t *testing.T) {
 
 	// validate app info entry
 	assert.NotNil(t, GlobalAppCtx.GetAppInfoEntry())
+	assert.NotNil(t, GlobalAppCtx.GetAppInfoEntryRaw())
 
 	// validate config entries.
 	configEntries := GlobalAppCtx.ListConfigEntries()
@@ -49,6 +53,7 @@ func TestGlobalAppCtx_init(t *testing.T) {
 
 	// validate cert entries.
 	certEntries := GlobalAppCtx.ListCertEntries()
+	fmt.Println(GlobalAppCtx.ListCertEntries())
 	assert.Equal(t, 0, len(certEntries))
 
 	// validate shutdown hooks.
@@ -87,6 +92,34 @@ func TestListEntryRegFunc_HappyCase(t *testing.T) {
 	assert.Len(t, ListEntryRegFunc(), 1)
 	// clear reg functions
 	entryRegFuncList = entryRegFuncList[:0]
+}
+
+func TestRegisterInternalEntriesFromConfig(t *testing.T) {
+	assertNotPanic(t)
+	filePath := createFileAtTestTempDir(t, `---`)
+	RegisterInternalEntriesFromConfig(filePath)
+}
+
+func TestAppContext_SetRkMetaEntry(t *testing.T) {
+	assert.Empty(t, GlobalAppCtx.SetRkMetaEntry(nil))
+	assert.NotEmpty(t, GlobalAppCtx.SetRkMetaEntry(&EntryMock{Name: "mock"}))
+	GlobalAppCtx.rkMetaEntry = nil
+}
+
+func TestAppContext_GetRkMetaEntry(t *testing.T) {
+	assert.Nil(t, GlobalAppCtx.GetRkMetaEntry())
+	metaEntry := &RkMetaEntry{}
+	GlobalAppCtx.SetRkMetaEntry(metaEntry)
+	assert.NotNil(t, GlobalAppCtx.GetRkMetaEntry())
+	GlobalAppCtx.rkMetaEntry = nil
+}
+
+func TestAppContext_GetRkMetaEntryRaw(t *testing.T) {
+	assert.Nil(t, GlobalAppCtx.GetRkMetaEntryRaw())
+	metaEntry := &RkMetaEntry{}
+	GlobalAppCtx.SetRkMetaEntry(metaEntry)
+	assert.NotNil(t, GlobalAppCtx.GetRkMetaEntryRaw())
+	GlobalAppCtx.rkMetaEntry = nil
 }
 
 // value related
@@ -358,6 +391,14 @@ func TestAppContext_ListEventLoggerEntries_HappyCase(t *testing.T) {
 	GlobalAppCtx.RemoveEventLoggerEntry(loggerName)
 }
 
+func TestAppContext_RemoveEventLoggerEntry_WithNonExist(t *testing.T) {
+	assert.False(t, GlobalAppCtx.RemoveEventLoggerEntry("non-exist"))
+}
+
+func TestAppContext_GetEventHelper_WithNonExist(t *testing.T) {
+	assert.Nil(t, GlobalAppCtx.GetEventHelper("non-exist"))
+}
+
 func TestAppContext_ListEventLoggerEntriesRaw_HappyCase(t *testing.T) {
 	length := len(GlobalAppCtx.ListEventLoggerEntriesRaw())
 
@@ -415,12 +456,14 @@ func TestAppContext_GetAppInfoEntry_HappyCase(t *testing.T) {
 // Cert entry related
 func TestAppContext_AddCertEntry_WithNilEntry(t *testing.T) {
 	assert.Empty(t, GlobalAppCtx.AddCertEntry(nil))
+	// clear cert entries
+	GlobalAppCtx.clearCertEntries()
 }
 
 func TestAppContext_GetCertEntry_WithNonExist(t *testing.T) {
 	name := "non-exist"
 	assert.Nil(t, GlobalAppCtx.GetCertEntry(name))
-	// clear viper entries
+	// clear cert entries
 	GlobalAppCtx.clearCertEntries()
 }
 
@@ -429,13 +472,13 @@ func TestAppContext_GetCertEntry_HappyCase(t *testing.T) {
 
 	assert.True(t, len(GlobalAppCtx.ListCertEntries()) == 1)
 
-	// clear viper entries
+	// clear cert entries
 	GlobalAppCtx.clearCertEntries()
 }
 
 func TestAppContext_ListCertEntries_WithEmptyList(t *testing.T) {
 	assert.True(t, len(GlobalAppCtx.ListCertEntries()) == 0)
-	// clear viper entries
+	// clear cert entries
 	GlobalAppCtx.clearCertEntries()
 }
 
@@ -443,17 +486,88 @@ func TestAppContext_ListCertEntries_HappyCase(t *testing.T) {
 	RegisterCertEntry()
 
 	assert.True(t, len(GlobalAppCtx.ListCertEntries()) == 1)
-	// clear viper entries
+	// clear cert entries
 	GlobalAppCtx.clearCertEntries()
 }
 
 func TestAppContext_ListCertEntriesRaw_WithEmptyList(t *testing.T) {
 	assert.True(t, len(GlobalAppCtx.ListCertEntriesRaw()) == 0)
-	// clear viper entries
+	// clear cert entries
 	GlobalAppCtx.clearCertEntries()
 }
 
 func TestAppContext_ListCertEntriesRaw_HappyCase(t *testing.T) {
+	RegisterCertEntry()
+
+	assert.True(t, len(GlobalAppCtx.ListCertEntriesRaw()) == 1)
+	assert.NotNil(t, GlobalAppCtx.GetCertEntry(CertEntryName))
+	// clear cert entries
+	GlobalAppCtx.clearCertEntries()
+}
+
+func TestAppContext_RemoveCertEntry(t *testing.T) {
+	RegisterCertEntry()
+
+	assert.True(t, GlobalAppCtx.RemoveCertEntry(CertEntryName))
+	assert.False(t, GlobalAppCtx.RemoveCertEntry("non-exist"))
+	// clear cert entries
+	GlobalAppCtx.clearCertEntries()
+}
+
+// Cred entry related
+func TestAppContext_AddCredEntry_WithNilEntry(t *testing.T) {
+	assert.Empty(t, GlobalAppCtx.AddCredEntry(nil))
+}
+
+func TestAppContext_GetCredEntry_WithNonExist(t *testing.T) {
+	name := "non-exist"
+	assert.Nil(t, GlobalAppCtx.GetCredEntry(name))
+	// clear cred entries
+	GlobalAppCtx.clearCredEntries()
+}
+
+func TestAppContext_GetCredEntry_HappyCase(t *testing.T) {
+	RegisterCredEntry()
+
+	assert.True(t, len(GlobalAppCtx.ListCredEntries()) == 1)
+	assert.NotNil(t, GlobalAppCtx.GetCredEntry(CredEntryName))
+	assert.Nil(t, GlobalAppCtx.GetCredEntry("non-exist"))
+
+	// clear cred entries
+	GlobalAppCtx.clearCredEntries()
+}
+
+func TestAppContext_ListCredEntries_WithEmptyList(t *testing.T) {
+	assert.True(t, len(GlobalAppCtx.ListCredEntries()) == 0)
+	// clear cred entries
+	GlobalAppCtx.clearCredEntries()
+}
+
+func TestAppContext_ListCredEntries_HappyCase(t *testing.T) {
+	RegisterCredEntry()
+
+	assert.True(t, len(GlobalAppCtx.ListCredEntries()) == 1)
+	// clear cred entries
+	GlobalAppCtx.clearCredEntries()
+}
+
+func TestAppContext_ListCredEntriesRaw_WithEmptyList(t *testing.T) {
+	assert.True(t, len(GlobalAppCtx.ListCredEntriesRaw()) == 0)
+	// clear cred entries
+	GlobalAppCtx.clearCredEntries()
+}
+
+func TestAppContext_RemoveCredEntry(t *testing.T) {
+	RegisterCredEntry()
+
+	assert.True(t, GlobalAppCtx.RemoveCredEntry(CredEntryName))
+	assert.False(t, GlobalAppCtx.RemoveCredEntry("non-exist"))
+
+	// clear cred entries
+	GlobalAppCtx.clearCredEntries()
+}
+
+func TestAppContext_ListCredEntriesRaw_HappyCase(t *testing.T) {
 	RegisterCertEntry()
 
 	assert.True(t, len(GlobalAppCtx.ListCertEntriesRaw()) == 1)
@@ -518,6 +632,22 @@ func TestAppContext_ListConfigEntriesRaw_HappyCase(t *testing.T) {
 		WithViperInstanceConfig(vp))
 
 	assert.True(t, len(GlobalAppCtx.ListConfigEntriesRaw()) == 1)
+	// clear viper entries
+	GlobalAppCtx.clearConfigEntries()
+}
+
+func TestAppContext_RemoveConfigEntry(t *testing.T) {
+	assert.False(t, GlobalAppCtx.RemoveConfigEntry("non-exist"))
+
+	name := "viper-config"
+	vp := viper.New()
+	RegisterConfigEntry(
+		WithNameConfig(name),
+		WithViperInstanceConfig(vp))
+
+	assert.True(t, len(GlobalAppCtx.ListConfigEntriesRaw()) == 1)
+
+	assert.True(t, GlobalAppCtx.RemoveConfigEntry(name))
 	// clear viper entries
 	GlobalAppCtx.clearConfigEntries()
 }
@@ -590,9 +720,9 @@ func TestAppContext_ListShutdownHooks_HappyCase(t *testing.T) {
 
 // entry related
 func TestAppContext_AddEntry_WithEmptyName(t *testing.T) {
-	name := ""
+	name := "unit-test-entry"
 	entry := &EntryMock{
-		Name: "unit-test-entry",
+		Name: name,
 	}
 	GlobalAppCtx.AddEntry(entry)
 	assert.Equal(t, 1, len(GlobalAppCtx.ListEntries()))
@@ -675,6 +805,34 @@ func TestAppContext_MergeEntries_HappyCase(t *testing.T) {
 	GlobalAppCtx.clearEntries()
 }
 
+func TestAppContext_RemoveEntry(t *testing.T) {
+	assert.False(t, GlobalAppCtx.RemoveEntry("non-exist"))
+
+	entry := &EntryMock{
+		Name: "unit-test-entry",
+	}
+	GlobalAppCtx.AddEntry(entry)
+	assert.Equal(t, entry, GlobalAppCtx.GetEntry(entry.GetName()))
+	assert.True(t, GlobalAppCtx.RemoveEntry(entry.GetName()))
+	// clear entries
+	GlobalAppCtx.clearEntries()
+}
+
+func TestAppContext_RemoveShutdownHook(t *testing.T) {
+	assert.False(t, GlobalAppCtx.RemoveShutdownHook("non-exist"))
+	GlobalAppCtx.AddShutdownHook("ut-shutdownhook", func() {})
+	assert.True(t, GlobalAppCtx.RemoveShutdownHook("ut-shutdownhook"))
+}
+
+func TestAppContext_WaitForShutdownSig(t *testing.T) {
+	go func() {
+		time.Sleep(1 * time.Second)
+		GlobalAppCtx.shutdownSig <- syscall.SIGTERM
+	}()
+
+	GlobalAppCtx.WaitForShutdownSig()
+}
+
 type EntryMock struct {
 	Name string
 }
@@ -684,7 +842,7 @@ func (entry *EntryMock) Bootstrap(context.Context) {}
 func (entry *EntryMock) Interrupt(context.Context) {}
 
 func (entry *EntryMock) GetName() string {
-	return ""
+	return entry.Name
 }
 
 func (entry *EntryMock) GetType() string {

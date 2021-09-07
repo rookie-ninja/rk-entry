@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -258,8 +259,6 @@ func TestEventLoggerEntry_GetLumberjackConfig_HappyCase(t *testing.T) {
 
 	configFile := `
 ---
-rk:
-  appName: ut-app
 eventLogger:
   - name: ut-event-logger
     format: RK
@@ -281,6 +280,42 @@ eventLogger:
 
 	entry := convertToEventLoggerEntry(t, entries["ut-event-logger"])
 	assert.NotNil(t, entry.GetEventHelper())
+}
+
+func TestEventLoggerEntry_UnmarshalJSON(t *testing.T) {
+	assert.Nil(t, NoopEventLoggerEntry().UnmarshalJSON(nil))
+}
+
+func TestEventLoggerEntry_GetDescription(t *testing.T) {
+	assert.NotEmpty(t, NoopEventLoggerEntry().GetDescription())
+}
+
+func TestEventLoggerEntry_GetLumberjackConfig(t *testing.T) {
+	defer assertNotPanic(t)
+
+	configFile := `
+---
+eventLogger:
+  - name: ut-event-logger
+    format: RK
+    outputPaths: ["ut.log"]
+    lumberjack:
+      filename: "ut-lumberjack-filename"
+      maxsize: 1
+      maxage: 1
+      maxbackups: 1
+      localtime: true
+      compress: true
+`
+	// create bootstrap config file at ut temp dir
+	configFilePath := createFileAtTestTempDir(t, configFile)
+	// register entries with config file
+	entries := RegisterEventLoggerEntriesWithConfig(configFilePath)
+
+	assert.Len(t, entries, 1)
+
+	entry := convertToEventLoggerEntry(t, entries["ut-event-logger"])
+	assert.NotNil(t, entry.GetLumberjackConfig())
 }
 
 func convertToEventLoggerEntry(t *testing.T, raw Entry) *EventLoggerEntry {

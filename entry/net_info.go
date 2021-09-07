@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -50,10 +51,12 @@ func initNetInfos() *NetInfo {
 	return res
 }
 
+// NetInfo defines network interface information about local machine
 type NetInfo struct {
 	NetInterface []*NetInterface `json:"netInterface" yaml:"netInterface"`
 }
 
+// NetInterface describes network interface
 type NetInterface struct {
 	// e.g., "en0", "lo0", "eth0.100"
 	Name string `json:"name" yaml:"name"`
@@ -69,6 +72,7 @@ type NetInterface struct {
 	MulticastAddrs []string `json:"multicastAddrs" yaml:"multicastAddrs"`
 }
 
+// NewNetInfo creates a new NetInfo instance
 func NewNetInfo() *NetInfo {
 	return netInfos
 }

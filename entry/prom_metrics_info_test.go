@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -26,6 +27,7 @@ var (
 func TestNewPromMetricsInfo_HappyCase(t *testing.T) {
 	observer.Observe(100)
 	observer.Observe(200)
+
 	metrics := NewPromMetricsInfo(summaryVec)
 	assert.Len(t, metrics, 1)
 

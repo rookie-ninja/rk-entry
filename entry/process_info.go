@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -12,7 +13,7 @@ import (
 	"time"
 )
 
-// Process information for a running application.
+// ProcessInfo process information for a running application.
 // 1: AppName - Name of current application set by user
 // 2: Version - Version of application set by user
 // 3: Description - Description of application set by user
@@ -52,6 +53,7 @@ type ProcessInfo struct {
 	Domain      string   `json:"domain" json:"domain"`
 }
 
+// NewProcessInfo creates a new ProcessInfo instance
 func NewProcessInfo() *ProcessInfo {
 	u, err := user.Current()
 	// Assign unknown value to user in order to prevent panic

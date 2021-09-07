@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -10,6 +11,7 @@ import (
 	"time"
 )
 
+// GoEnvInfo defines go processor information
 type GoEnvInfo struct {
 	GOOS          string `json:"goos" yaml:"goos"`
 	GOArch        string `json:"goArch" yaml:"goArch"`
@@ -20,6 +22,7 @@ type GoEnvInfo struct {
 	Version       string `json:"version" yaml:"version"`
 }
 
+// NewGoEnvInfo creates a new instance of GoEnvInfo
 func NewGoEnvInfo() *GoEnvInfo {
 	var stats runtime.MemStats
 	runtime.ReadMemStats(&stats)

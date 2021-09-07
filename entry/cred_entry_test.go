@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -9,6 +10,24 @@ import (
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+func TestCredStore_MarshalJSON(t *testing.T) {
+	store := CredStore{
+		Cred: make(map[string][]byte),
+	}
+
+	store.Cred["key"] = []byte("fake cred")
+	bytes, err := store.MarshalJSON()
+	assert.Nil(t, err)
+	assert.NotEmpty(t, bytes)
+}
+
+func TestCertStore_UnmarshalJSON(t *testing.T) {
+	store := CredStore{
+		Cred: make(map[string][]byte),
+	}
+	assert.Nil(t, store.UnmarshalJSON(nil))
+}
 
 func TestWithZapLoggerEntryCred_WithNilLogger(t *testing.T) {
 	entry := &CredEntry{
@@ -230,4 +249,109 @@ func TestCredEntry_GetType_HappyCase(t *testing.T) {
 	assert.Equal(t, CredEntryType, entry.GetType())
 
 	GlobalAppCtx.clearCredEntries()
+}
+
+func TestCredEntry_GetDescription_HappyCase(t *testing.T) {
+	entry := RegisterCredEntry(WithDescriptionCred("ut-description"))
+	assert.Equal(t, "ut-description", entry.GetDescription())
+
+	GlobalAppCtx.clearCredEntries()
+}
+
+func TestCredEntry_UnmarshalJSON_HappyCase(t *testing.T) {
+	entry := RegisterCredEntry()
+	assert.Nil(t, entry.UnmarshalJSON(nil))
+
+	GlobalAppCtx.clearCredEntries()
+}
+
+func TestCredRetrieverEtcd_Retrieve(t *testing.T) {
+	retriever := CredRetrieverEtcd{
+		Endpoint:       "fake-endpoint",
+		ZapLoggerEntry: NoopZapLoggerEntry(),
+		Paths:          []string{"fake-path"},
+	}
+
+	store := retriever.Retrieve(context.TODO())
+	assert.Empty(t, store.Cred["fake-path"])
+}
+
+func TestCredRetrieverEtcd_ListPaths(t *testing.T) {
+	retriever := CredRetrieverEtcd{
+		Endpoint:       "fake-endpoint",
+		ZapLoggerEntry: NoopZapLoggerEntry(),
+		Paths:          []string{"fake-path"},
+	}
+
+	assert.Len(t, retriever.ListPaths(), 1)
+}
+
+func TestCredRetrieverConsul_Retrieve(t *testing.T) {
+	retriever := CredRetrieverConsul{
+		Endpoint:       "fake-endpoint",
+		ZapLoggerEntry: NoopZapLoggerEntry(),
+		Paths:          []string{"fake-path"},
+	}
+
+	store := retriever.Retrieve(context.TODO())
+	assert.Empty(t, store.Cred["fake-path"])
+}
+
+func TestCredRetrieverConsul_ListPaths(t *testing.T) {
+	retriever := CredRetrieverEtcd{
+		Endpoint:       "fake-endpoint",
+		ZapLoggerEntry: NoopZapLoggerEntry(),
+		Paths:          []string{"fake-path"},
+	}
+
+	assert.Len(t, retriever.ListPaths(), 1)
+}
+
+func TestCredRetrieverConsul(t *testing.T) {
+	retriever := CredRetrieverEtcd{
+		Endpoint:       "fake-endpoint",
+		ZapLoggerEntry: NoopZapLoggerEntry(),
+		Paths:          []string{"fake-path"},
+		Provider:       "fake-provider",
+		Locale:         "fake-locale",
+	}
+
+	assert.Equal(t, "fake-provider", retriever.GetProvider())
+	assert.Equal(t, "fake-endpoint", retriever.GetEndpoint())
+	assert.Equal(t, "fake-locale", retriever.GetLocale())
+}
+
+func TestCredRetrieverRemoteFs_Retrieve(t *testing.T) {
+	retriever := CredRetrieverRemoteFs{
+		Endpoint:       "fake-endpoint",
+		ZapLoggerEntry: NoopZapLoggerEntry(),
+		Paths:          []string{"fake-path"},
+	}
+
+	store := retriever.Retrieve(context.TODO())
+	assert.Empty(t, store.Cred["fake-path"])
+}
+
+func TestCredRetrieverRemoteFs_ListPaths(t *testing.T) {
+	retriever := CredRetrieverRemoteFs{
+		Endpoint:       "fake-endpoint",
+		ZapLoggerEntry: NoopZapLoggerEntry(),
+		Paths:          []string{"fake-path"},
+	}
+
+	assert.Len(t, retriever.ListPaths(), 1)
+}
+
+func TestCredRetrieverRemoteFs(t *testing.T) {
+	retriever := CredRetrieverRemoteFs{
+		Endpoint:       "fake-endpoint",
+		ZapLoggerEntry: NoopZapLoggerEntry(),
+		Paths:          []string{"fake-path"},
+		Provider:       "fake-provider",
+		Locale:         "fake-locale",
+	}
+
+	assert.Equal(t, "fake-provider", retriever.GetProvider())
+	assert.Equal(t, "fake-endpoint", retriever.GetEndpoint())
+	assert.Equal(t, "fake-locale", retriever.GetLocale())
 }
