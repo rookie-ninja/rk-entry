@@ -2,6 +2,8 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
+// Package rkentry defines inner entries for rk-boot.
 package rkentry
 
 import (
@@ -13,15 +15,16 @@ import (
 )
 
 const (
-	AppNameDefault          = "rk"
-	VersionDefault          = ""
-	LangDefault             = "golang"
-	AppInfoEntryName        = "AppInfoDefault"
-	AppInfoEntryType        = "AppInfoEntry"
+	AppNameDefault   = "rk"             // AppNameDefault will be used if not provided by user
+	VersionDefault   = ""               // VersionDefault will be empty if not provided by user
+	LangDefault      = "golang"         // LangDefault will always be golang
+	AppInfoEntryName = "AppInfoDefault" // AppInfoEntryName is a fixed value
+	AppInfoEntryType = "AppInfoEntry"   // AppInfoEntry is a fixed value
+	// AppInfoEntryDescription is a fixed value
 	AppInfoEntryDescription = "Internal RK entry which describes application with fields of appName, version and etc."
 )
 
-// Bootstrap config of application's basic information.
+// BootConfigAppInfo is config of application's basic information.
 // 1: Description: Description of application itself.
 // 2: Keywords: A set of words describe application.
 // 3: HomeUrl: Home page URL.
@@ -39,7 +42,7 @@ type BootConfigAppInfo struct {
 	} `yaml:"app"`
 }
 
-// AppInfo Entry contains bellow fields.
+// AppInfoEntry contains bellow fields.
 // 1: AppName: Application name which refers to go process
 // 2: Version: Application version
 // 3: Lang: Programming language <NOT configurable!>
@@ -71,7 +74,7 @@ type AppInfoEntry struct {
 	UtHtml           string   `json:"-" yaml:"-"`
 }
 
-// Generate a AppInfo entry with default fields.
+// AppInfoEntryDefault generate a AppInfo entry with default fields.
 func AppInfoEntryDefault() *AppInfoEntry {
 	return &AppInfoEntry{
 		EntryName:        AppInfoEntryName,
@@ -91,66 +94,66 @@ func AppInfoEntryDefault() *AppInfoEntry {
 	}
 }
 
-// AppInfo Entry Option which used while registering entry from codes.
+// AppInfoEntryOption which used while registering entry from codes.
 type AppInfoEntryOption func(*AppInfoEntry)
 
-// Provide application name.
+// WithAppNameAppInfo provide application name.
 func WithAppNameAppInfo(name string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
 		entry.AppName = name
 	}
 }
 
-// Provide version.
+// WithVersionAppInfo provide version.
 func WithVersionAppInfo(version string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
 		entry.Version = version
 	}
 }
 
-// Provide description.
+// WithDescriptionAppInfo provide description.
 func WithDescriptionAppInfo(description string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
 		entry.EntryDescription = description
 	}
 }
 
-// Provide home page URL.
+// WithHomeUrlAppInfo provide home page URL.
 func WithHomeUrlAppInfo(homeUrl string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
 		entry.HomeUrl = homeUrl
 	}
 }
 
-// Provide icon URL.
+// WithIconUrlAppInfo provide icon URL.
 func WithIconUrlAppInfo(iconUrl string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
 		entry.IconUrl = iconUrl
 	}
 }
 
-// Provide keywords.
+// WithKeywordsAppInfo provide keywords.
 func WithKeywordsAppInfo(keywords ...string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
 		entry.Keywords = append(entry.Keywords, keywords...)
 	}
 }
 
-// Provide documentation URLs.
+// WithDocsUrlAppInfo provide documentation URLs.
 func WithDocsUrlAppInfo(docsURL ...string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
 		entry.DocsUrl = append(entry.DocsUrl, docsURL...)
 	}
 }
 
-// Provide maintainers.
+// WithMaintainersAppInfo provide maintainers.
 func WithMaintainersAppInfo(maintainers ...string) AppInfoEntryOption {
 	return func(entry *AppInfoEntry) {
 		entry.Maintainers = append(entry.Maintainers, maintainers...)
 	}
 }
 
-// Implements rkentry.EntryRegFunc which generate RKEntry based on boot configuration file.
+// RegisterAppInfoEntriesFromConfig implements rkentry.EntryRegFunc which generate RKEntry based on boot configuration file.
 func RegisterAppInfoEntriesFromConfig(configFilePath string) map[string]Entry {
 	res := make(map[string]Entry)
 
@@ -172,7 +175,7 @@ func RegisterAppInfoEntriesFromConfig(configFilePath string) map[string]Entry {
 	return res
 }
 
-// Register RKEntry with options.
+// RegisterAppInfoEntry register RKEntry with options.
 // This function is used while creating entry from code instead of config file.
 // We will override RKEntry fields if value is nil or empty if necessary.
 //
@@ -231,10 +234,6 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 		entry.Version = VersionDefault
 	}
 
-	if len(entry.Lang) < 1 {
-		entry.Lang = LangDefault
-	}
-
 	if len(entry.EntryDescription) < 1 {
 		entry.EntryDescription = AppInfoEntryDescription
 	}
@@ -258,7 +257,7 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 	return entry
 }
 
-// Read license file.
+// Read rk meta file.
 func (entry *AppInfoEntry) readRkMetaFile(filePath string) string {
 	// read file from gen/rk directory
 	if bytes := rkcommon.TryReadFile(filePath); len(bytes) < 1 {
@@ -269,7 +268,7 @@ func (entry *AppInfoEntry) readRkMetaFile(filePath string) string {
 	}
 }
 
-// No op.
+// Bootstrap will read meta files.
 func (entry *AppInfoEntry) Bootstrap(context.Context) {
 	// read license file
 	entry.License = entry.readRkMetaFile(rkcommon.RkLicenseFilePath)
@@ -281,27 +280,27 @@ func (entry *AppInfoEntry) Bootstrap(context.Context) {
 	entry.UtHtml = entry.readRkMetaFile(rkcommon.RkUtHtmlFilePath)
 }
 
-// No op.
+// Interrupt is noop function.
 func (entry *AppInfoEntry) Interrupt(context.Context) {
 	// No op
 }
 
-// Return name of entry.
+// GetName return name of entry.
 func (entry *AppInfoEntry) GetName() string {
 	return entry.EntryName
 }
 
-// Return type of entry.
+// GetType return type of entry.
 func (entry *AppInfoEntry) GetType() string {
 	return entry.EntryType
 }
 
-// Return description of entry.
+// GetDescription return description of entry.
 func (entry *AppInfoEntry) GetDescription() string {
 	return entry.EntryDescription
 }
 
-// Return string of entry.
+// String return string value of entry.
 func (entry *AppInfoEntry) String() string {
 	if bytes, err := json.Marshal(entry); err != nil {
 		return "{}"

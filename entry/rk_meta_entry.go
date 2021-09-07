@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -13,12 +14,15 @@ import (
 )
 
 const (
-	RkMetaEntryName        = "RkMetaDefault"
-	RkMetaEntryType        = "RkMetaEntry"
+	// RkMetaEntryName name of entry
+	RkMetaEntryName = "RkMetaDefault"
+	// RkMetaEntryType type of entry
+	RkMetaEntryType = "RkMetaEntry"
+	// RkMetaEntryDescription description of entry
 	RkMetaEntryDescription = "Internal RK entry which describes rk metadata."
 )
 
-// Bootstrap config of application's meta information.
+// BootConfigRkMeta bootstrap config of application's meta information.
 type BootConfigRkMeta struct {
 	Name    string `yaml:"name" json:"name"`
 	Version string `yaml:"version" json:"version"`
@@ -50,14 +54,14 @@ type RkMetaEntry struct {
 // RkMetaEntry Option which used while registering entry from codes.
 type RkMetaEntryOption func(*RkMetaEntry)
 
-// Provide git information.
+// WithMetaRkMeta provide git information.
 func WithMetaRkMeta(meta *rkcommon.RkMeta) RkMetaEntryOption {
 	return func(entry *RkMetaEntry) {
 		entry.RkMeta = meta
 	}
 }
 
-// Implements rkentry.EntryRegFunc which generate RKEntry based on boot configuration file.
+// RegisterRkMetaEntriesFromConfig implements rkentry.EntryRegFunc which generate RKEntry based on boot configuration file.
 func RegisterRkMetaEntriesFromConfig(string) map[string]Entry {
 	res := make(map[string]Entry)
 
@@ -109,7 +113,7 @@ func RegisterRkMetaEntriesFromConfig(string) map[string]Entry {
 	return res
 }
 
-// Register Entry with options.
+// RegisterRkMetaEntry register Entry with options.
 // This function is used while creating entry from code instead of config file.
 // We will override RKEntry fields if value is nil or empty if necessary.
 //
@@ -133,32 +137,32 @@ func RegisterRkMetaEntry(opts ...RkMetaEntryOption) *RkMetaEntry {
 	return entry
 }
 
-// No op.
+// Bootstrap No op.
 func (entry *RkMetaEntry) Bootstrap(context.Context) {
 	// No op
 }
 
-// No op.
+// Interrupt No op.
 func (entry *RkMetaEntry) Interrupt(context.Context) {
 	// No op
 }
 
-// Return name of entry.
+// GetName return name of entry.
 func (entry *RkMetaEntry) GetName() string {
 	return entry.EntryName
 }
 
-// Return type of entry.
+// GetType return type of entry.
 func (entry *RkMetaEntry) GetType() string {
 	return entry.EntryType
 }
 
-// Return description of entry.
+// GetDescription return description of entry.
 func (entry *RkMetaEntry) GetDescription() string {
 	return entry.EntryDescription
 }
 
-// Return string of entry.
+// String return string of entry.
 func (entry *RkMetaEntry) String() string {
 	if bytes, err := json.Marshal(entry); err != nil {
 		return "{}"

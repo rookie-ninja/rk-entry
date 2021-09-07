@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -14,12 +15,15 @@ import (
 )
 
 const (
-	ZapLoggerEntryType   = "ZapLoggerEntry"
-	ZapLoggerNameNoop    = "ZapLoggerNoop"
+	// ZapLoggerEntryType name of entry
+	ZapLoggerEntryType = "ZapLoggerEntry"
+	// ZapLoggerNameNoop type of entry
+	ZapLoggerNameNoop = "ZapLoggerNoop"
+	// ZapLoggerDescription description of entry
 	ZapLoggerDescription = "Internal RK entry which is used for logging with zap.Logger."
 )
 
-// Create zap logger entry with noop.
+// NoopZapLoggerEntry create zap logger entry with noop.
 // Since we don't need any log rotation in case of noop, lumberjack config and logger config will be nil.
 func NoopZapLoggerEntry() *ZapLoggerEntry {
 	return &ZapLoggerEntry{
@@ -32,7 +36,7 @@ func NoopZapLoggerEntry() *ZapLoggerEntry {
 	}
 }
 
-// Bootstrap config of Zap Logger information.
+// BootConfigZapLogger bootstrap config of Zap Logger information.
 // 1: ZapLogger.Name: Name of zap logger entry.
 // 2: ZapLogger.Description: Description of zap logger entry.
 // 3: ZapLogger.Zap: zap logger config, refer to zap.Config.
@@ -65,21 +69,21 @@ type ZapLoggerEntry struct {
 // ZapLoggerEntry Option which used while registering entry from codes.
 type ZapLoggerEntryOption func(*ZapLoggerEntry)
 
-// Provide name of entry.
+// WithNameZap provide name of entry.
 func WithNameZap(name string) ZapLoggerEntryOption {
 	return func(entry *ZapLoggerEntry) {
 		entry.EntryName = name
 	}
 }
 
-// Provide description of entry.
+// WithDescriptionZap provide description of entry.
 func WithDescriptionZap(description string) ZapLoggerEntryOption {
 	return func(entry *ZapLoggerEntry) {
 		entry.EntryDescription = description
 	}
 }
 
-// Provide zap logger related entity of entry.
+// WithLoggerZap provide zap logger related entity of entry.
 func WithLoggerZap(logger *zap.Logger, loggerConfig *zap.Config, lumberjackConfig *lumberjack.Logger) ZapLoggerEntryOption {
 	return func(entry *ZapLoggerEntry) {
 		entry.Logger = logger
@@ -88,7 +92,7 @@ func WithLoggerZap(logger *zap.Logger, loggerConfig *zap.Config, lumberjackConfi
 	}
 }
 
-// Create zap logger entries with config file.
+// RegisterZapLoggerEntriesWithConfig create zap logger entries with config file.
 // Currently, only YAML file is supported.
 // File path could be either relative or absolute.
 func RegisterZapLoggerEntriesWithConfig(configFilePath string) map[string]Entry {
@@ -125,7 +129,7 @@ func RegisterZapLoggerEntriesWithConfig(configFilePath string) map[string]Entry 
 	return res
 }
 
-// Crate event logger entry with options.
+// RegisterZapLoggerEntry create event logger entry with options.
 func RegisterZapLoggerEntry(opts ...ZapLoggerEntryOption) *ZapLoggerEntry {
 	entry := &ZapLoggerEntry{
 		EntryType:        ZapLoggerEntryType,
@@ -164,22 +168,22 @@ func (entry *ZapLoggerEntry) Interrupt(context.Context) {
 	// no op
 }
 
-// Get name of entry.
+// GetName returns name of entry.
 func (entry *ZapLoggerEntry) GetName() string {
 	return entry.EntryName
 }
 
-// Get type of entry.
+// GetType returns type of entry.
 func (entry *ZapLoggerEntry) GetType() string {
 	return entry.EntryType
 }
 
-// Return description of entry.
+// GetDescription returns description of entry.
 func (entry *ZapLoggerEntry) GetDescription() string {
 	return entry.EntryDescription
 }
 
-// Convert entry into JSON style string.
+// String convert entry into JSON style string.
 func (entry *ZapLoggerEntry) String() string {
 	if bytes, err := json.Marshal(entry); err != nil {
 		return "{}"
@@ -188,7 +192,7 @@ func (entry *ZapLoggerEntry) String() string {
 	}
 }
 
-// Marshal entry.
+// MarshalJSON marshal entry.
 func (entry *ZapLoggerEntry) MarshalJSON() ([]byte, error) {
 	loggerConfigWrap := rklogger.TransformToZapConfigWrap(entry.LoggerConfig)
 
@@ -209,22 +213,22 @@ func (entry *ZapLoggerEntry) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// Not supported.
+// UnmarshalJSON not supported.
 func (entry *ZapLoggerEntry) UnmarshalJSON([]byte) error {
 	return nil
 }
 
-// Get zap logger, refer to zap.Logger.
+// GetLogger returns zap logger, refer to zap.Logger.
 func (entry *ZapLoggerEntry) GetLogger() *zap.Logger {
 	return entry.Logger
 }
 
-// Get zap logger config, refer to zap.Config.
+// GetLoggerConfig returns zap logger config, refer to zap.Config.
 func (entry *ZapLoggerEntry) GetLoggerConfig() *zap.Config {
 	return entry.LoggerConfig
 }
 
-// Get lumberjack config, refer to lumberjack.Logger.
+// GetLumberjackConfig returns lumberjack config, refer to lumberjack.Logger.
 func (entry *ZapLoggerEntry) GetLumberjackConfig() *lumberjack.Logger {
 	return entry.LumberjackConfig
 }

@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package main
 
 import (
@@ -55,7 +56,7 @@ type BootConfig struct {
 	} `yaml:"myEntry" json:"myEntry"`
 }
 
-// An implementation of:
+// RegisterMyEntriesFromConfig an implementation of:
 // type EntryRegFunc func(string) map[string]rkentry.Entry
 func RegisterMyEntriesFromConfig(configFilePath string) map[string]rkentry.Entry {
 	res := make(map[string]rkentry.Entry)
@@ -81,6 +82,7 @@ func RegisterMyEntriesFromConfig(configFilePath string) map[string]rkentry.Entry
 	return res
 }
 
+// RegisterMyEntry register entry based on code
 func RegisterMyEntry(opts ...MyEntryOption) *MyEntry {
 	entry := &MyEntry{
 		EntryName:        "default",
@@ -107,26 +109,31 @@ func RegisterMyEntry(opts ...MyEntryOption) *MyEntry {
 	return entry
 }
 
+// MyEntryOption options of MyEntry
 type MyEntryOption func(*MyEntry)
 
+// WithName provide name of entry
 func WithName(name string) MyEntryOption {
 	return func(entry *MyEntry) {
 		entry.EntryName = name
 	}
 }
 
+// WithDescription provide description of entry
 func WithDescription(description string) MyEntryOption {
 	return func(entry *MyEntry) {
 		entry.EntryDescription = description
 	}
 }
 
+// WithKey provide key field in entry
 func WithKey(key string) MyEntryOption {
 	return func(entry *MyEntry) {
 		entry.Key = key
 	}
 }
 
+// WithZapLoggerEntry provide ZapLoggerEntry
 func WithZapLoggerEntry(zapLoggerEntry *rkentry.ZapLoggerEntry) MyEntryOption {
 	return func(entry *MyEntry) {
 		if zapLoggerEntry != nil {
@@ -135,6 +142,7 @@ func WithZapLoggerEntry(zapLoggerEntry *rkentry.ZapLoggerEntry) MyEntryOption {
 	}
 }
 
+// WithEventLoggerEntry provide EventLoggerEntry
 func WithEventLoggerEntry(eventLoggerEntry *rkentry.EventLoggerEntry) MyEntryOption {
 	return func(entry *MyEntry) {
 		if eventLoggerEntry != nil {
@@ -143,6 +151,7 @@ func WithEventLoggerEntry(eventLoggerEntry *rkentry.EventLoggerEntry) MyEntryOpt
 	}
 }
 
+// MyEntry is a implementation of Entry
 type MyEntry struct {
 	EntryName        string                    `json:"entryName" yaml:"entryName"`
 	EntryType        string                    `json:"entryType" yaml:"entryType"`
@@ -152,6 +161,7 @@ type MyEntry struct {
 	EventLoggerEntry *rkentry.EventLoggerEntry `json:"eventLoggerEntry" yaml:"eventLoggerEntry"`
 }
 
+// Bootstrap init required fields in MyEntry
 func (entry *MyEntry) Bootstrap(context.Context) {
 	event := entry.EventLoggerEntry.GetEventHelper().Start(
 		"bootstrap",
@@ -161,23 +171,27 @@ func (entry *MyEntry) Bootstrap(context.Context) {
 	entry.EventLoggerEntry.GetEventHelper().Finish(event)
 }
 
+// Interrupt noop
 func (entry *MyEntry) Interrupt(context.Context) {}
 
+// GetName returns name of entry
 func (entry *MyEntry) GetName() string {
 	return entry.EntryName
 }
 
+// GetType returns type of entry
 func (entry *MyEntry) GetType() string {
 	return entry.EntryType
 }
 
+// String returns string value of entry
 func (entry *MyEntry) String() string {
 	bytes, _ := json.Marshal(entry)
 
 	return string(bytes)
 }
 
-// Marshal entry
+// MarshalJSON marshal entry
 func (entry *MyEntry) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
 		"entryName":        entry.EntryName,
@@ -191,12 +205,12 @@ func (entry *MyEntry) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&m)
 }
 
-// Unmarshal entry
+// UnmarshalJSON unmarshal entry
 func (entry *MyEntry) UnmarshalJSON([]byte) error {
 	return nil
 }
 
-// Get description of entry
+// GetDescription returns description of entry
 func (entry *MyEntry) GetDescription() string {
 	return entry.EntryDescription
 }

@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -21,12 +22,14 @@ func initOsInfo() *OsInfo {
 	}
 }
 
+// OsInfo defines OS information
 type OsInfo struct {
 	Os       string `json:"os" yaml:"os"`
 	Arch     string `json:"arch" yaml:"arch"`
 	Hostname string `json:"hostname" yaml:"hostname"`
 }
 
+// NewOsInfo creates a new OsInfo instance
 func NewOsInfo() *OsInfo {
 	return osInfo
 }

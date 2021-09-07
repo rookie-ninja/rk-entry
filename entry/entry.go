@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -37,7 +38,7 @@ import (
 // 3: Application will wait for shutdown signal
 // 4: Interrupt will be called from Bootstrapper.Interrupt() function
 
-// New entry function which must be implemented
+// EntryRegFunc create new entries based on config file which must be implemented
 type EntryRegFunc func(configFilePath string) map[string]Entry
 
 // Entry interface which must be implemented for bootstrapper to bootstrap
@@ -49,15 +50,15 @@ type Entry interface {
 	// Wait for shutdown signal and wait for draining incomplete procedure
 	Interrupt(context.Context)
 
-	// Get name of entry
+	// GetName returns name of entry
 	GetName() string
 
-	// Get type of entry
+	// GetType returns type of entry
 	GetType() string
 
-	// Get description of entry
+	// GetDescription returns description of entry
 	GetDescription() string
 
-	// print entry as string
+	// String print entry as string
 	String() string
 }

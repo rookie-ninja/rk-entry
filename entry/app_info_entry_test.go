@@ -2,6 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
@@ -376,6 +377,19 @@ func TestAppInfoEntry_String_HappyCase(t *testing.T) {
 	assert.Empty(t, entry.Keywords, m["keywords"])
 	assert.Empty(t, entry.DocsUrl, m["docsUrl"])
 	assert.Empty(t, entry.Maintainers, m["maintainers"])
+}
+
+func TestAppInfoEntry_GetDescription(t *testing.T) {
+	entry := RegisterAppInfoEntry(
+		WithDescriptionAppInfo("ut-description"))
+
+	assert.Equal(t, "ut-description", entry.GetDescription())
+}
+
+func TestReadRkMetaFile_HappyCase(t *testing.T) {
+	entry := RegisterAppInfoEntry()
+	filePath := createFileAtTestTempDir(t, "ut-content")
+	assert.Equal(t, "ut-content", entry.readRkMetaFile(filePath))
 }
 
 func assertPanic(t *testing.T) {

@@ -323,18 +323,27 @@ func TestRegisterConfigEntry_WithoutOptions(t *testing.T) {
 	GlobalAppCtx.clearConfigEntries()
 }
 
+func TestRegisterConfigEntry_WithInvalidFile(t *testing.T) {
+	defer assertPanic(t)
+	filePath := createFileAtTestTempDir(t, "invalid")
+	RegisterConfigEntry(WithPathConfig(filePath))
+}
+
 func TestRegisterConfigEntry_HappyCase(t *testing.T) {
 	name := "unit-test-viper"
+	description := "unit-test-description"
 	vp := viper.New()
 
 	entry := RegisterConfigEntry(
 		WithNameConfig(name),
+		WithDescriptionConfig(description),
 		WithViperInstanceConfig(vp))
 
 	assert.NotNil(t, entry)
 
 	// validate default fields
 	assert.Equal(t, name, entry.EntryName)
+	assert.Equal(t, description, entry.GetDescription())
 	assert.Equal(t, ConfigEntryType, entry.EntryType)
 
 	// validate viper instance
@@ -343,6 +352,31 @@ func TestRegisterConfigEntry_HappyCase(t *testing.T) {
 
 	// clear viper entry
 	GlobalAppCtx.clearConfigEntries()
+}
+
+func TestConfigEntry_GetDescription_HappyCase(t *testing.T) {
+	entry := RegisterConfigEntry(
+		WithDescriptionConfig("ut-description"))
+	assert.Equal(t, "ut-description", entry.GetDescription())
+}
+
+func TestConfigEntry_GetViperAsMap_HappyCase(t *testing.T) {
+	vp := viper.New()
+	vp.Set("key", "value")
+	entry := RegisterConfigEntry(WithViperInstanceConfig(vp))
+
+	res := entry.GetViperAsMap()
+	assert.Equal(t, "value", res["key"])
+}
+
+func TestConfigEntry_UnmarshalJSON(t *testing.T) {
+	entry := RegisterConfigEntry()
+	assert.Nil(t, entry.UnmarshalJSON(nil))
+}
+
+func TestConfigEntry_GetLocale(t *testing.T) {
+	entry := RegisterConfigEntry(WithLocaleConfig("ut-locale"))
+	assert.Equal(t, "ut-locale", entry.GetLocale())
 }
 
 func TestConfigEntry_GetViper_HappyCase(t *testing.T) {
