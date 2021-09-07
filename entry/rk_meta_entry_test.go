@@ -9,6 +9,9 @@ import (
 	"context"
 	"github.com/rookie-ninja/rk-common/common"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"os"
+	"path"
 	"testing"
 )
 
@@ -39,14 +42,19 @@ name: fake-name
 version: fake-version
 `
 
-	filePath := createFileAtTestTempDir(t, config)
-	entries := RegisterRkMetaEntriesFromConfig(filePath)
+	wd, _ := os.Getwd()
+	os.MkdirAll(path.Join(wd, ".rk"), os.ModePerm)
+	tempDir := path.Join(wd, ".rk/rk.yaml")
+	assert.Nil(t, ioutil.WriteFile(tempDir, []byte(config), os.ModePerm))
+
+	entries := RegisterRkMetaEntriesFromConfig("")
 	assert.NotEmpty(t, entries)
 
 	metaEntry := entries[RkMetaEntryName]
 	assert.NotNil(t, metaEntry)
 
 	GlobalAppCtx.rkMetaEntry = nil
+	os.RemoveAll(path.Join(wd, ".rk"))
 }
 
 func TestRegisterRkMetaEntry(t *testing.T) {
