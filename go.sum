@@ -432,10 +432,14 @@ github.com/rookie-ninja/rk-logger v1.2.0 h1:DtN/rfSGzaX6Ky2Oe6Hndw/evSd/pYsmEL/S
 github.com/rookie-ninja/rk-logger v1.2.0/go.mod h1:NDRMGnXMO/PBsFQc+N4LQgTmIxOKaFE1c7pDRmQUGjc=
 github.com/rookie-ninja/rk-logger v1.2.2 h1:UnsadmLTLFKwTuG9+CNHt+n8RPgULALGwQ+4ErfU72g=
 github.com/rookie-ninja/rk-logger v1.2.2/go.mod h1:NDRMGnXMO/PBsFQc+N4LQgTmIxOKaFE1c7pDRmQUGjc=
+github.com/rookie-ninja/rk-logger v1.2.3 h1:BTbHizHtCIP01JD2msdmZrijEPEFXD/KprsBgMDBJ6A=
+github.com/rookie-ninja/rk-logger v1.2.3/go.mod h1:NDRMGnXMO/PBsFQc+N4LQgTmIxOKaFE1c7pDRmQUGjc=
 github.com/rookie-ninja/rk-query v1.2.0 h1:9e+hwPZigIpCspt43QfBEHoIMtb7h3MdEboGATUbokY=
 github.com/rookie-ninja/rk-query v1.2.0/go.mod h1:Yqmd3Bc7hySzwkzBGt2emCw23vknx8eLHy33KRWh8wA=
 github.com/rookie-ninja/rk-query v1.2.3 h1:YGK/fznIfIQKzQ73cUjtg9vJgPNYFq6xOyGMZym2s0E=
 github.com/rookie-ninja/rk-query v1.2.3/go.mod h1:osJL7RV1Y0rZJOZ0FEWQq6xer2LB+FxaD0HL+Wbiczs=
+github.com/rookie-ninja/rk-query v1.2.4 h1:PBM90z5dDWRKNvJHtDUQ2F4um5c4I+WwSml8uLVvfkc=
+github.com/rookie-ninja/rk-query v1.2.4/go.mod h1:nxdqy600ZC996QW0yHflY/hAkG4Qt9lSaDftf540YDI=
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
 github.com/samuel/go-zookeeper v0.0.0-20190923202752-2cc03de413da/go.mod h1:gi+0XIa01GRL2eRQVjQkKGqKF3SF9vZR/HnPullcV2E=
