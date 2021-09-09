@@ -16,9 +16,11 @@ import (
 )
 
 const (
-	CertEntryName = "CertDefault" // CertEntryName name of default entry
-	CertEntryType = "CertEntry"   // CertEntryType type name of CertEntry
-	// CertEntryDescription is defualt description of CertEntry
+	// CertEntryName name of default entry
+	CertEntryName = "CertDefault"
+	// CertEntryType type name of CertEntry
+	CertEntryType = "CertEntry"
+	// CertEntryDescription is default description of CertEntry
 	CertEntryDescription = "Internal RK entry which retrieves certificates from localFs, remoteFs, etcd or consul."
 )
 

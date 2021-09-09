@@ -15,11 +15,16 @@ import (
 )
 
 const (
-	AppNameDefault   = "rk"             // AppNameDefault will be used if not provided by user
-	VersionDefault   = ""               // VersionDefault will be empty if not provided by user
-	LangDefault      = "golang"         // LangDefault will always be golang
-	AppInfoEntryName = "AppInfoDefault" // AppInfoEntryName is a fixed value
-	AppInfoEntryType = "AppInfoEntry"   // AppInfoEntry is a fixed value
+	// AppNameDefault will be used if not provided by user
+	AppNameDefault = "rk"
+	// VersionDefault will be empty if not provided by user
+	VersionDefault = ""
+	// LangDefault will always be golang
+	LangDefault = "golang"
+	// AppInfoEntryName is a fixed value
+	AppInfoEntryName = "AppInfoDefault"
+	// AppInfoEntry is a fixed value
+	AppInfoEntryType = "AppInfoEntry"
 	// AppInfoEntryDescription is a fixed value
 	AppInfoEntryDescription = "Internal RK entry which describes application with fields of appName, version and etc."
 )
@@ -259,13 +264,14 @@ func RegisterAppInfoEntry(opts ...AppInfoEntryOption) *AppInfoEntry {
 
 // Read rk meta file.
 func (entry *AppInfoEntry) readRkMetaFile(filePath string) string {
+	var bytes []byte
 	// read file from gen/rk directory
-	if bytes := rkcommon.TryReadFile(filePath); len(bytes) < 1 {
+	if bytes = rkcommon.TryReadFile(filePath); len(bytes) < 1 {
 		// read from current working directory as backoff, since user may run program from IDE directory.
 		return string(rkcommon.TryReadFile(path.Base(filePath)))
-	} else {
-		return string(bytes)
 	}
+
+	return string(bytes)
 }
 
 // Bootstrap will read meta files.
@@ -302,9 +308,11 @@ func (entry *AppInfoEntry) GetDescription() string {
 
 // String return string value of entry.
 func (entry *AppInfoEntry) String() string {
-	if bytes, err := json.Marshal(entry); err != nil {
+	var bytes []byte
+	var err error
+	if bytes, err = json.Marshal(entry); err != nil {
 		return "{}"
-	} else {
-		return string(bytes)
 	}
+
+	return string(bytes)
 }

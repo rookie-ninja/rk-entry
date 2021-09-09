@@ -79,7 +79,7 @@ type EventLoggerEntry struct {
 	LumberjackConfig *lumberjack.Logger    `yaml:"lumberjackConfig" json:"lumberjackConfig"`
 }
 
-// EventLoggerEntry Option which used while registering entry from codes.
+// EventLoggerEntryOption Option which used while registering entry from codes.
 type EventLoggerEntryOption func(*EventLoggerEntry)
 
 // WithNameEvent provide name of entry.
@@ -201,11 +201,14 @@ func (entry *EventLoggerEntry) GetType() string {
 
 // String convert entry into JSON style string.
 func (entry *EventLoggerEntry) String() string {
-	if bytes, err := json.Marshal(entry); err != nil {
+	var bytes []byte
+	var err error
+
+	if bytes, err = json.Marshal(entry); err != nil {
 		return "{}"
-	} else {
-		return string(bytes)
 	}
+
+	return string(bytes)
 }
 
 // MarshalJSON marshal entry.
