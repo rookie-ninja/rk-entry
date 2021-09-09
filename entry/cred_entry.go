@@ -31,11 +31,11 @@ const (
 	DefaultTimeout = 3 * time.Second
 	// ProviderEtcd retriever type of etcd
 	ProviderEtcd = "etcd"
-	// ProviderEtcd retriever type of consul
+	// ProviderConsul retriever type of consul
 	ProviderConsul = "consul"
-	// ProviderEtcd retriever type of localFs
+	// ProviderLocalFs retriever type of localFs
 	ProviderLocalFs = "localFs"
-	// ProviderEtcd retriever type of RemoteFs
+	// ProviderRemoteFs retriever type of RemoteFs
 	ProviderRemoteFs = "remoteFs"
 )
 
@@ -372,20 +372,23 @@ func (retriever *CredRetrieverEtcd) getValueFromEtcd(client *clientv3.Client, ke
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultTimeout)
 	defer cancel()
 
-	if resp, err := client.Get(ctx, key); err != nil {
+	var resp *clientv3.GetResponse
+	var err error
+
+	if resp, err = client.Get(ctx, key); err != nil {
 		retriever.ZapLoggerEntry.GetLogger().Warn("failed to get credentials from etcd",
 			zap.String("endpoint", retriever.Endpoint),
 			zap.String("locale", retriever.Locale),
 			zap.String("key", key),
 			zap.Error(err))
 		return nil
-	} else {
-		if len(resp.Kvs) > 0 {
-			return resp.Kvs[0].Value
-		}
-
-		return nil
 	}
+
+	if len(resp.Kvs) > 0 {
+		return resp.Kvs[0].Value
+	}
+
+	return nil
 }
 
 // ListPaths return list of paths
@@ -612,7 +615,7 @@ type CredRetrieverRemoteFs struct {
 	Paths            []string          `yaml:"paths" json:"paths"`
 }
 
-// CredRetrieverRemoteFs call remote file store and retrieve values based on keys.
+// Retrieve call remote file store and retrieve values based on keys.
 func (retriever *CredRetrieverRemoteFs) Retrieve(context.Context) *CredStore {
 	client := &http.Client{
 		Timeout: DefaultTimeout,

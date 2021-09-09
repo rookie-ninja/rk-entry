@@ -38,7 +38,7 @@ func init() {
 	rkentry.RegisterEntryRegFunc(RegisterMyEntriesFromConfig)
 }
 
-// A struct which is for unmarshalled YAML
+// BootConfig A struct which is for unmarshalled YAML
 type BootConfig struct {
 	MyEntry struct {
 		Enabled     bool   `yaml:"enabled" json:"enabled"`

@@ -66,7 +66,7 @@ type ZapLoggerEntry struct {
 	LumberjackConfig *lumberjack.Logger `yaml:"lumberjackConfig" json:"lumberjackConfig"`
 }
 
-// ZapLoggerEntry Option which used while registering entry from codes.
+// ZapLoggerEntryOption Option which used while registering entry from codes.
 type ZapLoggerEntryOption func(*ZapLoggerEntry)
 
 // WithNameZap provide name of entry.
@@ -185,11 +185,13 @@ func (entry *ZapLoggerEntry) GetDescription() string {
 
 // String convert entry into JSON style string.
 func (entry *ZapLoggerEntry) String() string {
-	if bytes, err := json.Marshal(entry); err != nil {
+	var bytes []byte
+	var err error
+	if bytes, err = json.Marshal(entry); err != nil {
 		return "{}"
-	} else {
-		return string(bytes)
 	}
+
+	return string(bytes)
 }
 
 // MarshalJSON marshal entry.

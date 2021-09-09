@@ -51,7 +51,7 @@ type RkMetaEntry struct {
 	RkMeta           *rkcommon.RkMeta `json:"meta" yaml:"meta"`
 }
 
-// RkMetaEntry Option which used while registering entry from codes.
+// RkMetaEntryOption Option which used while registering entry from codes.
 type RkMetaEntryOption func(*RkMetaEntry)
 
 // WithMetaRkMeta provide git information.
@@ -164,9 +164,11 @@ func (entry *RkMetaEntry) GetDescription() string {
 
 // String return string of entry.
 func (entry *RkMetaEntry) String() string {
-	if bytes, err := json.Marshal(entry); err != nil {
+	var bytes []byte
+	var err error
+	if bytes, err = json.Marshal(entry); err != nil {
 		return "{}"
-	} else {
-		return string(bytes)
 	}
+
+	return string(bytes)
 }

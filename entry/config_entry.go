@@ -8,7 +8,6 @@ package rkentry
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/rookie-ninja/rk-common/common"
 	"github.com/spf13/viper"
@@ -17,7 +16,8 @@ import (
 )
 
 const (
-	ConfigEntryType = "ConfigEntry" // ConfigEntryType is entry type of ConfigEntry
+	// ConfigEntryType is entry type of ConfigEntry
+	ConfigEntryType = "ConfigEntry"
 	// ConfigEntryDescription is default description of ConfigEntry
 	ConfigEntryDescription = "Internal RK entry which read user config file into viper instance."
 )
@@ -154,7 +154,7 @@ func RegisterConfigEntry(opts ...ConfigEntryOption) *ConfigEntry {
 		if rkcommon.FileExists(entry.Path) {
 			entry.vp.SetConfigFile(entry.Path)
 			if err := entry.vp.ReadInConfig(); err != nil {
-				rkcommon.ShutdownWithError(errors.New(fmt.Sprintf("failed to read file, path:%s", entry.Path)))
+				rkcommon.ShutdownWithError(fmt.Errorf("failed to read file, path:%s", entry.Path))
 			}
 		}
 	}
