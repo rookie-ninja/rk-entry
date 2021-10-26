@@ -65,19 +65,19 @@ cred:
 #  - name: "etcd-cred"                        # Required
 #    description: "Description of entry"      # Optional
 #    provider: "etcd"                         # Required, etcd, consul, localFs, remoteFs are supported options
-#    locale: "*::*::*::*"                     # Optional, default: *::*::*::*
+#    locale: "*::*::*::*"                     # Required, default: ""
 #    endpoint: "localhost:2379"               # Required, http://x.x.x.x or x.x.x.x both acceptable.
 #    basicAuth: "root:etcd"                   # Optional, default: "", basic auth for Consul server, like <user:pass>
 #    paths: ["myCred"]                        # Optional, default: [""], key of value in etcd
   - name: "local-cred"                        # Required
     description: "Description of entry"       # Optional
     provider: "localFs"                       # Required, etcd, consul, localFs, remoteFs are supported options
-    locale: "*::*::*::*"                      # Optional, default: *::*::*::*
+    locale: "*::*::*::*"                      # Required, default: ""
     paths: ["example/my-cred.yaml"]           # Optional, default: "", path of cred on local FS
 #  - name: "consul-cert"                      # Required
 #    provider: "consul"                       # Required, etcd, consul, localFS, remoteFs are supported options
 #    description: "Description of entry"      # Optional
-#    locale: "*::*::*::*"                     # Optional, default: *::*::*::*
+#    locale: "*::*::*::*"                     # Required, default: ""
 #    endpoint: "localhost:8500"               # Required, http://x.x.x.x or x.x.x.x both acceptable.
 #    basicAuth: "user:pass"                   # Optional, default: "", basic auth for consul server, like <user:pass>
 #    datacenter: "rk"                         # Optional, default: "", consul datacenter
@@ -86,7 +86,7 @@ cred:
 #  - name: "remoteFs-cert"                    # Required
 #    description: "Description of entry"      # Optional
 #    provider: "remoteFs"                     # Required, etcd, consul, localFs, remoteFs are supported options
-#    locale: "*::*::*::*"                     # Optional, default: *::*::*::*
+#    locale: "*::*::*::*"                     # Required, default: ""
 #    endpoint: "localhost:8080"               # Required, http://x.x.x.x or x.x.x.x both acceptable.
 #    basicAuth: "user:pass"                   # Optional, default: "", basic auth for remote file store, like <user:pass>
 #    paths: ["myCred"]                        # Optional, default: [""], key of value in remoteFs
@@ -94,7 +94,7 @@ cert:
 #  - name: "etcd-cert"                        # Required
 #    description: "Description of entry"      # Optional
 #    provider: "etcd"                         # Required, etcd, consul, localFs, remoteFs are supported options
-#    locale: "*::*::*::*"                     # Optional, default: *::*::*::*
+#    locale: "*::*::*::*"                     # Required, default: ""
 #    endpoint: "localhost:2379"               # Required, http://x.x.x.x or x.x.x.x both acceptable.
 #    basicAuth: "root:etcd"                   # Optional, default: "", basic auth for Consul server, like <user:pass>
 #    serverCertPath: "serverCert"             # Optional, default: "", key of value in etcd
@@ -104,7 +104,7 @@ cert:
   - name: "local-cert"                        # Required
     description: "Description of entry"       # Optional
     provider: "localFs"                       # Required, etcd, consul, localFs, remoteFs are supported options
-    locale: "*::*::*::*"                      # Optional, default: *::*::*::*
+    locale: "*::*::*::*"                      # Required, default: ""
     serverCertPath: "example/server.pem"      # Optional, default: "", path of certificate on local FS
     serverKeyPath: "example/server-key.pem"   # Optional, default: "", path of certificate on local FS
 #    clientCertPath: "example/client.pem"     # Optional, default: "", path of certificate on local FS
@@ -112,7 +112,7 @@ cert:
 #  - name: "consul-cert"                      # Required
 #    provider: "consul"                       # Required, etcd, consul, localFS, remoteFs are supported options
 #    description: "Description of entry"      # Optional
-#    locale: "*::*::*::*"                     # Optional, default: *::*::*::*
+#    locale: "*::*::*::*"                     # Required, default: ""
 #    endpoint: "localhost:8500"               # Required, http://x.x.x.x or x.x.x.x both acceptable.
 #    basicAuth: "user:pass"                   # Optional, default: "", basic auth for consul server, like <user:pass>
 #    datacenter: "rk"                         # Optional, default: "", consul datacenter
@@ -124,7 +124,7 @@ cert:
 #  - name: "remoteFs-cert"                    # Required
 #    description: "Description of entry"      # Optional
 #    provider: "remoteFs"                     # Required, etcd, consul, localFs, remoteFs are supported options
-#    locale: "*::*::*::*"                     # Optional, default: *::*::*::*
+#    locale: "*::*::*::*"                     # Required, default: ""
 #    endpoint: "localhost:8080"               # Required, http://x.x.x.x or x.x.x.x both acceptable.
 #    basicAuth: "user:pass"                   # Optional, default: "", basic auth for remote file store, like <user:pass>
 #    serverCertPath: "serverCert"             # Optional, default: "", path of file in remote file store

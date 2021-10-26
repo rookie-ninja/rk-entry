@@ -1073,7 +1073,7 @@ cert:
   - name: "local-cert"                       # Required
     description: "Description of entry"      # Optional
     provider: "localFs"                      # Required, etcd, consul, localFS, remoteFs are supported options
-    locale: "*::*::*::*"                     # Optional, default: *::*::*::*
+    locale: "*::*::*::*"                     # Required, default: ""
     serverCertPath: "example/server.pem"     # Optional, default: "", path of certificate on local FS
     serverKeyPath: "example/server-key.pem"  # Optional, default: "", path of certificate on local FS
     clientCertPath: "example/client.pem"     # Optional, default: "", path of certificate on local FS
