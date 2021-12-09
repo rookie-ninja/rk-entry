@@ -68,7 +68,7 @@ func RegisterRkMetaEntriesFromConfig(string) map[string]Entry {
 	// 1: Unmarshal user provided config into boot config struct
 	config := &BootConfigRkMeta{}
 
-	var meta *rkcommon.RkMeta
+	meta := rkcommon.NewRkMeta()
 
 	// We will looking for .rk/rk.yaml file in current working directory
 	//
@@ -100,8 +100,6 @@ func RegisterRkMetaEntriesFromConfig(string) map[string]Entry {
 				},
 			},
 		}
-	} else {
-		meta = rkcommon.GetRkMetaFromCmd()
 	}
 
 	// 2: Init rk entry from config
