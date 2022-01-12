@@ -6,7 +6,7 @@
 package rkmidtimeout
 
 import (
-	rkentry "github.com/rookie-ninja/rk-entry/entry"
+	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
