@@ -12,7 +12,7 @@ import (
 	"errors"
 	"github.com/rookie-ninja/rk-common/common"
 	"github.com/rookie-ninja/rk-common/error"
-	"github.com/rookie-ninja/rk-entry/entry/middleware"
+	"github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rs/xid"
 	"net/http"
 	"net/url"

@@ -9,7 +9,7 @@ package rkmidlimit
 import (
 	"fmt"
 	juju "github.com/juju/ratelimit"
-	rkerror "github.com/rookie-ninja/rk-common/error"
+	"github.com/rookie-ninja/rk-common/error"
 	"github.com/rs/xid"
 	uber "go.uber.org/ratelimit"
 	"net/http"

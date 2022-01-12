@@ -6,7 +6,7 @@
 package rkmidmeta
 
 import (
-	rkentry "github.com/rookie-ninja/rk-entry/entry"
+	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

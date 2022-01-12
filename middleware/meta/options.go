@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"github.com/rookie-ninja/rk-common/common"
 	"github.com/rookie-ninja/rk-entry/entry"
-	"github.com/rookie-ninja/rk-entry/entry/middleware"
+	"github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-query"
 	"github.com/rs/xid"
 	"strings"

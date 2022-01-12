@@ -7,7 +7,7 @@
 package rkmidcors
 
 import (
-	rkmid "github.com/rookie-ninja/rk-entry/entry/middleware"
+	"github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rs/xid"
 	"net/http"
 	"regexp"

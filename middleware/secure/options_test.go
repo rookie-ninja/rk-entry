@@ -7,7 +7,7 @@ package rkmidsec
 
 import (
 	"crypto/tls"
-	rkmid "github.com/rookie-ninja/rk-entry/entry/middleware"
+	"github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"

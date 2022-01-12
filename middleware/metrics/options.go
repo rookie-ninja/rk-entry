@@ -9,7 +9,7 @@ package rkmidmetrics
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rookie-ninja/rk-entry/entry"
-	"github.com/rookie-ninja/rk-entry/entry/middleware"
+	"github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-prom"
 	"github.com/rs/xid"
 	"net/http"
