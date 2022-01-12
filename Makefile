@@ -1,5 +1,5 @@
 .PHONY: all
-all: test lint doctoc fmt
+all: test lint doctoc fmt swag
 
 .PHONY: lint
 lint:
@@ -24,4 +24,17 @@ fmt:
 doctoc:
 	@echo "[doctoc] Running doctoc..."
 	@doctoc . 2>&1
+	@echo "------------------------------------[Done]"
+
+.PHONY: pkger
+pkger:
+	@echo "[pkger] Running pkger..."
+	@pkger -o entry
+	@echo "------------------------------------[Done]"
+
+.PHONY: swag
+swag:
+	@echo "[swag] Running swag..."
+	@swag init --generalInfo entry/common_service_entry.go --output assets/sw/config --propertyStrategy camelcase
+	@rm -rf assets/sw/config/docs.go
 	@echo "------------------------------------[Done]"
