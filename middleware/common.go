@@ -65,6 +65,7 @@ var (
 
 	ignorePrefix = []string{
 		"/rk/v1/assets",
+		"/rk/v1/tv",
 	}
 
 	IgnorePrefixGlobal = ignorePathPrefix
