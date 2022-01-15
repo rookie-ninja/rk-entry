@@ -49,6 +49,7 @@ func init() {
 	Templates["license"] = readFileFromPkger(ModPath, "/assets/tv/license.tmpl")
 	Templates["info"] = readFileFromPkger(ModPath, "/assets/tv/info.tmpl")
 	Templates["logs"] = readFileFromPkger(ModPath, "/assets/tv/logs.tmpl")
+	Templates["gw-error-mapping"] = readFileFromPkger(ModPath, "/assets/tv/error-mapping.tmpl")
 	Templates["git"] = readFileFromPkger(ModPath, "/assets/tv/git.tmpl")
 }
 

@@ -215,6 +215,34 @@
                 }
             }
         },
+        "/rk/v1/gwErrorMapping": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "JWT": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "List error mapping between gRPC and grpc-gateway",
+                "operationId": "16",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rkentry.GwErrorMappingResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/rk/v1/healthy": {
             "get": {
                 "security": [
@@ -444,52 +472,24 @@
                 "entries": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/rkentry.ApisResponse_Entry"
+                        "$ref": "#/definitions/rkentry.ApisResponseElement"
                     }
                 }
             }
         },
-        "rkentry.ApisResponse_Entry": {
+        "rkentry.ApisResponseElement": {
             "type": "object",
             "properties": {
                 "entryName": {
                     "type": "string"
                 },
-                "grpc": {
-                    "$ref": "#/definitions/rkentry.ApisResponse_Grpc"
-                },
-                "rest": {
-                    "$ref": "#/definitions/rkentry.ApisResponse_Rest"
-                }
-            }
-        },
-        "rkentry.ApisResponse_Grpc": {
-            "type": "object",
-            "properties": {
                 "gw": {
-                    "$ref": "#/definitions/rkentry.ApisResponse_Rest"
+                    "type": "string"
                 },
                 "method": {
                     "type": "string"
                 },
-                "port": {
-                    "type": "integer"
-                },
-                "service": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "rkentry.ApisResponse_Rest": {
-            "type": "object",
-            "properties": {
-                "method": {
-                    "type": "string"
-                },
-                "pattern": {
+                "path": {
                     "type": "string"
                 },
                 "port": {
@@ -506,12 +506,12 @@
                 "entries": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/rkentry.CertsResponse_Entry"
+                        "$ref": "#/definitions/rkentry.CertsResponseElement"
                     }
                 }
             }
         },
-        "rkentry.CertsResponse_Entry": {
+        "rkentry.CertsResponseElement": {
             "type": "object",
             "properties": {
                 "clientCert": {
@@ -558,12 +558,12 @@
                 "entries": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/rkentry.ConfigsResponse_ConfigEntry"
+                        "$ref": "#/definitions/rkentry.ConfigsResponseElement"
                     }
                 }
             }
         },
-        "rkentry.ConfigsResponse_ConfigEntry": {
+        "rkentry.ConfigsResponseElement": {
             "type": "object",
             "properties": {
                 "entryDescription": {
@@ -626,13 +626,13 @@
                     "additionalProperties": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/definitions/rkentry.EntriesResponse_Entry"
+                            "$ref": "#/definitions/rkentry.EntriesResponseElement"
                         }
                     }
                 }
             }
         },
-        "rkentry.EntriesResponse_Entry": {
+        "rkentry.EntriesResponseElement": {
             "type": "object",
             "properties": {
                 "entryDescription": {
@@ -724,6 +724,34 @@
                 }
             }
         },
+        "rkentry.GwErrorMappingResponse": {
+            "type": "object",
+            "properties": {
+                "mapping": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/rkentry.GwErrorMappingResponseElement"
+                    }
+                }
+            }
+        },
+        "rkentry.GwErrorMappingResponseElement": {
+            "type": "object",
+            "properties": {
+                "grpcCode": {
+                    "type": "integer"
+                },
+                "grpcText": {
+                    "type": "string"
+                },
+                "restCode": {
+                    "type": "integer"
+                },
+                "restText": {
+                    "type": "string"
+                }
+            }
+        },
         "rkentry.HealthyResponse": {
             "type": "object",
             "properties": {
@@ -748,13 +776,13 @@
                     "additionalProperties": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/definitions/rkentry.LogsResponse_Entry"
+                            "$ref": "#/definitions/rkentry.LogsResponseElement"
                         }
                     }
                 }
             }
         },
-        "rkentry.LogsResponse_Entry": {
+        "rkentry.LogsResponseElement": {
             "type": "object",
             "properties": {
                 "entryDescription": {

@@ -66,25 +66,26 @@ type BootConfigCommonService struct {
 // 13: License Returns license file content
 // 14: Readme Returns README file content
 type CommonServiceEntry struct {
-	EntryName        string            `json:"entryName" yaml:"entryName"`
-	EntryType        string            `json:"entryType" yaml:"entryType"`
-	EntryDescription string            `json:"-" yaml:"-"`
-	EventLoggerEntry *EventLoggerEntry `json:"-" yaml:"-"`
-	ZapLoggerEntry   *ZapLoggerEntry   `json:"-" yaml:"-"`
-	HealthyPath      string            `json:"-" yaml:"-"`
-	GcPath           string            `json:"-" yaml:"-"`
-	InfoPath         string            `json:"-" yaml:"-"`
-	ConfigsPath      string            `json:"-" yaml:"-"`
-	SysPath          string            `json:"-" yaml:"-"`
-	EntriesPath      string            `json:"-" yaml:"-"`
-	CertsPath        string            `json:"-" yaml:"-"`
-	LogsPath         string            `json:"-" yaml:"-"`
-	DepsPath         string            `json:"-" yaml:"-"`
-	LicensePath      string            `json:"-" yaml:"-"`
-	ReadmePath       string            `json:"-" yaml:"-"`
-	GitPath          string            `json:"-" yaml:"-"`
-	ApisPath         string            `json:"-" yaml:"-"`
-	ReqPath          string            `json:"-" yaml:"-"`
+	EntryName          string            `json:"entryName" yaml:"entryName"`
+	EntryType          string            `json:"entryType" yaml:"entryType"`
+	EntryDescription   string            `json:"-" yaml:"-"`
+	EventLoggerEntry   *EventLoggerEntry `json:"-" yaml:"-"`
+	ZapLoggerEntry     *ZapLoggerEntry   `json:"-" yaml:"-"`
+	HealthyPath        string            `json:"-" yaml:"-"`
+	GcPath             string            `json:"-" yaml:"-"`
+	InfoPath           string            `json:"-" yaml:"-"`
+	ConfigsPath        string            `json:"-" yaml:"-"`
+	SysPath            string            `json:"-" yaml:"-"`
+	EntriesPath        string            `json:"-" yaml:"-"`
+	CertsPath          string            `json:"-" yaml:"-"`
+	LogsPath           string            `json:"-" yaml:"-"`
+	DepsPath           string            `json:"-" yaml:"-"`
+	LicensePath        string            `json:"-" yaml:"-"`
+	ReadmePath         string            `json:"-" yaml:"-"`
+	GitPath            string            `json:"-" yaml:"-"`
+	ApisPath           string            `json:"-" yaml:"-"`
+	ReqPath            string            `json:"-" yaml:"-"`
+	GwErrorMappingPath string            `json:"-" yaml:"-"`
 }
 
 // CommonServiceEntryOption Common service entry option.
@@ -128,25 +129,26 @@ func RegisterCommonServiceEntryWithConfig(config *BootConfigCommonService, name 
 // RegisterCommonServiceEntry Create new common service entry with options.
 func RegisterCommonServiceEntry(opts ...CommonServiceEntryOption) *CommonServiceEntry {
 	entry := &CommonServiceEntry{
-		EntryName:        CommonServiceEntryNameDefault,
-		EntryType:        CommonServiceEntryType,
-		EntryDescription: CommonServiceEntryDescription,
-		ZapLoggerEntry:   GlobalAppCtx.GetZapLoggerEntryDefault(),
-		EventLoggerEntry: GlobalAppCtx.GetEventLoggerEntryDefault(),
-		HealthyPath:      "/rk/v1/healthy",
-		GcPath:           "/rk/v1/gc",
-		InfoPath:         "/rk/v1/info",
-		ConfigsPath:      "/rk/v1/configs",
-		SysPath:          "/rk/v1/sys",
-		EntriesPath:      "/rk/v1/entries",
-		CertsPath:        "/rk/v1/certs",
-		LogsPath:         "/rk/v1/logs",
-		DepsPath:         "/rk/v1/deps",
-		LicensePath:      "/rk/v1/license",
-		ReadmePath:       "/rk/v1/readme",
-		GitPath:          "/rk/v1/git",
-		ApisPath:         "/rk/v1/apis",
-		ReqPath:          "/rk/v1/req",
+		EntryName:          CommonServiceEntryNameDefault,
+		EntryType:          CommonServiceEntryType,
+		EntryDescription:   CommonServiceEntryDescription,
+		ZapLoggerEntry:     GlobalAppCtx.GetZapLoggerEntryDefault(),
+		EventLoggerEntry:   GlobalAppCtx.GetEventLoggerEntryDefault(),
+		HealthyPath:        "/rk/v1/healthy",
+		GcPath:             "/rk/v1/gc",
+		InfoPath:           "/rk/v1/info",
+		ConfigsPath:        "/rk/v1/configs",
+		SysPath:            "/rk/v1/sys",
+		EntriesPath:        "/rk/v1/entries",
+		CertsPath:          "/rk/v1/certs",
+		LogsPath:           "/rk/v1/logs",
+		DepsPath:           "/rk/v1/deps",
+		LicensePath:        "/rk/v1/license",
+		ReadmePath:         "/rk/v1/readme",
+		GitPath:            "/rk/v1/git",
+		ApisPath:           "/rk/v1/apis",
+		ReqPath:            "/rk/v1/req",
+		GwErrorMappingPath: "/rk/v1/gwErrorMapping",
 	}
 
 	for i := range opts {
@@ -235,7 +237,8 @@ func doHealthy() *HealthyResponse {
 // @Router /rk/v1/healthy [get]
 func (entry *CommonServiceEntry) Healthy(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doHealthy())
+
+	bytes, _ := json.MarshalIndent(doHealthy(), "", "  ")
 	writer.Write(bytes)
 }
 
@@ -262,7 +265,7 @@ func doGc() *GcResponse {
 // @Router /rk/v1/gc [get]
 func (entry *CommonServiceEntry) Gc(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doGc())
+	bytes, _ := json.MarshalIndent(doGc(), "", "  ")
 	writer.Write(bytes)
 }
 
@@ -282,17 +285,17 @@ func doInfo() *ProcessInfo {
 // @Router /rk/v1/info [get]
 func (entry *CommonServiceEntry) Info(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doInfo())
+	bytes, _ := json.MarshalIndent(doInfo(), "", "  ")
 	writer.Write(bytes)
 }
 
 func doConfigs() *ConfigsResponse {
 	res := &ConfigsResponse{
-		Entries: make([]*ConfigsResponse_ConfigEntry, 0),
+		Entries: make([]*ConfigsResponseElement, 0),
 	}
 
 	for _, v := range GlobalAppCtx.ListConfigEntries() {
-		configEntry := &ConfigsResponse_ConfigEntry{
+		configEntry := &ConfigsResponseElement{
 			EntryName:        v.GetName(),
 			EntryType:        v.GetType(),
 			EntryDescription: v.GetDescription(),
@@ -318,7 +321,7 @@ func doConfigs() *ConfigsResponse {
 // @Router /rk/v1/configs [get]
 func (entry *CommonServiceEntry) Configs(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doConfigs())
+	bytes, _ := json.MarshalIndent(doConfigs(), "", "  ")
 	writer.Write(bytes)
 }
 
@@ -344,13 +347,13 @@ func doSys() *SysResponse {
 // @Router /rk/v1/sys [get]
 func (entry *CommonServiceEntry) Sys(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doSys())
+	bytes, _ := json.MarshalIndent(doSys(), "", "  ")
 	writer.Write(bytes)
 }
 
 func doEntries() *EntriesResponse {
 	res := &EntriesResponse{
-		Entries: make(map[string][]*EntriesResponse_Entry),
+		Entries: make(map[string][]*EntriesResponseElement),
 	}
 
 	// Iterate all internal and external entries in GlobalAppCtx
@@ -363,7 +366,7 @@ func doEntries() *EntriesResponse {
 
 	// App info entry
 	appInfoEntry := GlobalAppCtx.GetAppInfoEntry()
-	res.Entries[appInfoEntry.GetType()] = []*EntriesResponse_Entry{
+	res.Entries[appInfoEntry.GetType()] = []*EntriesResponseElement{
 		{
 			EntryName:        appInfoEntry.GetName(),
 			EntryType:        appInfoEntry.GetType(),
@@ -380,7 +383,7 @@ func entriesHelper(m map[string]Entry, res *EntriesResponse) {
 	// Iterate entries and construct EntryElement
 	for i := range m {
 		entry := m[i]
-		element := &EntriesResponse_Entry{
+		element := &EntriesResponseElement{
 			EntryName:        entry.GetName(),
 			EntryType:        entry.GetType(),
 			EntryDescription: entry.GetDescription(),
@@ -390,7 +393,7 @@ func entriesHelper(m map[string]Entry, res *EntriesResponse) {
 		if entries, ok := res.Entries[entry.GetType()]; ok {
 			entries = append(entries, element)
 		} else {
-			res.Entries[entry.GetType()] = []*EntriesResponse_Entry{element}
+			res.Entries[entry.GetType()] = []*EntriesResponseElement{element}
 		}
 	}
 }
@@ -407,13 +410,13 @@ func entriesHelper(m map[string]Entry, res *EntriesResponse) {
 // @Router /rk/v1/entries [get]
 func (entry *CommonServiceEntry) Entries(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doEntries())
+	bytes, _ := json.MarshalIndent(doEntries(), "", "  ")
 	writer.Write(bytes)
 }
 
 func doCerts() *CertsResponse {
 	res := &CertsResponse{
-		Entries: make([]*CertsResponse_Entry, 0),
+		Entries: make([]*CertsResponseElement, 0),
 	}
 
 	entries := GlobalAppCtx.ListCertEntries()
@@ -422,7 +425,7 @@ func doCerts() *CertsResponse {
 	for i := range entries {
 		entry := entries[i]
 
-		certEntry := &CertsResponse_Entry{
+		certEntry := &CertsResponseElement{
 			EntryName:        entry.GetName(),
 			EntryType:        entry.GetType(),
 			EntryDescription: entry.GetDescription(),
@@ -461,13 +464,13 @@ func doCerts() *CertsResponse {
 // @Router /rk/v1/certs [get]
 func (entry *CommonServiceEntry) Certs(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doCerts())
+	bytes, _ := json.MarshalIndent(doCerts(), "", "  ")
 	writer.Write(bytes)
 }
 
 func doLogs() *LogsResponse {
 	res := &LogsResponse{
-		Entries: make(map[string][]*LogsResponse_Entry),
+		Entries: make(map[string][]*LogsResponseElement),
 	}
 
 	logsHelper(GlobalAppCtx.ListEventLoggerEntriesRaw(), res)
@@ -478,12 +481,12 @@ func doLogs() *LogsResponse {
 
 // Helper function of /logs
 func logsHelper(m map[string]Entry, res *LogsResponse) {
-	entries := make([]*LogsResponse_Entry, 0)
+	entries := make([]*LogsResponseElement, 0)
 
 	// Iterate logger related entries and construct LogEntryElement
 	for i := range m {
 		entry := m[i]
-		logEntry := &LogsResponse_Entry{
+		logEntry := &LogsResponseElement{
 			EntryName:        entry.GetName(),
 			EntryType:        entry.GetType(),
 			EntryDescription: entry.GetDescription(),
@@ -528,7 +531,7 @@ func logsHelper(m map[string]Entry, res *LogsResponse) {
 // @Router /rk/v1/logs [get]
 func (entry *CommonServiceEntry) Logs(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doLogs())
+	bytes, _ := json.MarshalIndent(doLogs(), "", "  ")
 	writer.Write(bytes)
 }
 
@@ -550,7 +553,7 @@ func doDeps() *DepResponse {
 // @Router /rk/v1/deps [get]
 func (entry *CommonServiceEntry) Deps(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doDeps())
+	bytes, _ := json.MarshalIndent(doDeps(), "", "  ")
 	writer.Write(bytes)
 }
 
@@ -572,7 +575,7 @@ func doLicense() *LicenseResponse {
 // @Router /rk/v1/license [get]
 func (entry *CommonServiceEntry) License(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doLicense())
+	bytes, _ := json.MarshalIndent(doLicense(), "", "  ")
 	writer.Write(bytes)
 }
 
@@ -594,7 +597,7 @@ func doReadme() *ReadmeResponse {
 // @Router /rk/v1/readme [get]
 func (entry *CommonServiceEntry) Readme(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doReadme())
+	bytes, _ := json.MarshalIndent(doReadme(), "", "  ")
 	writer.Write(bytes)
 }
 
@@ -630,7 +633,7 @@ func doGit() *GitResponse {
 // @Router /rk/v1/git [get]
 func (entry *CommonServiceEntry) Git(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
-	bytes, _ := json.Marshal(doGit())
+	bytes, _ := json.MarshalIndent(doGit(), "", "  ")
 	writer.Write(bytes)
 }
 
@@ -657,3 +660,16 @@ func (entry *CommonServiceEntry) apisNoop(writer http.ResponseWriter, request *h
 // @success 200 {object} ReqResponse
 // @Router /rk/v1/req [get]
 func (entry *CommonServiceEntry) reqNoop(writer http.ResponseWriter, request *http.Request) {}
+
+// gRPC gateway error mapping handler
+// @Summary List error mapping between gRPC and grpc-gateway
+// @Id 16
+// @version 1.0
+// @Security ApiKeyAuth
+// @Security BasicAuth
+// @Security JWT
+// @produce application/json
+// @success 200 {object} GwErrorMappingResponse
+// @Router /rk/v1/gwErrorMapping [get]
+func (entry *CommonServiceEntry) gwErrorMappingNoop(writer http.ResponseWriter, request *http.Request) {
+}

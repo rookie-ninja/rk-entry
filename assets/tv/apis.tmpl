@@ -37,6 +37,7 @@
                 <th>Entry Name</th>
                 <th>Method</th>
                 <th>Path</th>
+                <th>GW</th>
                 <th>Port</th>
                 <th>Swagger URL</th>
               </tr>
@@ -45,10 +46,11 @@
               {{ range .Entries }}
               <tr>
                 <td>{{ .EntryName }}</td>
-                <td>{{ .Rest.Method }}</td>
-                <td>{{ .Rest.Pattern }}</td>
-                <td>{{ .Rest.Port }}</td>
-                <td><a target="_blank" href="{{ .Rest.SwUrl }}">{{ .Rest.SwUrl }}</a></td>
+                <td>{{ .Method }}</td>
+                <td>{{ .Path }}</td>
+                <td>{{ .Gw }}</td>
+                <td>{{ .Port }}</td>
+                <td><a target="_blank" href="{{ .SwUrl }}">{{ .SwUrl }}</a></td>
               </tr>
               {{ end }}
             </tbody>
