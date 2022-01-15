@@ -483,7 +483,7 @@
     }, intervalMS);
     setInterval(function() {
       $.ajax({
-        url : remoteURL + '/rk/v1/req',
+        url : remoteURL + '/rk/v1/req?fromTv=true',
         type : 'GET',
         dataType : 'json',
         success : function(data) {
@@ -600,7 +600,7 @@
     for (let i = 0; i < apis.entries.length; i++) {
       let api = document.getElementById("API");
       let op = document.createElement("option");
-      let linkText = document.createTextNode(apis.entries[i].rest.method+' : '+apis.entries[i].rest.pattern);
+      let linkText = document.createTextNode(apis.entries[i].method+' : '+apis.entries[i].path);
       op.appendChild(linkText);
       api.appendChild(op);
     }

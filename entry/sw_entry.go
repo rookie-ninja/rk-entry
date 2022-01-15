@@ -95,17 +95,18 @@ func WithNameSw(name string) SwOption {
 // WithPathSw Provide path.
 func WithPathSw(path string) SwOption {
 	return func(entry *SwEntry) {
-		if len(path) < 1 {
-			path = "sw"
+		if len(path) > 0 {
+			entry.Path = path
 		}
-		entry.Path = path
 	}
 }
 
 // WithJsonPathSw Provide JsonPath.
 func WithJsonPathSw(path string) SwOption {
 	return func(entry *SwEntry) {
-		entry.JsonPath = path
+		if len(path) > 0 {
+			entry.JsonPath = path
+		}
 	}
 }
 
@@ -176,6 +177,7 @@ func RegisterSwEntry(opts ...SwOption) *SwEntry {
 		ZapLoggerEntry:   GlobalAppCtx.GetZapLoggerEntryDefault(),
 		EventLoggerEntry: GlobalAppCtx.GetEventLoggerEntryDefault(),
 		Path:             "sw",
+		JsonPath:         "",
 		AssetsFilePath:   "/rk/v1/assets/sw/",
 	}
 
@@ -307,8 +309,18 @@ func (entry *SwEntry) initSwaggerConfig() {
 		Urls: make([]*swUrl, 0),
 	}
 
-	// 1: Add user API swagger JSON
-	entry.listFilesWithSuffix(swaggerUrlConfig)
+	if len(entry.JsonPath) > 0 {
+		// 1: Add user API swagger JSON
+		entry.listFilesWithSuffix(swaggerUrlConfig, entry.JsonPath, false)
+	} else {
+		// try to read from default directories
+		// - docs
+		// - api/gen/v1
+		// - api/gen
+		entry.listFilesWithSuffix(swaggerUrlConfig, "docs", true)
+		entry.listFilesWithSuffix(swaggerUrlConfig, "api/gen/v1", true)
+		entry.listFilesWithSuffix(swaggerUrlConfig, "api/gen", true)
+	}
 
 	// 2: Add rk common APIs
 	if entry.EnableCommonService {
@@ -333,23 +345,17 @@ func (entry *SwEntry) initSwaggerConfig() {
 }
 
 // List files with .json suffix and store them into swaggerJsonFiles variable.
-func (entry *SwEntry) listFilesWithSuffix(urlConfig *swUrlConfig) {
-	jsonPath := entry.JsonPath
+func (entry *SwEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath string, ignoreError bool) {
 	suffix := ".json"
 	// re-path it with working directory if not absolute path
 	if !path.IsAbs(entry.JsonPath) {
-		wd, err := os.Getwd()
-		if err != nil {
-			entry.ZapLoggerEntry.GetLogger().Info("Failed to get working directory",
-				zap.String("error", err.Error()))
-			rkcommon.ShutdownWithError(err)
-		}
+		wd, _ := os.Getwd()
 		jsonPath = path.Join(wd, jsonPath)
 	}
 
 	files, err := ioutil.ReadDir(jsonPath)
-	if err != nil {
-		entry.ZapLoggerEntry.GetLogger().Error("Failed to list files with suffix",
+	if err != nil && !ignoreError {
+		entry.ZapLoggerEntry.GetLogger().Warn("Failed to list files with suffix",
 			zap.String("path", jsonPath),
 			zap.String("suffix", suffix),
 			zap.String("error", err.Error()))
@@ -362,7 +368,7 @@ func (entry *SwEntry) listFilesWithSuffix(urlConfig *swUrlConfig) {
 			bytes, err := ioutil.ReadFile(path.Join(jsonPath, file.Name()))
 			key := entry.EntryName + "-" + file.Name()
 
-			if err != nil {
+			if err != nil && !ignoreError {
 				entry.ZapLoggerEntry.GetLogger().Info("Failed to read file with suffix",
 					zap.String("path", path.Join(jsonPath, key)),
 					zap.String("suffix", suffix),

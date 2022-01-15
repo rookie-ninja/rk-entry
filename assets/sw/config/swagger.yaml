@@ -3,36 +3,18 @@ definitions:
     properties:
       entries:
         items:
-          $ref: '#/definitions/rkentry.ApisResponse_Entry'
+          $ref: '#/definitions/rkentry.ApisResponseElement'
         type: array
     type: object
-  rkentry.ApisResponse_Entry:
+  rkentry.ApisResponseElement:
     properties:
       entryName:
         type: string
-      grpc:
-        $ref: '#/definitions/rkentry.ApisResponse_Grpc'
-      rest:
-        $ref: '#/definitions/rkentry.ApisResponse_Rest'
-    type: object
-  rkentry.ApisResponse_Grpc:
-    properties:
       gw:
-        $ref: '#/definitions/rkentry.ApisResponse_Rest'
+        type: string
       method:
         type: string
-      port:
-        type: integer
-      service:
-        type: string
-      type:
-        type: string
-    type: object
-  rkentry.ApisResponse_Rest:
-    properties:
-      method:
-        type: string
-      pattern:
+      path:
         type: string
       port:
         type: integer
@@ -43,10 +25,10 @@ definitions:
     properties:
       entries:
         items:
-          $ref: '#/definitions/rkentry.CertsResponse_Entry'
+          $ref: '#/definitions/rkentry.CertsResponseElement'
         type: array
     type: object
-  rkentry.CertsResponse_Entry:
+  rkentry.CertsResponseElement:
     properties:
       clientCert:
         type: string
@@ -77,10 +59,10 @@ definitions:
     properties:
       entries:
         items:
-          $ref: '#/definitions/rkentry.ConfigsResponse_ConfigEntry'
+          $ref: '#/definitions/rkentry.ConfigsResponseElement'
         type: array
     type: object
-  rkentry.ConfigsResponse_ConfigEntry:
+  rkentry.ConfigsResponseElement:
     properties:
       entryDescription:
         type: string
@@ -121,11 +103,11 @@ definitions:
       entries:
         additionalProperties:
           items:
-            $ref: '#/definitions/rkentry.EntriesResponse_Entry'
+            $ref: '#/definitions/rkentry.EntriesResponseElement'
           type: array
         type: object
     type: object
-  rkentry.EntriesResponse_Entry:
+  rkentry.EntriesResponseElement:
     properties:
       entryDescription:
         type: string
@@ -185,6 +167,24 @@ definitions:
       version:
         type: string
     type: object
+  rkentry.GwErrorMappingResponse:
+    properties:
+      mapping:
+        additionalProperties:
+          $ref: '#/definitions/rkentry.GwErrorMappingResponseElement'
+        type: object
+    type: object
+  rkentry.GwErrorMappingResponseElement:
+    properties:
+      grpcCode:
+        type: integer
+      grpcText:
+        type: string
+      restCode:
+        type: integer
+      restText:
+        type: string
+    type: object
   rkentry.HealthyResponse:
     properties:
       healthy:
@@ -200,11 +200,11 @@ definitions:
       entries:
         additionalProperties:
           items:
-            $ref: '#/definitions/rkentry.LogsResponse_Entry'
+            $ref: '#/definitions/rkentry.LogsResponseElement'
           type: array
         type: object
     type: object
-  rkentry.LogsResponse_Entry:
+  rkentry.LogsResponseElement:
     properties:
       entryDescription:
         type: string
@@ -502,6 +502,21 @@ paths:
       - BasicAuth: []
       - JWT: []
       summary: Get Git information.
+  /rk/v1/gwErrorMapping:
+    get:
+      operationId: "16"
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rkentry.GwErrorMappingResponse'
+      security:
+      - ApiKeyAuth: []
+      - BasicAuth: []
+      - JWT: []
+      summary: List error mapping between gRPC and grpc-gateway
   /rk/v1/healthy:
     get:
       operationId: "1"

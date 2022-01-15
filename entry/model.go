@@ -17,8 +17,13 @@ type GcResponse struct {
 	MemStatAfterGc  *MemInfo `json:"memStatAfterGc" yaml:"memStatAfterGc"`
 }
 
-// ConfigsResponse_ConfigEntry Entry for ConfigsResponse
-type ConfigsResponse_ConfigEntry struct {
+// ConfigsResponse response of /configs
+type ConfigsResponse struct {
+	Entries []*ConfigsResponseElement `json:"entries" yaml:"entries"`
+}
+
+// ConfigsResponseElement element for ConfigsResponse
+type ConfigsResponseElement struct {
 	EntryName        string                 `json:"entryName" yaml:"entryName"`
 	EntryType        string                 `json:"entryType" yaml:"entryType"`
 	EntryDescription string                 `json:"entryDescription" yaml:"entryDescription"`
@@ -26,38 +31,19 @@ type ConfigsResponse_ConfigEntry struct {
 	Path             string                 `json:"path" yaml:"path"`
 }
 
-// ConfigsResponse response of /configs
-type ConfigsResponse struct {
-	Entries []*ConfigsResponse_ConfigEntry `json:"entries" yaml:"entries"`
-}
-
 // ApisResponse response for path of /apis
 type ApisResponse struct {
-	Entries []*ApisResponse_Entry `json:"entries" yaml:"entries"`
+	Entries []*ApisResponseElement `json:"entries" yaml:"entries"`
 }
 
-// ApisResponse_Entry Entry for /apis
-type ApisResponse_Entry struct {
-	EntryName string             `json:"entryName" yaml:"entryName"`
-	Grpc      *ApisResponse_Grpc `json:"grpc" yaml:"grpc"`
-	Rest      *ApisResponse_Rest `json:"rest" yaml:"rest"`
-}
-
-// ApisResponse_Grpc Entry for /apis
-type ApisResponse_Grpc struct {
-	Service string             `json:"service" yaml:"service"`
-	Method  string             `json:"method" yaml:"method"`
-	Type    string             `json:"type" yaml:"type"`
-	Port    uint64             `json:"port" yaml:"port"`
-	Gw      *ApisResponse_Rest `json:"gw" yaml:"gw"`
-}
-
-// ApisResponse_Rest Entry for /apis
-type ApisResponse_Rest struct {
-	Port    uint64 `json:"port" yaml:"port"`
-	Pattern string `json:"pattern" yaml:"pattern"`
-	Method  string `json:"method" yaml:"method"`
-	SwUrl   string `json:"swUrl" yaml:"swUrl"`
+// ApiResponseElement element for ApisResponse
+type ApisResponseElement struct {
+	EntryName string `json:"entryName" yaml:"entryName"`
+	Method    string `json:"method" yaml:"method"`
+	Path      string `json:"path" yaml:"path"`
+	Gw        string `json:"gw" yaml:"gw"`
+	Port      uint64 `json:"port" yaml:"port"`
+	SwUrl     string `json:"swUrl" yaml:"swUrl"`
 }
 
 // SysResponse response of /sys
@@ -71,11 +57,11 @@ type SysResponse struct {
 
 // EntriesResponse response of /entries
 type EntriesResponse struct {
-	Entries map[string][]*EntriesResponse_Entry `json:"entries" yaml:"entries"`
+	Entries map[string][]*EntriesResponseElement `json:"entries" yaml:"entries"`
 }
 
-// EntriesResponse_Entry Entry element which specifies name, type and description.
-type EntriesResponse_Entry struct {
+// EntriesResponseElement element for EntriesResponse
+type EntriesResponseElement struct {
 	EntryName        string `json:"entryName" yaml:"entryName"`
 	EntryType        string `json:"entryType" yaml:"entryType"`
 	EntryDescription string `json:"entryDescription" yaml:"entryDescription"`
@@ -84,11 +70,11 @@ type EntriesResponse_Entry struct {
 
 // CertsResponse response of /certs
 type CertsResponse struct {
-	Entries []*CertsResponse_Entry `json:"entries" yaml:"entries"`
+	Entries []*CertsResponseElement `json:"entries" yaml:"entries"`
 }
 
-// CertsResponse_Entry Entry for /certs
-type CertsResponse_Entry struct {
+// CertsResponseElement element for CertsResponse
+type CertsResponseElement struct {
 	EntryName        string `json:"entryName" yaml:"entryName"`
 	EntryType        string `json:"entryType" yaml:"entryType"`
 	EntryDescription string `json:"entryDescription" yaml:"entryDescription"`
@@ -105,11 +91,11 @@ type CertsResponse_Entry struct {
 
 // LogsResponse response of /logs.
 type LogsResponse struct {
-	Entries map[string][]*LogsResponse_Entry `json:"entries" yaml:"entries"`
+	Entries map[string][]*LogsResponseElement `json:"entries" yaml:"entries"`
 }
 
-// LogsResponse_Entry Entry element which specifies name, type. description, output path and error output path.
-type LogsResponse_Entry struct {
+// LogsResponseElement element for LogsResponse
+type LogsResponseElement struct {
 	EntryName        string   `json:"entryName" yaml:"entryName"`
 	EntryType        string   `json:"entryType" yaml:"entryType"`
 	EntryDescription string   `json:"entryDescription" yaml:"entryDescription"`
@@ -140,11 +126,11 @@ type ReadmeResponse struct {
 
 // GwErrorMappingResponse response of /gwErrorMapping
 type GwErrorMappingResponse struct {
-	Mapping map[int32]*GwErrorMappingResponse_Mapping `json:"mapping" yaml:"mapping"`
+	Mapping map[int32]*GwErrorMappingResponseElement `json:"mapping" yaml:"mapping"`
 }
 
-// GwErrorMappingResponse_Mapping element of mapping of grpc code to restful code with grpc-gateway
-type GwErrorMappingResponse_Mapping struct {
+// GwErrorMappingResponseElement element for GwErrorMappingResponse
+type GwErrorMappingResponseElement struct {
 	GrpcCode int32  `json:"grpcCode" yaml:"grpcCode"`
 	GrpcText string `json:"grpcText" yaml:"grpcText"`
 	RestCode int32  `json:"restCode" yaml:"restCode"`

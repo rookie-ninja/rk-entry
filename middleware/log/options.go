@@ -171,6 +171,8 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		zap.String("userAgent", ctx.Input.UserAgent),
 	}...)
 
+	ctx.Output.Event.AddPayloads(ctx.Input.Fields...)
+
 	ctx.Output.Event.SetOperation(ctx.Input.UrlPath)
 }
 
@@ -308,6 +310,7 @@ func (mock *optionSetMock) After(before *BeforeCtx, after *AfterCtx) {
 // NewBeforeCtx create new BeforeCtx with fields initialized
 func NewBeforeCtx() *BeforeCtx {
 	ctx := &BeforeCtx{}
+	ctx.Input.Fields = make([]zap.Field, 0)
 	return ctx
 }
 
@@ -326,6 +329,7 @@ type BeforeCtx struct {
 		RawQuery   string
 		Protocol   string
 		UserAgent  string
+		Fields     []zap.Field
 	}
 	Output struct {
 		Event  rkquery.Event

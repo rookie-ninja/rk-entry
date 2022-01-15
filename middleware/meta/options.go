@@ -106,6 +106,8 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		ctx.Input.Event.SetEventId(reqId)
 	}
 
+	ctx.Output.RequestId = reqId
+
 	ctx.Output.HeadersToReturn[rkmid.HeaderRequestId] = reqId
 	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-App-Name", set.prefix)] = rkentry.GlobalAppCtx.GetAppInfoEntry().AppName
 	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-App-Version", set.prefix)] = rkentry.GlobalAppCtx.GetAppInfoEntry().Version
@@ -164,6 +166,7 @@ type BeforeCtx struct {
 		Event rkquery.Event
 	}
 	Output struct {
+		RequestId       string
 		HeadersToReturn map[string]string
 	}
 }
