@@ -34,6 +34,7 @@ type BootConfigConfig struct {
 		Description string `yaml:"description" json:"description"`
 		Locale      string `yaml:"locale" json:"locale"`
 		Path        string `yaml:"path" json:"name"`
+		EnvPrefix   string `yaml:"envPrefix" json:"envPrefix"`
 	} `yaml:"config" json:"config"`
 }
 
@@ -51,6 +52,7 @@ type ConfigEntry struct {
 	EntryDescription string       `yaml:"entryDescription" json:"entryDescription"`
 	Locale           string       `yaml:"locale" json:"locale"`
 	Path             string       `yaml:"path" json:"path"`
+	EnvPrefix        string       `yaml:"envPrefix" json:"envPrefix"`
 	vp               *viper.Viper `yaml:"-" json:"-"`
 }
 
@@ -71,6 +73,15 @@ func WithDescriptionConfig(description string) ConfigEntryOption {
 	return func(entry *ConfigEntry) {
 		if len(description) > 0 {
 			entry.EntryDescription = description
+		}
+	}
+}
+
+// WithEnvPrefixConfig provide environment variable prefix for viper instance.
+func WithEnvPrefixConfig(prefix string) ConfigEntryOption {
+	return func(entry *ConfigEntry) {
+		if len(prefix) > 0 {
+			entry.EnvPrefix = prefix
 		}
 	}
 }
@@ -120,6 +131,7 @@ func RegisterConfigEntriesWithConfig(configFilePath string) map[string]Entry {
 			WithNameConfig(element.Name),
 			WithLocaleConfig(element.Locale),
 			WithDescriptionConfig(element.Description),
+			WithEnvPrefixConfig(element.EnvPrefix),
 			WithPathConfig(element.Path))
 
 		res[element.Name] = entry
@@ -158,6 +170,11 @@ func RegisterConfigEntry(opts ...ConfigEntryOption) *ConfigEntry {
 			}
 		}
 	}
+
+	// enable automatic env
+	// issue: https://github.com/rookie-ninja/rk-boot/issues/55
+	entry.vp.AutomaticEnv()
+	entry.vp.SetEnvPrefix(entry.EnvPrefix)
 
 	if len(entry.EntryName) < 1 {
 		entry.EntryName = "config-" + rkcommon.RandString(4)

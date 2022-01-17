@@ -65,6 +65,25 @@ config:
 	assert.NotEmpty(t, entries)
 }
 
+func TestRegisterConfigEntriesWithConfig_WithoutEnvPrefix(t *testing.T) {
+	defer assertNotPanic(t)
+
+	configFile := `
+---
+config:
+  - name: unit-test-config
+    locale: "*::*::*::*"
+    envPrefix: rk
+`
+	// create bootstrap config file at ut temp dir
+	configFilePath := createFileAtTestTempDir(t, configFile)
+	// register entries with config file
+	entries := RegisterConfigEntriesWithConfig(configFilePath)
+
+	assert.NotEmpty(t, entries)
+	assert.Equal(t, "rk", entries["unit-test-config"].(*ConfigEntry).EnvPrefix)
+}
+
 func TestRegisterConfigEntriesWithConfig_WithNonExistPath(t *testing.T) {
 	defer assertNotPanic(t)
 
