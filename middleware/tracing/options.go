@@ -185,9 +185,9 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 	}
 
 	if ctx.Input.IsClient {
-		oteltrace.WithSpanKind(oteltrace.SpanKindClient)
+		opts = append(opts, oteltrace.WithSpanKind(oteltrace.SpanKindClient))
 	} else {
-		oteltrace.WithSpanKind(oteltrace.SpanKindServer)
+		opts = append(opts, oteltrace.WithSpanKind(oteltrace.SpanKindServer))
 	}
 
 	// 1: extract tracing info from request header
