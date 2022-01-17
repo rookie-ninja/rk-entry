@@ -257,8 +257,13 @@ func (entry *StaticFileHandlerEntry) UnmarshalJSON([]byte) error {
 // GetFileHandler handles requests sent from user.
 func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
+		if !strings.HasSuffix(request.URL.Path, "/") {
+			request.URL.Path = request.URL.Path + "/"
+		}
+
 		// Trim prefix with path user defined in order to get file path
 		p := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, entry.Path), "/")
+
 		if len(p) < 1 {
 			p = "/"
 		}
