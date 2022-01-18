@@ -165,6 +165,8 @@ func (set *optionSet) BeforeCtx(req *http.Request, isClient bool, attrs ...attri
 		ctx.Input.RequestCtx = req.Context()
 		ctx.Input.Carrier = propagation.HeaderCarrier(req.Header)
 		ctx.Input.UrlPath = req.URL.Path
+		// assign NewCtx for safety
+		ctx.Output.NewCtx = req.Context()
 	}
 
 	return ctx
