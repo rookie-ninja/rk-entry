@@ -605,6 +605,15 @@ Otherwise, default application name would be assigned.
 | eventLogger.lumberjack.maxbackups | axBackups is the maximum number of old log files to retain. | 3 |
 | eventLogger.lumberjack.localtime | LocalTime determines if the time used for formatting the timestamps in backup files is the computer's local time. | true |
 | eventLogger.lumberjack.compress | Compress determines if the rotated log files should be compressed using gzip. | true |
+| eventLogger.loki.enabled | Enable Grafana Loki syncer. | true |
+| eventLogger.loki.addr | Grafana Loki remote address with port. Prefix of http or https are options. | localhost:3100 |
+| eventLogger.loki.path | Grafana Loki push path. | /loki/api/v1/push |
+| eventLogger.loki.username | Grafana Loki username. | /loki/api/v1/push |
+| eventLogger.loki.password | Grafana Loki password. | /loki/api/v1/push |
+| eventLogger.loki.maxBatchWaitMs | How long should goroutine wait before send to Loki | 3 seconds |
+| eventLogger.loki.maxBatchSize | How many logs should be cached before send to loki | 1000 |
+| eventLogger.loki.insecureSkipVerify | If remote Loki server used SSL, then user can skip to verify certificates | false |
+| eventLogger.loki.labels | Labels to send with logs | map[string]string |
 
 ```yaml
 ---
@@ -620,6 +629,17 @@ eventLogger:
       maxbackups: 3                    # Optional, default: 3 (days)
       localtime: true                  # Optional, default: true
       compress: true                   # Optional, default: true
+    loki:
+      enabled: true                    # Optional, default: false
+      addr: localhost:3100             # Optional, default: localhost:3100
+      path: /loki/api/v1/push          # Optional, default: /loki/api/v1/push
+      username: ""                     # Optional, default: ""
+      password: ""                     # Optional, default: ""
+      maxBatchWaitMs: 3000             # Optional, default: 3000
+      maxBatchSize: 1000               # Optional, default: 1000
+      insecureSkipVerify: false        # Optional, default: false
+      labels:                          # Optional, default: empty map
+        my_label_key: my_label_value
 ```
 
 ##### Access EventLoggerEntry
@@ -757,6 +777,15 @@ ZapLoggerEntry follows zap and lumberjack YAML hierarchy, please refer to [zap](
 | zapLogger.lumberjack.maxbackups | axBackups is the maximum number of old log files to retain. | 3 |
 | zapLogger.lumberjack.localtime | LocalTime determines if the time used for formatting the timestamps in backup files is the computer's local time. | true |
 | zapLogger.lumberjack.compress | Compress determines if the rotated log files should be compressed using gzip. | true |
+| zapLogger.loki.enabled | Enable Grafana Loki syncer. | true |
+| zapLogger.loki.addr | Grafana Loki remote address with port. Prefix of http or https are options. | localhost:3100 |
+| zapLogger.loki.path | Grafana Loki push path. | /loki/api/v1/push |
+| zapLogger.loki.username | Grafana Loki username. | /loki/api/v1/push |
+| zapLogger.loki.password | Grafana Loki password. | /loki/api/v1/push |
+| zapLogger.loki.maxBatchWaitMs | How long should goroutine wait before send to Loki | 3 seconds |
+| zapLogger.loki.maxBatchSize | How many logs should be cached before send to loki | 1000 |
+| zapLogger.loki.insecureSkipVerify | If remote Loki server used SSL, then user can skip to verify certificates | false |
+| zapLogger.loki.labels | Labels to send with logs | map[string]string |
 
 ```yaml
 ---
@@ -798,6 +827,17 @@ zapLogger:
       maxbackups: 3                       # Optional, default: 3 (days)
       localtime: true                     # Optional, default: true
       compress: true                      # Optional, default: true
+    loki:
+      enabled: true                    # Optional, default: false
+      addr: localhost:3100             # Optional, default: localhost:3100
+      path: /loki/api/v1/push          # Optional, default: /loki/api/v1/push
+      username: ""                     # Optional, default: ""
+      password: ""                     # Optional, default: ""
+      maxBatchWaitMs: 3000             # Optional, default: 3000
+      maxBatchSize: 1000               # Optional, default: 1000
+      insecureSkipVerify: false        # Optional, default: false
+      labels:                          # Optional, default: empty map
+        my_label_key: my_label_value
 ```
 
 ##### Access ZapLoggerEntry
@@ -1209,11 +1249,6 @@ DB:
     addr: "176.0.0.1:6379"
 ```
 
-
-
-
-
-
 #### CredEntry
 CredEntry provides a convenient way to retrieve credentials from local or remote services.
 Supported services listed bellow:
@@ -1343,15 +1378,6 @@ DB:
     locale: "*::*::*::prod"
     addr: "176.0.0.1:6379"
 ```
-
-
-
-
-
-
-
-
-
 
 ### Info Utility
 #### ProcessInfo
