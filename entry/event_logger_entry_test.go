@@ -100,6 +100,8 @@ eventLogger:
   - name: ut-event-logger
     format: RK
     outputPaths: ["ut.log"]
+    loki:
+      enabled: true
     lumberjack:
       filename: "ut-lumberjack-filename"
       maxsize: 1

@@ -7,12 +7,16 @@ package rkentry
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"github.com/rookie-ninja/rk-common/common"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-logger"
 	"github.com/rookie-ninja/rk-query"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"time"
 )
 
 const (
@@ -58,17 +62,11 @@ type BootConfigEventLogger struct {
 		Encoding    string             `yaml:"encoding" json:"encoding"`
 		OutputPaths []string           `yaml:"outputPaths" json:"outputPaths"`
 		Lumberjack  *lumberjack.Logger `yaml:"lumberjack" json:"lumberjack"`
+		Loki        BootConfigLoki     `yaml:"loki" json:"loki"`
 	} `yaml:"eventLogger json:"eventLogger"`
 }
 
 // EventLoggerEntry contains bellow fields.
-// 1: EntryName: Name of entry.
-// 2: EntryType: Type of entry which is EventLoggerEntryType.
-// 3: EntryDescription: Description of EventLoggerEntry.
-// 4: EventFactory: rkquery.EventFactory was initialized at the beginning.
-// 5: EventHelper: rkquery.EventHelper was initialized at the beginning.
-// 6: LoggerConfig: zap.Config which was initialized at the beginning which is not accessible after initialization.
-// 7: LumberjackConfig: lumberjack.Logger which was initialized at the beginning.
 type EventLoggerEntry struct {
 	EntryName        string                `yaml:"entryName" json:"entryName"`
 	EntryType        string                `yaml:"entryType" json:"entryType"`
@@ -77,6 +75,7 @@ type EventLoggerEntry struct {
 	EventHelper      *rkquery.EventHelper  `yaml:"-" json:"-"`
 	LoggerConfig     *zap.Config           `yaml:"zapConfig" json:"zapConfig"`
 	LumberjackConfig *lumberjack.Logger    `yaml:"lumberjackConfig" json:"lumberjackConfig"`
+	lokiSyncer       *rklogger.LokiSyncer  `yaml:"lokiSyncer" json:"lokiSyncer"`
 }
 
 // EventLoggerEntryOption Option which used while registering entry from codes.
@@ -100,6 +99,13 @@ func WithDescriptionEvent(description string) EventLoggerEntryOption {
 func WithEventFactoryEvent(fac *rkquery.EventFactory) EventLoggerEntryOption {
 	return func(entry *EventLoggerEntry) {
 		entry.EventFactory = fac
+	}
+}
+
+// WithLokiSyncerEvent provide rklogger.LokiSyncer
+func WithLokiSyncerEvent(loki *rklogger.LokiSyncer) EventLoggerEntryOption {
+	return func(entry *EventLoggerEntry) {
+		entry.lokiSyncer = loki
 	}
 }
 
@@ -128,7 +134,46 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 			eventLoggerConfig.OutputPaths = element.OutputPaths
 		}
 
-		if eventLogger, err := rklogger.NewZapLoggerWithConf(eventLoggerConfig, eventLoggerLumberjackConfig); err != nil {
+		// Loki Syncer
+		syncers := make([]zapcore.WriteSyncer, 0)
+		var lokiSyncer *rklogger.LokiSyncer
+		if element.Loki.Enabled {
+			opts := []rklogger.LokiSyncerOption{
+				rklogger.WithLokiAddr(element.Loki.Addr),
+				rklogger.WithLokiPath(element.Loki.Path),
+				rklogger.WithLokiUsername(element.Loki.Username),
+				rklogger.WithLokiPassword(element.Loki.Password),
+				rklogger.WithLokiMaxBatchSize(element.Loki.MaxBatchSize),
+				rklogger.WithLokiMaxBatchWaitMs(time.Duration(element.Loki.MaxBatchWaitMs) * time.Millisecond),
+			}
+
+			// default labels
+			opts = append(opts,
+				rklogger.WithLokiLabel(rkmid.Realm.Key, rkmid.Realm.String),
+				rklogger.WithLokiLabel(rkmid.Region.Key, rkmid.Region.String),
+				rklogger.WithLokiLabel(rkmid.AZ.Key, rkmid.AZ.String),
+				rklogger.WithLokiLabel(rkmid.Domain.Key, rkmid.Domain.String),
+				rklogger.WithLokiLabel("app_name", GlobalAppCtx.GetAppInfoEntry().AppName),
+				rklogger.WithLokiLabel("app_version", GlobalAppCtx.GetAppInfoEntry().Version),
+				rklogger.WithLokiLabel("logger_type", "event"),
+			)
+
+			// labels
+			for k, v := range element.Loki.Labels {
+				opts = append(opts, rklogger.WithLokiLabel(k, v))
+			}
+
+			if element.Loki.InsecureSkipVerify {
+				opts = append(opts, rklogger.WithLokiClientTls(&tls.Config{
+					InsecureSkipVerify: true,
+				}))
+			}
+
+			lokiSyncer = rklogger.NewLokiSyncer(opts...)
+			syncers = append(syncers, lokiSyncer)
+		}
+
+		if eventLogger, err := rklogger.NewZapLoggerWithConfAndSyncer(eventLoggerConfig, eventLoggerLumberjackConfig, syncers); err != nil {
 			rkcommon.ShutdownWithError(err)
 		} else {
 			eventFactory = rkquery.NewEventFactory(
@@ -141,7 +186,8 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 		entry := RegisterEventLoggerEntry(
 			WithNameEvent(element.Name),
 			WithDescriptionEvent(element.Description),
-			WithEventFactoryEvent(eventFactory))
+			WithEventFactoryEvent(eventFactory),
+			WithLokiSyncerEvent(lokiSyncer))
 
 		// special case for logger config
 		entry.LoggerConfig = eventLoggerConfig
@@ -180,13 +226,17 @@ func RegisterEventLoggerEntry(opts ...EventLoggerEntryOption) *EventLoggerEntry 
 }
 
 // Bootstrap entry.
-func (entry *EventLoggerEntry) Bootstrap(context.Context) {
-	// no op
+func (entry *EventLoggerEntry) Bootstrap(ctx context.Context) {
+	if entry.lokiSyncer != nil {
+		entry.lokiSyncer.Bootstrap(ctx)
+	}
 }
 
 // Interrupt entry.
-func (entry *EventLoggerEntry) Interrupt(context.Context) {
-	// no op
+func (entry *EventLoggerEntry) Interrupt(ctx context.Context) {
+	if entry.lokiSyncer != nil {
+		entry.lokiSyncer.Interrupt(ctx)
+	}
 }
 
 // GetName returns name of entry.
@@ -255,4 +305,19 @@ func (entry *EventLoggerEntry) GetEventHelper() *rkquery.EventHelper {
 // GetLumberjackConfig return lumberjack config, refer to lumberjack.Logger.
 func (entry *EventLoggerEntry) GetLumberjackConfig() *lumberjack.Logger {
 	return entry.LumberjackConfig
+}
+
+// AddEntryLabelToLokiSyncer add entry name entry type into loki syncer
+func (entry *EventLoggerEntry) AddEntryLabelToLokiSyncer(e Entry) {
+	if entry.lokiSyncer != nil && e != nil {
+		entry.lokiSyncer.AddLabel("entry_name", e.GetName())
+		entry.lokiSyncer.AddLabel("entry_type", e.GetType())
+	}
+}
+
+// AddLabelToLokiSyncer add key value pair as label into loki syncer
+func (entry *EventLoggerEntry) AddLabelToLokiSyncer(k, v string) {
+	if entry.lokiSyncer != nil {
+		entry.lokiSyncer.AddLabel(k, v)
+	}
 }

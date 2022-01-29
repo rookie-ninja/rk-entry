@@ -100,6 +100,8 @@ zapLogger:
      maxbackups: 1
      localtime: true
      compress: true
+   loki:
+     enabled: true
 `
 	// create bootstrap config file at ut temp dir
 	configFilePath := createFileAtTestTempDir(t, configFile)
