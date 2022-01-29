@@ -7,11 +7,16 @@ package rkentry
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"github.com/rookie-ninja/rk-common/common"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-logger"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"time"
 )
 
 const (
@@ -37,33 +42,37 @@ func NoopZapLoggerEntry() *ZapLoggerEntry {
 }
 
 // BootConfigZapLogger bootstrap config of Zap Logger information.
-// 1: ZapLogger.Name: Name of zap logger entry.
-// 2: ZapLogger.Description: Description of zap logger entry.
-// 3: ZapLogger.Zap: zap logger config, refer to zap.Config.
-// 4: ZapLogger.Lumberjack: lumberjack config, refer to lumberjack.Logger.
 type BootConfigZapLogger struct {
 	ZapLogger []struct {
 		Name        string                  `yaml:"name" json:"name"`
 		Description string                  `yaml:"description" json:"description"`
 		Zap         *rklogger.ZapConfigWrap `yaml:"zap" json:"zap"`
 		Lumberjack  *lumberjack.Logger      `yaml:"lumberjack" json:"lumberjack"`
+		Loki        BootConfigLoki          `yaml:"loki" json:"loki"`
 	} `yaml:"zapLogger" json:"zapLogger"`
 }
 
+type BootConfigLoki struct {
+	Enabled            bool              `yaml:"enabled" json:"enabled"`
+	Addr               string            `yaml:"addr" json:"addr"`
+	Path               string            `yaml:"path" json:"path"`
+	Username           string            `yaml:"username" json:"username"`
+	Password           string            `yaml:"password" json:"password"`
+	InsecureSkipVerify bool              `yaml:"insecureSkipVerify" json:"insecureSkipVerify"`
+	Labels             map[string]string `yaml:"labels" json:"labels"`
+	MaxBatchWaitMs     int               `yaml:"maxBatchWaitMs" json:"maxBatchWaitMs"`
+	MaxBatchSize       int               `yaml:"maxBatchSize" json:"maxBatchSize"`
+}
+
 // ZapLoggerEntry contains bellow fields.
-// 1: EntryName: Name of entry.
-// 2: EntryType: Type of entry which is ZapLoggerEntryType.
-// 3: EntryDescription: Description of ZapLoggerEntry.
-// 4: Logger: zap.Logger which was initialized at the beginning.
-// 5: LoggerConfig: zap.Logger config which was initialized at the beginning which is not accessible after initialization..
-// 6: LumberjackConfig: lumberjack.Logger which was initialized at the beginning.
 type ZapLoggerEntry struct {
-	EntryName        string             `yaml:"entryName" json:"entryName"`
-	EntryType        string             `yaml:"entryType" json:"entryType"`
-	EntryDescription string             `yaml:"entryDescription" json:"entryDescription"`
-	Logger           *zap.Logger        `yaml:"-" json:"-"`
-	LoggerConfig     *zap.Config        `yaml:"zapConfig" json:"zapConfig"`
-	LumberjackConfig *lumberjack.Logger `yaml:"lumberjackConfig" json:"lumberjackConfig"`
+	EntryName        string               `yaml:"entryName" json:"entryName"`
+	EntryType        string               `yaml:"entryType" json:"entryType"`
+	EntryDescription string               `yaml:"entryDescription" json:"entryDescription"`
+	Logger           *zap.Logger          `yaml:"-" json:"-"`
+	LoggerConfig     *zap.Config          `yaml:"zapConfig" json:"zapConfig"`
+	LumberjackConfig *lumberjack.Logger   `yaml:"lumberjackConfig" json:"lumberjackConfig"`
+	lokiSyncer       *rklogger.LokiSyncer `yaml:"lokiSyncer" json:"lokiSyncer"`
 }
 
 // ZapLoggerEntryOption Option which used while registering entry from codes.
@@ -92,6 +101,13 @@ func WithLoggerZap(logger *zap.Logger, loggerConfig *zap.Config, lumberjackConfi
 	}
 }
 
+// WithLokiSyncerZap provide rklogger.LokiSyncer
+func WithLokiSyncerZap(loki *rklogger.LokiSyncer) ZapLoggerEntryOption {
+	return func(entry *ZapLoggerEntry) {
+		entry.lokiSyncer = loki
+	}
+}
+
 // RegisterZapLoggerEntriesWithConfig create zap logger entries with config file.
 // Currently, only YAML file is supported.
 // File path could be either relative or absolute.
@@ -109,11 +125,53 @@ func RegisterZapLoggerEntriesWithConfig(configFilePath string) map[string]Entry 
 		// Assign default zap config and lumberjack config
 		appLoggerConfig := rklogger.NewZapStdoutConfig()
 		appLoggerLumberjackConfig := rklogger.NewLumberjackConfigDefault()
+
 		// Override with user provided zap config and lumberjack config
 		rkcommon.OverrideZapConfig(appLoggerConfig, rklogger.TransformToZapConfig(element.Zap))
 		rkcommon.OverrideLumberjackConfig(appLoggerLumberjackConfig, element.Lumberjack)
+
+		// Loki Syncer
+		syncers := make([]zapcore.WriteSyncer, 0)
+		var lokiSyncer *rklogger.LokiSyncer
+		if element.Loki.Enabled {
+			opts := []rklogger.LokiSyncerOption{
+				rklogger.WithLokiAddr(element.Loki.Addr),
+				rklogger.WithLokiPath(element.Loki.Path),
+				rklogger.WithLokiUsername(element.Loki.Username),
+				rklogger.WithLokiPassword(element.Loki.Password),
+				rklogger.WithLokiMaxBatchSize(element.Loki.MaxBatchSize),
+				rklogger.WithLokiMaxBatchWaitMs(time.Duration(element.Loki.MaxBatchWaitMs) * time.Millisecond),
+			}
+
+			// labels
+			for k, v := range element.Loki.Labels {
+				opts = append(opts, rklogger.WithLokiLabel(k, v))
+			}
+
+			// default labels
+			opts = append(opts,
+				rklogger.WithLokiLabel(rkmid.Realm.Key, rkmid.Realm.String),
+				rklogger.WithLokiLabel(rkmid.Region.Key, rkmid.Region.String),
+				rklogger.WithLokiLabel(rkmid.AZ.Key, rkmid.AZ.String),
+				rklogger.WithLokiLabel(rkmid.Domain.Key, rkmid.Domain.String),
+				rklogger.WithLokiLabel("app_name", GlobalAppCtx.GetAppInfoEntry().AppName),
+				rklogger.WithLokiLabel("app_version", GlobalAppCtx.GetAppInfoEntry().Version),
+				rklogger.WithLokiLabel("logger_type", "zap"),
+			)
+
+			if element.Loki.InsecureSkipVerify {
+				opts = append(opts, rklogger.WithLokiClientTls(&tls.Config{
+					InsecureSkipVerify: true,
+				}))
+			}
+
+			lokiSyncer = rklogger.NewLokiSyncer(opts...)
+			syncers = append(syncers, lokiSyncer)
+		}
+
 		// Create app logger with config
-		appLogger, err := rklogger.NewZapLoggerWithConf(appLoggerConfig, appLoggerLumberjackConfig)
+		appLogger, err := rklogger.NewZapLoggerWithConfAndSyncer(appLoggerConfig, appLoggerLumberjackConfig, syncers)
+
 		if err != nil {
 			rkcommon.ShutdownWithError(err)
 		}
@@ -121,7 +179,8 @@ func RegisterZapLoggerEntriesWithConfig(configFilePath string) map[string]Entry 
 		entry := RegisterZapLoggerEntry(
 			WithNameZap(element.Name),
 			WithDescriptionZap(element.Description),
-			WithLoggerZap(appLogger, appLoggerConfig, appLoggerLumberjackConfig))
+			WithLoggerZap(appLogger, appLoggerConfig, appLoggerLumberjackConfig),
+			WithLokiSyncerZap(lokiSyncer))
 
 		res[element.Name] = entry
 	}
@@ -159,13 +218,18 @@ func RegisterZapLoggerEntry(opts ...ZapLoggerEntryOption) *ZapLoggerEntry {
 }
 
 // Bootstrap entry.
-func (entry *ZapLoggerEntry) Bootstrap(context.Context) {
-	// no op
+func (entry *ZapLoggerEntry) Bootstrap(ctx context.Context) {
+	if entry.lokiSyncer != nil {
+		fmt.Println("boot strapping zap logger")
+		entry.lokiSyncer.Bootstrap(ctx)
+	}
 }
 
 // Interrupt entry.
-func (entry *ZapLoggerEntry) Interrupt(context.Context) {
-	// no op
+func (entry *ZapLoggerEntry) Interrupt(ctx context.Context) {
+	if entry.lokiSyncer != nil {
+		entry.lokiSyncer.Interrupt(ctx)
+	}
 }
 
 // GetName returns name of entry.
@@ -233,4 +297,19 @@ func (entry *ZapLoggerEntry) GetLoggerConfig() *zap.Config {
 // GetLumberjackConfig returns lumberjack config, refer to lumberjack.Logger.
 func (entry *ZapLoggerEntry) GetLumberjackConfig() *lumberjack.Logger {
 	return entry.LumberjackConfig
+}
+
+// AddEntryLabelToLokiSyncer add entry name entry type into loki syncer
+func (entry *ZapLoggerEntry) AddEntryLabelToLokiSyncer(e Entry) {
+	if entry.lokiSyncer != nil && e != nil {
+		entry.lokiSyncer.AddLabel("entry_name", e.GetName())
+		entry.lokiSyncer.AddLabel("entry_type", e.GetType())
+	}
+}
+
+// AddLabelToLokiSyncer add key value pair as label into loki syncer
+func (entry *ZapLoggerEntry) AddLabelToLokiSyncer(k, v string) {
+	if entry.lokiSyncer != nil {
+		entry.lokiSyncer.AddLabel(k, v)
+	}
 }
