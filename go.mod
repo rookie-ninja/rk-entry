@@ -14,8 +14,8 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.18.0
 	github.com/rookie-ninja/rk-common v1.2.3
-	github.com/rookie-ninja/rk-logger v1.2.8
-	github.com/rookie-ninja/rk-query v1.2.8
+	github.com/rookie-ninja/rk-logger v1.2.9
+	github.com/rookie-ninja/rk-query v1.2.9
 	github.com/rs/xid v1.3.0
 	github.com/shirou/gopsutil/v3 v3.21.4
 	github.com/spf13/viper v1.7.1
