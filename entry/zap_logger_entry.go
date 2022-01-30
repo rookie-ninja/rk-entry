@@ -169,7 +169,7 @@ func RegisterZapLoggerEntriesWithConfig(configFilePath string) map[string]Entry 
 		}
 
 		// Create app logger with config
-		appLogger, err := rklogger.NewZapLoggerWithConfAndSyncer(appLoggerConfig, appLoggerLumberjackConfig, syncers)
+		appLogger, err := rklogger.NewZapLoggerWithConfAndSyncer(appLoggerConfig, appLoggerLumberjackConfig, syncers, zap.AddCaller())
 
 		if err != nil {
 			rkcommon.ShutdownWithError(err)
