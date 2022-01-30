@@ -311,3 +311,10 @@ func (entry *ZapLoggerEntry) AddLabelToLokiSyncer(k, v string) {
 		entry.lokiSyncer.AddLabel(k, v)
 	}
 }
+
+// Sync underlying logger
+func (entry *ZapLoggerEntry) Sync() {
+	if entry.Logger != nil {
+		entry.Logger.Sync()
+	}
+}
