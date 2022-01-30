@@ -10,7 +10,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/rookie-ninja/rk-entry/middleware"
-	"github.com/rookie-ninja/rk-prom"
 	"github.com/rs/xid"
 	"net/http"
 	"strings"
@@ -87,7 +86,7 @@ type optionSet struct {
 	registerer   prometheus.Registerer
 	labelerType  string
 	ignorePrefix []string
-	metricsSet   *rkprom.MetricsSet
+	metricsSet   *MetricsSet
 	mock         OptionSetInterface
 }
 
@@ -111,7 +110,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 
 	namespace := strings.ReplaceAll(rkentry.GlobalAppCtx.GetAppInfoEntry().AppName, "-", "_")
 	subSystem := strings.ReplaceAll(set.entryName, "-", "_")
-	set.metricsSet = rkprom.NewMetricsSet(
+	set.metricsSet = NewMetricsSet(
 		namespace,
 		subSystem,
 		set.registerer)
@@ -131,7 +130,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 		keys = labelKeysHttp
 	}
 
-	set.metricsSet.RegisterSummary(MetricsNameElapsedNano, rkprom.SummaryObjectives, keys...)
+	set.metricsSet.RegisterSummary(MetricsNameElapsedNano, SummaryObjectives, keys...)
 	set.metricsSet.RegisterCounter(MetricsNameResCode, keys...)
 
 	return set
@@ -527,7 +526,7 @@ const (
 var optionsMap = make(map[string]*optionSet)
 
 // GetServerMetricsSet server metrics set.
-func GetServerMetricsSet(entryName string) *rkprom.MetricsSet {
+func GetServerMetricsSet(entryName string) *MetricsSet {
 	if set, ok := optionsMap[entryName]; ok {
 		return set.metricsSet
 	}
