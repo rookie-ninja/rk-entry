@@ -76,6 +76,7 @@ type EventLoggerEntry struct {
 	LoggerConfig     *zap.Config           `yaml:"zapConfig" json:"zapConfig"`
 	LumberjackConfig *lumberjack.Logger    `yaml:"lumberjackConfig" json:"lumberjackConfig"`
 	lokiSyncer       *rklogger.LokiSyncer  `yaml:"lokiSyncer" json:"lokiSyncer"`
+	baseLogger       *zap.Logger           `yaml:"-" json:"-"`
 }
 
 // EventLoggerEntryOption Option which used while registering entry from codes.
@@ -106,6 +107,13 @@ func WithEventFactoryEvent(fac *rkquery.EventFactory) EventLoggerEntryOption {
 func WithLokiSyncerEvent(loki *rklogger.LokiSyncer) EventLoggerEntryOption {
 	return func(entry *EventLoggerEntry) {
 		entry.lokiSyncer = loki
+	}
+}
+
+// WithBaseLoggerEvent provide zap.Logger
+func WithBaseLoggerEvent(base *zap.Logger) EventLoggerEntryOption {
+	return func(entry *EventLoggerEntry) {
+		entry.baseLogger = base
 	}
 }
 
@@ -173,7 +181,9 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 			syncers = append(syncers, lokiSyncer)
 		}
 
-		if eventLogger, err := rklogger.NewZapLoggerWithConfAndSyncer(eventLoggerConfig, eventLoggerLumberjackConfig, syncers); err != nil {
+		var eventLogger *zap.Logger
+		var err error
+		if eventLogger, err = rklogger.NewZapLoggerWithConfAndSyncer(eventLoggerConfig, eventLoggerLumberjackConfig, syncers); err != nil {
 			rkcommon.ShutdownWithError(err)
 		} else {
 			eventFactory = rkquery.NewEventFactory(
@@ -187,7 +197,8 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 			WithNameEvent(element.Name),
 			WithDescriptionEvent(element.Description),
 			WithEventFactoryEvent(eventFactory),
-			WithLokiSyncerEvent(lokiSyncer))
+			WithLokiSyncerEvent(lokiSyncer),
+			WithBaseLoggerEvent(eventLogger))
 
 		// special case for logger config
 		entry.LoggerConfig = eventLoggerConfig
@@ -319,5 +330,12 @@ func (entry *EventLoggerEntry) AddEntryLabelToLokiSyncer(e Entry) {
 func (entry *EventLoggerEntry) AddLabelToLokiSyncer(k, v string) {
 	if entry.lokiSyncer != nil {
 		entry.lokiSyncer.AddLabel(k, v)
+	}
+}
+
+// Sync underlying logger
+func (entry *EventLoggerEntry) Sync() {
+	if entry.baseLogger != nil {
+		entry.baseLogger.Sync()
 	}
 }
