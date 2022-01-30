@@ -9,7 +9,6 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"github.com/rookie-ninja/rk-common/common"
 	rkmid "github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-logger"
@@ -220,7 +219,6 @@ func RegisterZapLoggerEntry(opts ...ZapLoggerEntryOption) *ZapLoggerEntry {
 // Bootstrap entry.
 func (entry *ZapLoggerEntry) Bootstrap(ctx context.Context) {
 	if entry.lokiSyncer != nil {
-		fmt.Println("boot strapping zap logger")
 		entry.lokiSyncer.Bootstrap(ctx)
 	}
 }
