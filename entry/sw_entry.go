@@ -3,10 +3,10 @@ package rkentry
 import (
 	"context"
 	"encoding/json"
-	"github.com/markbates/pkger"
-	"github.com/markbates/pkger/pkging"
 	"github.com/rookie-ninja/rk-common/common"
+	"github.com/rookie-ninja/rk-entry"
 	"go.uber.org/zap"
+	"io/fs"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -73,6 +73,7 @@ type SwEntry struct {
 	Port                uint64            `json:"port" yaml:"port"`
 	EnableCommonService bool              `json:"-" yaml:"-"`
 	AssetsFilePath      string            `json:"-" yaml:"-"`
+	assetsHttpFs        http.FileSystem   `json:"-" yaml:"-"`
 }
 
 // SwOption Swagger entry option.
@@ -179,6 +180,7 @@ func RegisterSwEntry(opts ...SwOption) *SwEntry {
 		Path:             "sw",
 		JsonPath:         "",
 		AssetsFilePath:   "/rk/v1/assets/sw/",
+		assetsHttpFs:     http.FS(rkembed.AssetsFS),
 	}
 
 	for i := range opts {
@@ -256,9 +258,9 @@ func (entry *SwEntry) UnmarshalJSON([]byte) error {
 // AssetsFileHandler Handler for swagger assets files.
 func (entry *SwEntry) AssetsFileHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		p := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/rk/v1"), "/")
+		p := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/rk/v1/"), "/")
 
-		if file, err := openFromPkger(ModPath, p); err != nil {
+		if file, err := entry.assetsHttpFs.Open(p); err != nil {
 			http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		} else {
 			http.ServeContent(writer, request, path.Base(p), time.Now(), file)
@@ -279,7 +281,7 @@ func (entry *SwEntry) ConfigFileHandler() http.HandlerFunc {
 
 		switch p {
 		case strings.TrimSuffix(entry.Path, "/"):
-			if file, err := openFromPkger(ModPath, "/assets/sw/index.html"); err != nil {
+			if file, err := entry.assetsHttpFs.Open("assets/sw/index.html"); err != nil {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
 				http.ServeContent(writer, request, "index.html", time.Now(), file)
@@ -326,7 +328,7 @@ func (entry *SwEntry) initSwaggerConfig() {
 	if entry.EnableCommonService {
 		key := entry.EntryName + "-rk-common.swagger.json"
 		// add common service json file
-		swaggerJsonFiles[key] = string(readFileFromPkger(ModPath, "/assets/sw/config/swagger.json"))
+		swaggerJsonFiles[key] = string(readFileFromEmbed("assets/sw/config/swagger.json"))
 		swaggerUrlConfig.Urls = append(swaggerUrlConfig.Urls, &swUrl{
 			Name: key,
 			Url:  path.Join(entry.Path, key),
@@ -386,12 +388,11 @@ func (entry *SwEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 	}
 }
 
-// Read go template files with Pkger.
-func readFileFromPkger(modPath, filePath string) []byte {
-	var file pkging.File
+func readFileFromEmbed(filePath string) []byte {
+	var file fs.File
 	var err error
 
-	if file, err = pkger.Open(path.Join(modPath+":", filePath)); err != nil {
+	if file, err = rkembed.AssetsFS.Open(filePath); err != nil {
 		return []byte{}
 	}
 
@@ -401,8 +402,4 @@ func readFileFromPkger(modPath, filePath string) []byte {
 	}
 
 	return bytes
-}
-
-func openFromPkger(modPath, filePath string) (pkging.File, error) {
-	return pkger.Open(path.Join(modPath + ":" + filePath))
 }

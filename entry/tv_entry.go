@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/markbates/pkger"
 	"github.com/rookie-ninja/rk-common/common"
+	"github.com/rookie-ninja/rk-entry"
 	"go.uber.org/zap"
 	"html/template"
 	"net/http"
@@ -30,27 +30,27 @@ const (
 
 // Read go TV related template files into memory.
 func init() {
-	Templates["header"] = readFileFromPkger(ModPath, "/assets/tv/header.tmpl")
-	Templates["footer"] = readFileFromPkger(ModPath, "/assets/tv/footer.tmpl")
-	Templates["aside"] = readFileFromPkger(ModPath, "/assets/tv/aside.tmpl")
-	Templates["head"] = readFileFromPkger(ModPath, "/assets/tv/head.tmpl")
-	Templates["svg-sprite"] = readFileFromPkger(ModPath, "/assets/tv/svg-sprite.tmpl")
-	Templates["overview"] = readFileFromPkger(ModPath, "/assets/tv/overview.tmpl")
-	Templates["apis"] = readFileFromPkger(ModPath, "/assets/tv/apis.tmpl")
-	Templates["entries"] = readFileFromPkger(ModPath, "/assets/tv/entries.tmpl")
-	Templates["configs"] = readFileFromPkger(ModPath, "/assets/tv/configs.tmpl")
-	Templates["certs"] = readFileFromPkger(ModPath, "/assets/tv/certs.tmpl")
-	Templates["not-found"] = readFileFromPkger(ModPath, "/assets/tv/not-found.tmpl")
-	Templates["internal-error"] = readFileFromPkger(ModPath, "/assets/tv/internal-error.tmpl")
-	Templates["os"] = readFileFromPkger(ModPath, "/assets/tv/os.tmpl")
-	Templates["env"] = readFileFromPkger(ModPath, "/assets/tv/env.tmpl")
-	Templates["prometheus"] = readFileFromPkger(ModPath, "/assets/tv/prometheus.tmpl")
-	Templates["deps"] = readFileFromPkger(ModPath, "/assets/tv/deps.tmpl")
-	Templates["license"] = readFileFromPkger(ModPath, "/assets/tv/license.tmpl")
-	Templates["info"] = readFileFromPkger(ModPath, "/assets/tv/info.tmpl")
-	Templates["logs"] = readFileFromPkger(ModPath, "/assets/tv/logs.tmpl")
-	Templates["gw-error-mapping"] = readFileFromPkger(ModPath, "/assets/tv/error-mapping.tmpl")
-	Templates["git"] = readFileFromPkger(ModPath, "/assets/tv/git.tmpl")
+	Templates["header"] = readFileFromEmbed("assets/tv/header.tmpl")
+	Templates["footer"] = readFileFromEmbed("assets/tv/footer.tmpl")
+	Templates["aside"] = readFileFromEmbed("assets/tv/aside.tmpl")
+	Templates["head"] = readFileFromEmbed("assets/tv/head.tmpl")
+	Templates["svg-sprite"] = readFileFromEmbed("assets/tv/svg-sprite.tmpl")
+	Templates["overview"] = readFileFromEmbed("assets/tv/overview.tmpl")
+	Templates["apis"] = readFileFromEmbed("assets/tv/apis.tmpl")
+	Templates["entries"] = readFileFromEmbed("assets/tv/entries.tmpl")
+	Templates["configs"] = readFileFromEmbed("assets/tv/configs.tmpl")
+	Templates["certs"] = readFileFromEmbed("assets/tv/certs.tmpl")
+	Templates["not-found"] = readFileFromEmbed("assets/tv/not-found.tmpl")
+	Templates["internal-error"] = readFileFromEmbed("assets/tv/internal-error.tmpl")
+	Templates["os"] = readFileFromEmbed("assets/tv/os.tmpl")
+	Templates["env"] = readFileFromEmbed("assets/tv/env.tmpl")
+	Templates["prometheus"] = readFileFromEmbed("assets/tv/prometheus.tmpl")
+	Templates["deps"] = readFileFromEmbed("assets/tv/deps.tmpl")
+	Templates["license"] = readFileFromEmbed("assets/tv/license.tmpl")
+	Templates["info"] = readFileFromEmbed("assets/tv/info.tmpl")
+	Templates["logs"] = readFileFromEmbed("assets/tv/logs.tmpl")
+	Templates["gw-error-mapping"] = readFileFromEmbed("assets/tv/error-mapping.tmpl")
+	Templates["git"] = readFileFromEmbed("assets/tv/git.tmpl")
 }
 
 // BootConfigTv Bootstrap config of tv.
@@ -74,6 +74,7 @@ type TvEntry struct {
 	EventLoggerEntry *EventLoggerEntry  `json:"-" yaml:"-"`
 	Template         *template.Template `json:"-" yaml:"-"`
 	AssetsFilePath   string             `json:"-" yaml:"-"`
+	assetsHttpFs     http.FileSystem    `json:"-" yaml:"-"`
 	BasePath         string             `json:"-" yaml:"-"`
 }
 
@@ -123,6 +124,7 @@ func RegisterTvEntry(opts ...TvEntryOption) *TvEntry {
 		EventLoggerEntry: GlobalAppCtx.GetEventLoggerEntryDefault(),
 		AssetsFilePath:   "/rk/v1/assets/tv/",
 		BasePath:         "/rk/v1/tv/",
+		assetsHttpFs:     http.FS(rkembed.AssetsFS),
 	}
 
 	for i := range opts {
@@ -139,9 +141,9 @@ func RegisterTvEntry(opts ...TvEntryOption) *TvEntry {
 // AssetsFileHandler Handler which returns js, css, images and html files for TV web UI.
 func (entry *TvEntry) AssetsFileHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		p := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/rk/v1"), "/")
+		p := strings.TrimSuffix(strings.TrimPrefix(request.URL.Path, "/rk/v1/"), "/")
 
-		if file, err := pkger.Open(path.Join("/", p)); err != nil {
+		if file, err := entry.assetsHttpFs.Open(p); err != nil {
 			http.Error(writer, "Internal server error", http.StatusInternalServerError)
 		} else {
 			http.ServeContent(writer, request, path.Base(p), time.Now(), file)

@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/markbates/pkger"
 	"github.com/rookie-ninja/rk-common/common"
 	"github.com/rookie-ninja/rk-common/error"
 	"go.uber.org/zap"
@@ -138,8 +137,6 @@ func RegisterStaticFileHandlerEntryWithConfig(config *BootConfigStaticHandler, n
 	if config.Enabled {
 		var fs http.FileSystem
 		switch config.SourceType {
-		case "pkger":
-			fs = pkger.Dir(config.SourcePath)
 		case "local":
 			if !filepath.IsAbs(config.SourcePath) {
 				wd, _ := os.Getwd()
@@ -204,7 +201,7 @@ func RegisterStaticFileHandlerEntry(opts ...StaticFileHandlerEntryOption) *Stati
 // Bootstrap entry.
 func (entry *StaticFileHandlerEntry) Bootstrap(context.Context) {
 	// parse template
-	if _, err := entry.Template.Parse(string(readFileFromPkger(ModPath, "/assets/static/index.tmpl"))); err != nil {
+	if _, err := entry.Template.Parse(string(readFileFromEmbed("assets/static/index.tmpl"))); err != nil {
 		rkcommon.ShutdownWithError(err)
 	}
 }
@@ -307,7 +304,8 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 			for _, v := range infos {
 				files = append(files, &fileResp{
 					isDir:    v.IsDir(),
-					Icon:     base64.StdEncoding.EncodeToString(readFileFromPkger(ModPath, path.Join("/assets/static/icons", getIconPath(v)))),
+					//Icon:     base64.StdEncoding.EncodeToString(readFileFromPkger(ModPath, path.Join("/assets/static/icons", getIconPath(v)))),
+					Icon:     base64.StdEncoding.EncodeToString(readFileFromEmbed(path.Join("/assets/static/icons", getIconPath(v)))),
 					FileUrl:  path.Join(entry.Path, p, v.Name()),
 					FileName: v.Name(),
 					Size:     v.Size(),
@@ -318,7 +316,8 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 			sortFiles(files)
 			resp := &resp{
 				PrevPath: path.Join(entry.Path, path.Dir(p)),
-				PrevIcon: base64.StdEncoding.EncodeToString(readFileFromPkger(ModPath, path.Join("/assets/static/icons/folder.png"))),
+				//PrevIcon: base64.StdEncoding.EncodeToString(readFileFromPkger(ModPath, path.Join("/assets/static/icons/folder.png"))),
+				PrevIcon: base64.StdEncoding.EncodeToString(readFileFromEmbed(path.Join("/assets/static/icons/folder.png"))),
 				Path:     p,
 				Files:    files,
 			}
