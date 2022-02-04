@@ -1,6 +1,6 @@
 module github.com/rookie-ninja/rk-entry
 
-go 1.15
+go 1.16
 
 require (
 	github.com/golang-jwt/jwt/v4 v4.2.0
@@ -8,12 +8,11 @@ require (
 	github.com/hako/durafmt v0.0.0-20200710122514-c0fb7b4da026
 	github.com/hashicorp/consul/api v1.8.1
 	github.com/juju/ratelimit v1.0.1
-	github.com/markbates/pkger v0.17.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.18.0
-	github.com/rookie-ninja/rk-common v1.2.3
+	github.com/rookie-ninja/rk-common v1.2.4
 	github.com/rookie-ninja/rk-logger v1.2.10
 	github.com/rookie-ninja/rk-query v1.2.10
 	github.com/rs/xid v1.3.0
