@@ -3,16 +3,14 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// package rkmidlog provide options
+// Package rkmidlog provide options
 package rkmidlog
 
 import (
-	"github.com/rookie-ninja/rk-common/common"
 	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-logger"
 	"github.com/rookie-ninja/rk-query"
-	"github.com/rs/xid"
 	"go.uber.org/zap"
 	"net/http"
 	"os"
@@ -51,8 +49,8 @@ type OptionSetInterface interface {
 type optionSet struct {
 	entryName             string
 	entryType             string
-	zapLoggerEntry        *rkentry.ZapLoggerEntry
-	eventLoggerEntry      *rkentry.EventLoggerEntry
+	loggerEntry           *rkentry.LoggerEntry
+	eventEntry            *rkentry.EventEntry
 	zapLogger             *zap.Logger
 	zapLoggerEncoding     string
 	eventLoggerEncoding   rkquery.Encoding
@@ -66,11 +64,11 @@ type optionSet struct {
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName:             xid.New().String(),
+		entryName:             "fake-entry",
 		entryType:             "",
-		zapLoggerEntry:        rkentry.GlobalAppCtx.GetZapLoggerEntryDefault(),
-		eventLoggerEntry:      rkentry.GlobalAppCtx.GetEventLoggerEntryDefault(),
-		zapLogger:             rkentry.GlobalAppCtx.GetZapLoggerEntryDefault().GetLogger(),
+		loggerEntry:           rkentry.LoggerEntryStdout,
+		eventEntry:            rkentry.EventEntryStdout,
+		zapLogger:             rkentry.LoggerEntryStdout.Logger,
 		zapLoggerOutputPath:   make([]string, 0),
 		eventLoggerOutputPath: make([]string, 0),
 		ignorePrefix:          []string{},
@@ -84,25 +82,25 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 		return set.mock
 	}
 
-	set.zapLogger = set.zapLoggerEntry.GetLogger()
+	set.zapLogger = set.loggerEntry.Logger
 
 	// Override zap logger encoding and output path if provided by user
 	// Override encoding type
 	if set.zapLoggerEncoding == json || len(set.zapLoggerOutputPath) > 0 {
 		if set.zapLoggerEncoding == json {
-			set.zapLoggerEntry.LoggerConfig.Encoding = "json"
+			set.loggerEntry.LoggerConfig.Encoding = "json"
 		}
 
 		if len(set.zapLoggerOutputPath) > 0 {
-			set.zapLoggerEntry.LoggerConfig.OutputPaths = toAbsPath(set.zapLoggerOutputPath...)
+			set.loggerEntry.LoggerConfig.OutputPaths = toAbsPath(set.zapLoggerOutputPath...)
 		}
 
-		if set.zapLoggerEntry.LumberjackConfig == nil {
-			set.zapLoggerEntry.LumberjackConfig = rklogger.NewLumberjackConfigDefault()
+		if set.loggerEntry.LumberjackConfig == nil {
+			set.loggerEntry.LumberjackConfig = rklogger.NewLumberjackConfigDefault()
 		}
 
-		if logger, err := rklogger.NewZapLoggerWithConf(set.zapLoggerEntry.LoggerConfig, set.zapLoggerEntry.LumberjackConfig); err != nil {
-			rkcommon.ShutdownWithError(err)
+		if logger, err := rklogger.NewZapLoggerWithConf(set.loggerEntry.LoggerConfig, set.loggerEntry.LumberjackConfig); err != nil {
+			rkentry.ShutdownWithError(err)
 		} else {
 			set.zapLogger = logger
 		}
@@ -110,12 +108,12 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 
 	// Override event logger output path if provided by user
 	if len(set.eventLoggerOutputPath) > 0 {
-		set.eventLoggerEntry.LoggerConfig.OutputPaths = toAbsPath(set.eventLoggerOutputPath...)
-		if set.eventLoggerEntry.LumberjackConfig == nil {
-			set.eventLoggerEntry.LumberjackConfig = rklogger.NewLumberjackConfigDefault()
+		set.eventEntry.LoggerConfig.OutputPaths = toAbsPath(set.eventLoggerOutputPath...)
+		if set.eventEntry.LumberjackConfig == nil {
+			set.eventEntry.LumberjackConfig = rklogger.NewLumberjackConfigDefault()
 		}
-		if logger, err := rklogger.NewZapLoggerWithConf(set.eventLoggerEntry.LoggerConfig, set.eventLoggerEntry.LumberjackConfig); err != nil {
-			rkcommon.ShutdownWithError(err)
+		if logger, err := rklogger.NewZapLoggerWithConf(set.eventEntry.LoggerConfig, set.eventEntry.LumberjackConfig); err != nil {
+			rkentry.ShutdownWithError(err)
 		} else {
 			set.eventLoggerOverride = logger
 		}
@@ -209,25 +207,25 @@ func (set *optionSet) After(before *BeforeCtx, after *AfterCtx) {
 	event.Finish()
 }
 
-// EventLoggerEntry returns rkentry.EventLoggerEntry
-func (set *optionSet) EventLoggerEntry() *rkentry.EventLoggerEntry {
-	return set.eventLoggerEntry
+// EventEntry returns rkentry.EventEntry
+func (set *optionSet) EventEntry() *rkentry.EventEntry {
+	return set.eventEntry
 }
 
-// ZapLoggerEntry returns rkentry.ZapLoggerEntry
-func (set *optionSet) ZapLoggerEntry() *rkentry.ZapLoggerEntry {
-	return set.zapLoggerEntry
+// ZapEntry returns rkentry.ZapEntry
+func (set *optionSet) ZapEntry() *rkentry.LoggerEntry {
+	return set.loggerEntry
 }
 
 // CreateEvent create event based on urlPath
 func (set *optionSet) createEvent(urlPath string, threadSafe bool) rkquery.Event {
 	if set.ignore(urlPath) {
-		return set.EventLoggerEntry().EventFactory.CreateEventNoop()
+		return set.EventEntry().EventFactory.CreateEventNoop()
 	}
 
 	var event rkquery.Event
 	if threadSafe {
-		event = set.eventLoggerEntry.GetEventFactory().CreateEventThreadSafe(
+		event = set.eventEntry.EventFactory.CreateEventThreadSafe(
 			rkquery.WithZapLogger(set.eventLoggerOverride),
 			rkquery.WithEncoding(set.eventLoggerEncoding),
 			rkquery.WithAppName(rkentry.GlobalAppCtx.GetAppInfoEntry().AppName),
@@ -235,7 +233,7 @@ func (set *optionSet) createEvent(urlPath string, threadSafe bool) rkquery.Event
 			rkquery.WithEntryName(set.GetEntryName()),
 			rkquery.WithEntryType(set.GetEntryType()))
 	} else {
-		event = set.eventLoggerEntry.GetEventFactory().CreateEvent(
+		event = set.eventEntry.EventFactory.CreateEvent(
 			rkquery.WithZapLogger(set.eventLoggerOverride),
 			rkquery.WithEncoding(set.eventLoggerEncoding),
 			rkquery.WithAppName(rkentry.GlobalAppCtx.GetAppInfoEntry().AppName),
@@ -351,30 +349,30 @@ type AfterCtx struct {
 
 // BootConfig for YAML
 type BootConfig struct {
-	Enabled                bool     `yaml:"enabled" json:"enabled"`
-	ZapLoggerEncoding      string   `yaml:"zapLoggerEncoding" json:"zapLoggerEncoding"`
-	ZapLoggerOutputPaths   []string `yaml:"zapLoggerOutputPaths" json:"zapLoggerOutputPaths"`
-	EventLoggerEncoding    string   `yaml:"eventLoggerEncoding" json:"eventLoggerEncoding"`
-	EventLoggerOutputPaths []string `yaml:"eventLoggerOutputPaths" json:"eventLoggerOutputPaths"`
-	IgnorePrefix           []string `yaml:"ignorePrefix" json:"ignorePrefix"`
+	Enabled           bool     `yaml:"enabled" json:"enabled"`
+	LoggerEncoding    string   `yaml:"loggerEncoding" json:"loggerEncoding"`
+	LoggerOutputPaths []string `yaml:"loggerOutputPaths" json:"loggerOutputPaths"`
+	EventEncoding     string   `yaml:"eventEncoding" json:"eventEncoding"`
+	EventOutputPaths  []string `yaml:"eventOutputPaths" json:"eventOutputPaths"`
+	IgnorePrefix      []string `yaml:"ignorePrefix" json:"ignorePrefix"`
 }
 
 // ToOptions convert BootConfig into Option list
 func ToOptions(config *BootConfig,
 	entryName, entryType string,
-	zapLoggerEntry *rkentry.ZapLoggerEntry,
-	eventLoggerEntry *rkentry.EventLoggerEntry) []Option {
+	loggerEntry *rkentry.LoggerEntry,
+	eventEntry *rkentry.EventEntry) []Option {
 	opts := make([]Option, 0)
 
 	if config.Enabled {
 		opts = append(opts,
 			WithEntryNameAndType(entryName, entryType),
-			WithEventLoggerEntry(eventLoggerEntry),
-			WithZapLoggerEntry(zapLoggerEntry),
-			WithZapLoggerEncoding(config.ZapLoggerEncoding),
-			WithEventLoggerEncoding(config.EventLoggerEncoding),
-			WithZapLoggerOutputPaths(config.ZapLoggerOutputPaths...),
-			WithEventLoggerOutputPaths(config.EventLoggerOutputPaths...),
+			WithEventEntry(eventEntry),
+			WithLoggerEntry(loggerEntry),
+			WithLoggerEncoding(config.LoggerEncoding),
+			WithEventEncoding(config.EventEncoding),
+			WithLoggerOutputPaths(config.LoggerOutputPaths...),
+			WithEventOutputPaths(config.EventOutputPaths...),
 			WithIgnorePrefix(config.IgnorePrefix...))
 	}
 
@@ -394,43 +392,43 @@ func WithEntryNameAndType(entryName, entryType string) Option {
 	}
 }
 
-// WithZapLoggerEntry provide rkentry.ZapLoggerEntry.
-func WithZapLoggerEntry(zapLoggerEntry *rkentry.ZapLoggerEntry) Option {
+// WithLoggerEntry provide rkentry.LoggerEntry.
+func WithLoggerEntry(loggerEntry *rkentry.LoggerEntry) Option {
 	return func(set *optionSet) {
-		if zapLoggerEntry != nil {
-			set.zapLoggerEntry = zapLoggerEntry
+		if loggerEntry != nil {
+			set.loggerEntry = loggerEntry
 		}
 	}
 }
 
-// WithEventLoggerEntry provide rkentry.EventLoggerEntry.
-func WithEventLoggerEntry(eventLoggerEntry *rkentry.EventLoggerEntry) Option {
+// WithEventEntry provide rkentry.EventEntry.
+func WithEventEntry(eventEntry *rkentry.EventEntry) Option {
 	return func(set *optionSet) {
-		if eventLoggerEntry != nil {
-			set.eventLoggerEntry = eventLoggerEntry
+		if eventEntry != nil {
+			set.eventEntry = eventEntry
 		}
 	}
 }
 
-// WithZapLoggerEncoding provide ZapLoggerEncodingType.
+// WithLoggerEncoding provide ZapLoggerEncodingType.
 // json or console is supported.
-func WithZapLoggerEncoding(ec string) Option {
+func WithLoggerEncoding(ec string) Option {
 	return func(set *optionSet) {
 		set.zapLoggerEncoding = strings.ToLower(ec)
 	}
 }
 
-// WithZapLoggerOutputPaths provide ZapLogger Output Path.
+// WithLoggerOutputPaths provide ZapLogger Output Path.
 // Multiple output path could be supported including stdout.
-func WithZapLoggerOutputPaths(path ...string) Option {
+func WithLoggerOutputPaths(path ...string) Option {
 	return func(set *optionSet) {
 		set.zapLoggerOutputPath = append(set.zapLoggerOutputPath, path...)
 	}
 }
 
-// WithEventLoggerEncoding provide ZapLoggerEncodingType.
+// WithEventEncoding provide ZapLoggerEncodingType.
 // Console or Json is supported.
-func WithEventLoggerEncoding(ec string) Option {
+func WithEventEncoding(ec string) Option {
 	return func(set *optionSet) {
 		switch strings.ToLower(ec) {
 		case console:
@@ -443,9 +441,9 @@ func WithEventLoggerEncoding(ec string) Option {
 	}
 }
 
-// WithEventLoggerOutputPaths provide EventLogger Output Path.
+// WithEventOutputPaths provide EventLogger Output Path.
 // Multiple output path could be supported including stdout.
-func WithEventLoggerOutputPaths(path ...string) Option {
+func WithEventOutputPaths(path ...string) Option {
 	return func(set *optionSet) {
 		set.eventLoggerOutputPath = append(set.eventLoggerOutputPath, path...)
 	}

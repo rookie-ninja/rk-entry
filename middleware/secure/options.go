@@ -3,13 +3,12 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// package rkmidsec provide auth related options
+// Package rkmidsec provide auth related options
 package rkmidsec
 
 import (
 	"fmt"
 	"github.com/rookie-ninja/rk-entry/middleware"
-	"github.com/rs/xid"
 	"net/http"
 	"strings"
 )
@@ -106,7 +105,7 @@ type optionSet struct {
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName:          xid.New().String(),
+		entryName:          "fake-entry",
 		entryType:          "",
 		xssProtection:      "1; mode=block",
 		contentTypeNosniff: "nosniff",

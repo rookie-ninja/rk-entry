@@ -1,14 +1,18 @@
+// Copyright (c) 2021 rookie-ninja
+//
+// Use of this source code is governed by an Apache-style
+// license that can be found in the LICENSE file.
+
 package rkentry
 
 import (
 	"bytes"
 	"context"
+	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/rookie-ninja/rk-common/common"
-	"github.com/rookie-ninja/rk-common/error"
-	"go.uber.org/zap"
+	"github.com/rookie-ninja/rk-entry/error"
 	"html/template"
 	"io/fs"
 	"math"
@@ -19,15 +23,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-)
-
-const (
-	// StaticFileHandlerEntryType type of entry
-	StaticFileHandlerEntryType = "StaticFileHandlerEntry"
-	// StaticFileHandlerEntryNameDefault name of entry
-	StaticFileHandlerEntryNameDefault = "StaticFileHandlerDefault"
-	// StaticFileHandlerEntryDescription description of entry
-	StaticFileHandlerEntryDescription = "Internal RK entry which implements static file handler."
 )
 
 var exToIcon = map[string]string{
@@ -69,8 +64,8 @@ var exToIcon = map[string]string{
 	"unknown": "file.png",
 }
 
-// BootConfigStaticHandler bootstrap config of StaticHandler.
-type BootConfigStaticHandler struct {
+// BootStaticFileHandler bootstrap config of StaticHandler.
+type BootStaticFileHandler struct {
 	Enabled    bool   `yaml:"enabled" json:"enabled"`
 	Path       string `yaml:"path" json:"path"`
 	SourceType string `yaml:"sourceType" json:"sourceType"`
@@ -79,106 +74,36 @@ type BootConfigStaticHandler struct {
 
 // StaticFileHandlerEntry Static file handler entry supports web UI for downloading static files.
 type StaticFileHandlerEntry struct {
-	EntryName        string             `yaml:"entryName" json:"entryName"`
-	EntryType        string             `yaml:"entryType" json:"entryType"`
-	EntryDescription string             `yaml:"-" json:"-"`
-	Path             string             `yaml:"path" json:"path"`
-	EventLoggerEntry *EventLoggerEntry  `json:"-" yaml:"-"`
-	ZapLoggerEntry   *ZapLoggerEntry    `json:"-" yaml:"-"`
-	Fs               http.FileSystem    `yaml:"-" json:"-"`
+	entryName        string             `yaml:"-" json:"-"`
+	entryType        string             `yaml:"-" json:"-"`
+	entryDescription string             `yaml:"-" json:"-"`
+	Path             string             `yaml:"-" json:"-"`
 	Template         *template.Template `json:"-" yaml:"-"`
+	httpFS           http.FileSystem    `yaml:"-" json:"-"`
 }
 
-// StaticFileHandlerEntryOption StaticFileHandlerEntry option.
-type StaticFileHandlerEntryOption func(*StaticFileHandlerEntry)
-
-// WithEventLoggerEntryCommonService Provide path.
-func WithPathStatic(path string) StaticFileHandlerEntryOption {
-	return func(entry *StaticFileHandlerEntry) {
-		if len(path) > 0 {
-			entry.Path = path
-		}
-	}
-}
-
-// WithEventLoggerEntryCommonService Provide EventLoggerEntry.
-func WithEventLoggerEntryStatic(eventLoggerEntry *EventLoggerEntry) StaticFileHandlerEntryOption {
-	return func(entry *StaticFileHandlerEntry) {
-		entry.EventLoggerEntry = eventLoggerEntry
-	}
-}
-
-// WithZapLoggerEntryCommonService Provide ZapLoggerEntry.
-func WithZapLoggerEntryStatic(zapLoggerEntry *ZapLoggerEntry) StaticFileHandlerEntryOption {
-	return func(entry *StaticFileHandlerEntry) {
-		entry.ZapLoggerEntry = zapLoggerEntry
-	}
-}
-
-// WithNameStatic Provide name.
-func WithNameStatic(name string) StaticFileHandlerEntryOption {
-	return func(entry *StaticFileHandlerEntry) {
-		if len(name) > 0 {
-			entry.EntryName = name
-		}
-	}
-}
-
-// WithFileSystemStatic Provide file system implementation.
-func WithFileSystemStatic(fs http.FileSystem) StaticFileHandlerEntryOption {
-	return func(entry *StaticFileHandlerEntry) {
-		entry.Fs = fs
-	}
-}
-
-// RegisterStaticFileHandlerEntryWithConfig Create new static file handler entry with config
-func RegisterStaticFileHandlerEntryWithConfig(config *BootConfigStaticHandler, name string, zap *ZapLoggerEntry, event *EventLoggerEntry) *StaticFileHandlerEntry {
-	var staticEntry *StaticFileHandlerEntry
-	if config.Enabled {
-		var fs http.FileSystem
-		switch config.SourceType {
-		case "local":
-			if !filepath.IsAbs(config.SourcePath) {
-				wd, _ := os.Getwd()
-				config.SourcePath = path.Join(wd, config.SourcePath)
-			}
-			fs = http.Dir(config.SourcePath)
-		}
-
-		staticEntry = RegisterStaticFileHandlerEntry(
-			WithNameStatic(name),
-			WithPathStatic(config.Path),
-			WithFileSystemStatic(fs),
-			WithZapLoggerEntryStatic(zap),
-			WithEventLoggerEntryStatic(event))
+// RegisterStaticFileHandlerEntry Create new static file handler entry with config
+func RegisterStaticFileHandlerEntry(boot *BootStaticFileHandler) *StaticFileHandlerEntry {
+	if !boot.Enabled {
+		return nil
 	}
 
-	return staticEntry
-}
-
-// RegisterStaticFileHandlerEntry Create new static file handler entry with options.
-func RegisterStaticFileHandlerEntry(opts ...StaticFileHandlerEntryOption) *StaticFileHandlerEntry {
 	entry := &StaticFileHandlerEntry{
-		EntryName:        StaticFileHandlerEntryNameDefault,
-		EntryType:        StaticFileHandlerEntryType,
-		EntryDescription: StaticFileHandlerEntryDescription,
-		ZapLoggerEntry:   GlobalAppCtx.GetZapLoggerEntryDefault(),
-		EventLoggerEntry: GlobalAppCtx.GetEventLoggerEntryDefault(),
+		entryName:        "StaticFileHandler",
+		entryType:        "StaticFileHandler",
+		entryDescription: "Internal RK entry which implements static file handler.",
 		Template:         template.New("rk-static"),
-		Fs:               http.Dir(""),
 		Path:             "/rk/v1/static",
+		httpFS:           http.Dir(""),
 	}
 
-	for i := range opts {
-		opts[i](entry)
-	}
-
-	if entry.ZapLoggerEntry == nil {
-		entry.ZapLoggerEntry = GlobalAppCtx.GetZapLoggerEntryDefault()
-	}
-
-	if entry.EventLoggerEntry == nil {
-		entry.EventLoggerEntry = GlobalAppCtx.GetEventLoggerEntryDefault()
+	switch boot.SourceType {
+	case "local":
+		if !filepath.IsAbs(boot.SourcePath) {
+			wd, _ := os.Getwd()
+			boot.SourcePath = path.Join(wd, boot.SourcePath)
+		}
+		entry.httpFS = http.Dir(boot.SourcePath)
 	}
 
 	// Deal with Path
@@ -191,18 +116,22 @@ func RegisterStaticFileHandlerEntry(opts ...StaticFileHandlerEntryOption) *Stati
 		entry.Path = entry.Path + "/"
 	}
 
-	if len(entry.EntryName) < 1 {
-		entry.EntryName = CommonServiceEntryNameDefault
-	}
-
 	return entry
+}
+
+func (entry *StaticFileHandlerEntry) SetEmbedFS(fs embed.FS) {
+	entry.httpFS = http.FS(fs)
+}
+
+func (entry *StaticFileHandlerEntry) SetHttpFS(fs http.FileSystem) {
+	entry.httpFS = fs
 }
 
 // Bootstrap entry.
 func (entry *StaticFileHandlerEntry) Bootstrap(context.Context) {
 	// parse template
 	if _, err := entry.Template.Parse(string(readFileFromEmbed("assets/static/index.tmpl"))); err != nil {
-		rkcommon.ShutdownWithError(err)
+		ShutdownWithError(err)
 	}
 }
 
@@ -213,17 +142,17 @@ func (entry *StaticFileHandlerEntry) Interrupt(context.Context) {
 
 // GetName Get name of entry.
 func (entry *StaticFileHandlerEntry) GetName() string {
-	return entry.EntryName
+	return entry.entryName
 }
 
 // GetType Get entry type.
 func (entry *StaticFileHandlerEntry) GetType() string {
-	return entry.EntryType
+	return entry.entryType
 }
 
 // GetDescription Get description of entry.
 func (entry *StaticFileHandlerEntry) GetDescription() string {
-	return entry.EntryDescription
+	return entry.entryDescription
 }
 
 // String Stringfy entry.
@@ -235,15 +164,13 @@ func (entry *StaticFileHandlerEntry) String() string {
 // MarshalJSON Marshal entry.
 func (entry *StaticFileHandlerEntry) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
-		"entryName":        entry.EntryName,
-		"entryType":        entry.EntryType,
-		"entryDescription": entry.EntryDescription,
-		"path":             entry.Path,
-		"zapLoggerEntry":   entry.ZapLoggerEntry.GetName(),
-		"eventLoggerEntry": entry.EventLoggerEntry.GetName(),
+		"name":        entry.GetName(),
+		"type":        entry.GetType(),
+		"description": entry.GetDescription(),
+		"path":        entry.Path,
 	}
 
-	return json.Marshal(&m)
+	return json.Marshal(m)
 }
 
 // UnmarshalJSON Not supported.
@@ -268,16 +195,10 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 
 		var file http.File
 		var err error
-
 		// open file
-		if file, err = entry.Fs.Open(p); err != nil {
-			entry.ZapLoggerEntry.GetLogger().Warn("failed to open file", zap.Error(err))
-
+		if file, err = entry.httpFS.Open(p); err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
-			bytes, _ := json.Marshal(rkerror.New(
-				rkerror.WithHttpCode(http.StatusInternalServerError),
-				rkerror.WithMessage("failed to open file"),
-				rkerror.WithDetails(err)))
+			bytes, _ := json.Marshal(rkerror.NewInternalError(err))
 			writer.Write(bytes)
 			return
 		}
@@ -285,13 +206,8 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 		// get file info
 		fileInfo, err := file.Stat()
 		if err != nil {
-			entry.ZapLoggerEntry.GetLogger().Warn("failed to stat file", zap.Error(err))
-
 			writer.WriteHeader(http.StatusInternalServerError)
-			bytes, _ := json.Marshal(rkerror.New(
-				rkerror.WithHttpCode(http.StatusInternalServerError),
-				rkerror.WithMessage("failed to stat file"),
-				rkerror.WithDetails(err)))
+			bytes, _ := json.Marshal(rkerror.NewInternalError(err))
 			writer.Write(bytes)
 			return
 		}
@@ -303,7 +219,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 
 			for _, v := range infos {
 				files = append(files, &fileResp{
-					isDir:    v.IsDir(),
+					isDir: v.IsDir(),
 					//Icon:     base64.StdEncoding.EncodeToString(readFileFromPkger(ModPath, path.Join("/assets/static/icons", getIconPath(v)))),
 					Icon:     base64.StdEncoding.EncodeToString(readFileFromEmbed(path.Join("/assets/static/icons", getIconPath(v)))),
 					FileUrl:  path.Join(entry.Path, p, v.Name()),
@@ -324,13 +240,8 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 
 			buf := new(bytes.Buffer)
 			if err := entry.Template.ExecuteTemplate(buf, "index", resp); err != nil {
-				entry.ZapLoggerEntry.GetLogger().Warn("failed to execute template", zap.Error(err))
-
 				writer.WriteHeader(http.StatusInternalServerError)
-				bytes, _ := json.Marshal(rkerror.New(
-					rkerror.WithHttpCode(http.StatusInternalServerError),
-					rkerror.WithMessage("failed to execute template"),
-					rkerror.WithDetails(err)))
+				bytes, _ := json.Marshal(rkerror.NewInternalError(err))
 				writer.Write(bytes)
 				return
 			}

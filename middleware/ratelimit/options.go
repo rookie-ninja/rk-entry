@@ -3,21 +3,18 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// package rkmidlimit provide options
+// Package rkmidlimit provide options
 package rkmidlimit
 
 import (
 	"fmt"
-	juju "github.com/juju/ratelimit"
-	"github.com/rookie-ninja/rk-common/error"
-	"github.com/rs/xid"
+	rkerror "github.com/rookie-ninja/rk-entry/error"
 	uber "go.uber.org/ratelimit"
 	"net/http"
 	"strings"
 )
 
 const (
-	TokenBucket   = "tokenBucket"
 	LeakyBucket   = "leakyBucket"
 	DefaultLimit  = 1000000
 	GlobalLimiter = "rk-limiter"
@@ -52,11 +49,11 @@ type optionSet struct {
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName:       xid.New().String(),
+		entryName:       "fake-entry",
 		entryType:       "",
 		reqPerSec:       DefaultLimit,
 		reqPerSecByPath: make(map[string]int),
-		algorithm:       TokenBucket,
+		algorithm:       LeakyBucket,
 		limiter:         make(map[string]Limiter),
 	}
 
@@ -69,28 +66,6 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	}
 
 	switch set.algorithm {
-	case TokenBucket:
-		if set.reqPerSec < 1 {
-			l := &ZeroRateLimiter{}
-			set.setLimiter(GlobalLimiter, l.Limit)
-		} else {
-			l := &tokenBucketLimiter{
-				delegator: juju.NewBucketWithRate(float64(set.reqPerSec), int64(set.reqPerSec)),
-			}
-			set.setLimiter(GlobalLimiter, l.Limit)
-		}
-
-		for k, v := range set.reqPerSecByPath {
-			if v < 1 {
-				l := &ZeroRateLimiter{}
-				set.setLimiter(k, l.Limit)
-			} else {
-				l := &tokenBucketLimiter{
-					delegator: juju.NewBucketWithRate(float64(v), int64(v)),
-				}
-				set.setLimiter(k, l.Limit)
-			}
-		}
 	case LeakyBucket:
 		if set.reqPerSec < 1 {
 			l := &ZeroRateLimiter{}
@@ -150,9 +125,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 
 	limiter := set.getLimiter(ctx.Input.UrlPath)
 	if err := limiter(); err != nil {
-		ctx.Output.ErrResp = rkerror.New(
-			rkerror.WithHttpCode(http.StatusTooManyRequests),
-			rkerror.WithDetails(err))
+		ctx.Output.ErrResp = rkerror.NewTooManyRequests(err)
 		return
 	}
 
@@ -338,7 +311,7 @@ func WithMockOptionSet(mock OptionSetInterface) Option {
 
 // ***************** Limiter *****************
 
-// User could implement
+// Limiter User could implement it
 type Limiter func() error
 
 // NoopLimiter will do nothing
@@ -355,17 +328,6 @@ type ZeroRateLimiter struct{}
 // Limit will block request and return error
 func (l *ZeroRateLimiter) Limit() error {
 	return fmt.Errorf("slow down your request")
-}
-
-// tokenBucketLimiter delegates limit logic to juju.Bucket
-type tokenBucketLimiter struct {
-	delegator *juju.Bucket
-}
-
-// Limit delegates limit logic to juju.Bucket
-func (l *tokenBucketLimiter) Limit() error {
-	l.delegator.Wait(1)
-	return nil
 }
 
 // leakyBucketLimiter delegates limit logic to uber.Limiter

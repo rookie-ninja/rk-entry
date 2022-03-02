@@ -9,8 +9,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"github.com/rookie-ninja/rk-common/common"
-	rkmid "github.com/rookie-ninja/rk-entry/middleware"
+	"github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-logger"
 	"github.com/rookie-ninja/rk-query"
 	"go.uber.org/zap"
@@ -19,140 +18,83 @@ import (
 	"time"
 )
 
-const (
-	// EventLoggerEntryType type of entry
-	EventLoggerEntryType = "EventLoggerEntry"
-	// EventLoggerNameNoop name of noop entry
-	EventLoggerNameNoop = "EventLoggerNoop"
-	// EventLoggerDescription of entry description
-	EventLoggerDescription = "Internal RK entry which is used to log event such as RPC request or periodic jobs."
-)
+const EventEntryType = "EventEntry"
 
-// NoopEventLoggerEntry create event logger entry with noop event factory.
+// NewEventEntryNoop create event logger entry with noop event factory.
 // Event factory and event helper will be created with noop zap logger.
 // Since we don't need any log rotation in case of noop, lumberjack config will be nil.
-func NoopEventLoggerEntry() *EventLoggerEntry {
-	entry := &EventLoggerEntry{
-		EntryName:        EventLoggerNameNoop,
-		EntryType:        EventLoggerEntryType,
-		EntryDescription: EventLoggerDescription,
+func NewEventEntryNoop() *EventEntry {
+	entry := &EventEntry{
+		entryName:        "EventLoggerNoop",
+		entryType:        "EventLoggerEntry",
+		entryDescription: "Internal RK entry which is used to log event such as RPC request or periodic jobs.",
 		EventFactory:     rkquery.NewEventFactory(rkquery.WithZapLogger(rklogger.NoopLogger)),
 	}
 
-	entry.EventHelper = rkquery.NewEventHelper(entry.EventFactory)
+	entry.eventHelper = rkquery.NewEventHelper(entry.EventFactory)
 
 	return entry
 }
 
-// BootConfigEventLogger bootstrap config of Event Logger information.
-// 1: RK.AppName: Application name which refers to go process.
-//                Default application name of AppNameDefault would be assigned if missing in boot config file.
-// 2: RK.Version: Version of application.
-// 3: EventLogger.Name: Name of event logger entry.
-// 4: EventLogger.Description: Description of event logger entry.
-// 5: EventLogger.Format: Format of event logger, RK & JSON is supported. Please refer rkquery.RK & rkquery.JSON.
-// 6: EventLogger.OutputPaths: Output paths of event logger, stdout would be the default one if not provided.
-//                             If one of output path was provided, then stdout would be omitted.
-//                             Output path could be relative or absolute paths either.
-// 7: EventLogger.Lumberjack: Lumberjack config which follows lumberjack.Logger style.
-type BootConfigEventLogger struct {
-	EventLogger []struct {
-		Name        string             `yaml:"name" json:"name"`
-		Description string             `yaml:"description" json:"description"`
-		Encoding    string             `yaml:"encoding" json:"encoding"`
-		OutputPaths []string           `yaml:"outputPaths" json:"outputPaths"`
-		Lumberjack  *lumberjack.Logger `yaml:"lumberjack" json:"lumberjack"`
-		Loki        BootConfigLoki     `yaml:"loki" json:"loki"`
-	} `yaml:"eventLogger json:"eventLogger"`
-}
-
-// EventLoggerEntry contains bellow fields.
-type EventLoggerEntry struct {
-	EntryName        string                `yaml:"entryName" json:"entryName"`
-	EntryType        string                `yaml:"entryType" json:"entryType"`
-	EntryDescription string                `yaml:"entryDescription" json:"entryDescription"`
-	EventFactory     *rkquery.EventFactory `yaml:"-" json:"-"`
-	EventHelper      *rkquery.EventHelper  `yaml:"-" json:"-"`
-	LoggerConfig     *zap.Config           `yaml:"zapConfig" json:"zapConfig"`
-	LumberjackConfig *lumberjack.Logger    `yaml:"lumberjackConfig" json:"lumberjackConfig"`
-	lokiSyncer       *rklogger.LokiSyncer  `yaml:"lokiSyncer" json:"lokiSyncer"`
-	baseLogger       *zap.Logger           `yaml:"-" json:"-"`
-}
-
-// EventLoggerEntryOption Option which used while registering entry from codes.
-type EventLoggerEntryOption func(*EventLoggerEntry)
-
-// WithNameEvent provide name of entry.
-func WithNameEvent(name string) EventLoggerEntryOption {
-	return func(entry *EventLoggerEntry) {
-		entry.EntryName = name
+func NewEventEntryStdout() *EventEntry {
+	entry := &EventEntry{
+		entryName:        "EventLoggerNoop",
+		entryType:        "EventLoggerEntry",
+		entryDescription: "Internal RK entry which is used to log event such as RPC request or periodic jobs.",
+		EventFactory:     rkquery.NewEventFactory(rkquery.WithZapLogger(rklogger.EventLogger)),
+		LoggerConfig:     rklogger.EventLoggerConfig,
+		baseLogger:       rklogger.EventLogger,
 	}
+
+	entry.eventHelper = rkquery.NewEventHelper(entry.EventFactory)
+
+	return entry
 }
 
-// WithDescriptionEvent provide description of entry.
-func WithDescriptionEvent(description string) EventLoggerEntryOption {
-	return func(entry *EventLoggerEntry) {
-		entry.EntryDescription = description
-	}
-}
+// RegisterEventEntry create event logger entry with options.
+func RegisterEventEntry(boot *BootEvent) []*EventEntry {
+	res := make([]*EventEntry, 0)
 
-// WithEventFactoryEvent provide event factory of entry which refers to rkquery.EventFactory.
-func WithEventFactoryEvent(fac *rkquery.EventFactory) EventLoggerEntryOption {
-	return func(entry *EventLoggerEntry) {
-		entry.EventFactory = fac
-	}
-}
+	for _, event := range boot.Event {
+		if len(event.Locale) < 1 {
+			event.Locale = "*::*::*::*"
+		}
 
-// WithLokiSyncerEvent provide rklogger.LokiSyncer
-func WithLokiSyncerEvent(loki *rklogger.LokiSyncer) EventLoggerEntryOption {
-	return func(entry *EventLoggerEntry) {
-		entry.lokiSyncer = loki
-	}
-}
+		if !IsLocaleValid(event.Locale) {
+			continue
+		}
 
-// WithBaseLoggerEvent provide zap.Logger
-func WithBaseLoggerEvent(base *zap.Logger) EventLoggerEntryOption {
-	return func(entry *EventLoggerEntry) {
-		entry.baseLogger = base
-	}
-}
-
-// RegisterEventLoggerEntriesWithConfig create event logger entries with config file.
-// Currently, only YAML file is supported.
-// File path could be either relative or absolute.
-func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entry {
-	res := make(map[string]Entry)
-
-	// 1: Unmarshal user provided config into boot config struct
-	config := &BootConfigEventLogger{}
-	rkcommon.UnmarshalBootConfig(configFilePath, config)
-
-	// 2: Init event logger entries with boot config
-	for i := range config.EventLogger {
-		element := config.EventLogger[i]
+		entry := &EventEntry{
+			entryName:        event.Name,
+			entryType:        EventEntryType,
+			entryDescription: event.Description,
+		}
 
 		var eventFactory *rkquery.EventFactory
+		var lokiSyncer *rklogger.LokiSyncer
+
 		// Assign default zap config and lumberjack config
 		eventLoggerConfig := rklogger.NewZapEventConfig()
 		eventLoggerLumberjackConfig := rklogger.NewLumberjackConfigDefault()
+
 		// Override with user provided zap config and lumberjack config
-		rkcommon.OverrideLumberjackConfig(eventLoggerLumberjackConfig, element.Lumberjack)
+		overrideLumberjackConfig(eventLoggerLumberjackConfig, event.Lumberjack)
+
 		// If output paths were provided by user, we will override it which means <stdout> would be omitted
-		if len(element.OutputPaths) > 0 {
-			eventLoggerConfig.OutputPaths = element.OutputPaths
+		if len(event.OutputPaths) > 0 {
+			eventLoggerConfig.OutputPaths = event.OutputPaths
 		}
 
 		// Loki Syncer
 		syncers := make([]zapcore.WriteSyncer, 0)
-		var lokiSyncer *rklogger.LokiSyncer
-		if element.Loki.Enabled {
+		if event.Loki.Enabled {
 			opts := []rklogger.LokiSyncerOption{
-				rklogger.WithLokiAddr(element.Loki.Addr),
-				rklogger.WithLokiPath(element.Loki.Path),
-				rklogger.WithLokiUsername(element.Loki.Username),
-				rklogger.WithLokiPassword(element.Loki.Password),
-				rklogger.WithLokiMaxBatchSize(element.Loki.MaxBatchSize),
-				rklogger.WithLokiMaxBatchWaitMs(time.Duration(element.Loki.MaxBatchWaitMs) * time.Millisecond),
+				rklogger.WithLokiAddr(event.Loki.Addr),
+				rklogger.WithLokiPath(event.Loki.Path),
+				rklogger.WithLokiUsername(event.Loki.Username),
+				rklogger.WithLokiPassword(event.Loki.Password),
+				rklogger.WithLokiMaxBatchSize(event.Loki.MaxBatchSize),
+				rklogger.WithLokiMaxBatchWaitMs(time.Duration(event.Loki.MaxBatchWaitMs) * time.Millisecond),
 			}
 
 			// default labels
@@ -167,11 +109,11 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 			)
 
 			// labels
-			for k, v := range element.Loki.Labels {
+			for k, v := range event.Loki.Labels {
 				opts = append(opts, rklogger.WithLokiLabel(k, v))
 			}
 
-			if element.Loki.InsecureSkipVerify {
+			if event.Loki.InsecureSkipVerify {
 				opts = append(opts, rklogger.WithLokiClientTls(&tls.Config{
 					InsecureSkipVerify: true,
 				}))
@@ -184,84 +126,110 @@ func RegisterEventLoggerEntriesWithConfig(configFilePath string) map[string]Entr
 		var eventLogger *zap.Logger
 		var err error
 		if eventLogger, err = rklogger.NewZapLoggerWithConfAndSyncer(eventLoggerConfig, eventLoggerLumberjackConfig, syncers); err != nil {
-			rkcommon.ShutdownWithError(err)
+			ShutdownWithError(err)
 		} else {
 			eventFactory = rkquery.NewEventFactory(
 				rkquery.WithZapLogger(eventLogger),
 				rkquery.WithAppName(GlobalAppCtx.GetAppInfoEntry().AppName),
 				rkquery.WithAppVersion(GlobalAppCtx.GetAppInfoEntry().Version),
-				rkquery.WithEncoding(rkquery.ToEncoding(element.Encoding)))
+				rkquery.WithEncoding(rkquery.ToEncoding(event.Encoding)))
 		}
 
-		entry := RegisterEventLoggerEntry(
-			WithNameEvent(element.Name),
-			WithDescriptionEvent(element.Description),
-			WithEventFactoryEvent(eventFactory),
-			WithLokiSyncerEvent(lokiSyncer),
-			WithBaseLoggerEvent(eventLogger))
-
-		// special case for logger config
+		entry.EventFactory = eventFactory
+		entry.eventHelper = rkquery.NewEventHelper(eventFactory)
+		entry.lokiSyncer = lokiSyncer
+		entry.baseLogger = eventLogger
 		entry.LoggerConfig = eventLoggerConfig
 		entry.LumberjackConfig = eventLoggerLumberjackConfig
 
-		res[element.Name] = entry
+		res = append(res, entry)
 	}
 
 	return res
 }
 
-// RegisterEventLoggerEntry create event logger entry with options.
-func RegisterEventLoggerEntry(opts ...EventLoggerEntryOption) *EventLoggerEntry {
-	entry := &EventLoggerEntry{
-		EntryType:        EventLoggerEntryType,
-		EntryDescription: EventLoggerDescription,
+// registerEventEntry register function
+func registerEventEntry(raw []byte) map[string]Entry {
+	boot := &BootEvent{}
+	UnmarshalBoot(raw, boot)
+
+	res := map[string]Entry{}
+
+	entries := RegisterEventEntry(boot)
+	for i := range entries {
+		entry := entries[i]
+		res[entry.GetName()] = entry
 	}
 
-	for i := range opts {
-		opts[i](entry)
-	}
+	return res
+}
 
-	if len(entry.EntryName) < 1 {
-		entry.EntryName = "eventLogger-" + rkcommon.RandString(4)
-	}
+// BootEvent bootstrap config of Event Logger information.
+type BootEvent struct {
+	Event []*BootEventE `yaml:"event" json:"event"`
+}
 
-	if entry.EventFactory == nil {
-		entry.EventFactory = rkquery.NewEventFactory()
-	}
+type BootLoki struct {
+	Enabled            bool              `yaml:"enabled" json:"enabled"`
+	Addr               string            `yaml:"addr" json:"addr"`
+	Path               string            `yaml:"path" json:"path"`
+	Username           string            `yaml:"username" json:"username"`
+	Password           string            `yaml:"password" json:"password"`
+	InsecureSkipVerify bool              `yaml:"insecureSkipVerify" json:"insecureSkipVerify"`
+	Labels             map[string]string `yaml:"labels" json:"labels"`
+	MaxBatchWaitMs     int               `yaml:"maxBatchWaitMs" json:"maxBatchWaitMs"`
+	MaxBatchSize       int               `yaml:"maxBatchSize" json:"maxBatchSize"`
+}
 
-	entry.EventHelper = rkquery.NewEventHelper(entry.EventFactory)
+type BootEventE struct {
+	Name        string             `yaml:"name" json:"name"`
+	Description string             `yaml:"description" json:"description"`
+	Locale      string             `yaml:"locale" json:"locale"`
+	Encoding    string             `yaml:"encoding" json:"encoding"`
+	OutputPaths []string           `yaml:"outputPaths" json:"outputPaths"`
+	Lumberjack  *lumberjack.Logger `yaml:"lumberjack" json:"lumberjack"`
+	Loki        BootLoki           `yaml:"loki" json:"loki"`
+}
 
-	GlobalAppCtx.AddEventLoggerEntry(entry)
-
-	return entry
+// EventEntry contains bellow fields.
+type EventEntry struct {
+	entryName        string                `yaml:"-" json:"-"`
+	entryType        string                `yaml:"-" json:"-"`
+	entryDescription string                `yaml:"-" json:"-"`
+	EventFactory     *rkquery.EventFactory `yaml:"-" json:"-"`
+	LoggerConfig     *zap.Config           `yaml:"-" json:"-"`
+	LumberjackConfig *lumberjack.Logger    `yaml:"-" json:"-"`
+	eventHelper      *rkquery.EventHelper  `yaml:"-" json:"-"`
+	lokiSyncer       *rklogger.LokiSyncer  `yaml:"-" json:"-"`
+	baseLogger       *zap.Logger           `yaml:"-" json:"-"`
 }
 
 // Bootstrap entry.
-func (entry *EventLoggerEntry) Bootstrap(ctx context.Context) {
+func (entry *EventEntry) Bootstrap(ctx context.Context) {
 	if entry.lokiSyncer != nil {
 		entry.lokiSyncer.Bootstrap(ctx)
 	}
 }
 
 // Interrupt entry.
-func (entry *EventLoggerEntry) Interrupt(ctx context.Context) {
+func (entry *EventEntry) Interrupt(ctx context.Context) {
 	if entry.lokiSyncer != nil {
 		entry.lokiSyncer.Interrupt(ctx)
 	}
 }
 
 // GetName returns name of entry.
-func (entry *EventLoggerEntry) GetName() string {
-	return entry.EntryName
+func (entry *EventEntry) GetName() string {
+	return entry.entryName
 }
 
 // GetType returns type of entry.
-func (entry *EventLoggerEntry) GetType() string {
-	return entry.EntryType
+func (entry *EventEntry) GetType() string {
+	return entry.entryType
 }
 
 // String convert entry into JSON style string.
-func (entry *EventLoggerEntry) String() string {
+func (entry *EventEntry) String() string {
 	var bytes []byte
 	var err error
 
@@ -273,53 +241,54 @@ func (entry *EventLoggerEntry) String() string {
 }
 
 // MarshalJSON marshal entry.
-func (entry *EventLoggerEntry) MarshalJSON() ([]byte, error) {
+func (entry *EventEntry) MarshalJSON() ([]byte, error) {
 	loggerConfigWrap := rklogger.TransformToZapConfigWrap(entry.LoggerConfig)
 
 	type innerEventLoggerEntry struct {
-		EntryName        string                  `yaml:"entryName" json:"entryName"`
-		EntryType        string                  `yaml:"entryType" json:"entryType"`
-		EntryDescription string                  `yaml:"entryDescription" json:"entryDescription"`
+		EntryName        string                  `yaml:"name" json:"name"`
+		EntryType        string                  `yaml:"type" json:"type"`
+		EntryDescription string                  `yaml:"description" json:"description"`
 		LoggerConfig     *rklogger.ZapConfigWrap `yaml:"zapConfig" json:"zapConfig"`
 		LumberjackConfig *lumberjack.Logger      `yaml:"lumberjackConfig" json:"lumberjackConfig"`
 	}
 
 	return json.Marshal(&innerEventLoggerEntry{
-		EntryName:        entry.EntryName,
-		EntryType:        entry.EntryType,
-		EntryDescription: entry.EntryDescription,
+		EntryName:        entry.entryName,
+		EntryType:        entry.entryType,
+		EntryDescription: entry.entryDescription,
 		LoggerConfig:     loggerConfigWrap,
 		LumberjackConfig: entry.LumberjackConfig,
 	})
 }
 
 // UnmarshalJSON not supported.
-func (entry *EventLoggerEntry) UnmarshalJSON([]byte) error {
+func (entry *EventEntry) UnmarshalJSON([]byte) error {
 	return nil
 }
 
 // GetDescription return description of entry.
-func (entry *EventLoggerEntry) GetDescription() string {
-	return entry.EntryDescription
+func (entry *EventEntry) GetDescription() string {
+	return entry.entryDescription
 }
 
-// GetEventFactory return event factory, refer to rkquery.EventFactory.
-func (entry *EventLoggerEntry) GetEventFactory() *rkquery.EventFactory {
-	return entry.EventFactory
+func (entry *EventEntry) CreateEvent(op string, opts ...rkquery.EventOption) rkquery.Event {
+	return entry.eventHelper.Start(op, opts...)
 }
 
-// GetEventHelper return event helperm refer to rkquery.EventHelper.
-func (entry *EventLoggerEntry) GetEventHelper() *rkquery.EventHelper {
-	return entry.EventHelper
+func (entry *EventEntry) FinishEvent(event rkquery.Event) {
+	entry.eventHelper.Finish(event)
 }
 
-// GetLumberjackConfig return lumberjack config, refer to lumberjack.Logger.
-func (entry *EventLoggerEntry) GetLumberjackConfig() *lumberjack.Logger {
-	return entry.LumberjackConfig
+func (entry *EventEntry) FinishEventWithCond(event rkquery.Event, succ bool) {
+	entry.eventHelper.FinishWithCond(event, succ)
+}
+
+func (entry *EventEntry) FinishEventWithError(event rkquery.Event, err error) {
+	entry.eventHelper.FinishWithError(event, err)
 }
 
 // AddEntryLabelToLokiSyncer add entry name entry type into loki syncer
-func (entry *EventLoggerEntry) AddEntryLabelToLokiSyncer(e Entry) {
+func (entry *EventEntry) AddEntryLabelToLokiSyncer(e Entry) {
 	if entry.lokiSyncer != nil && e != nil {
 		entry.lokiSyncer.AddLabel("entry_name", e.GetName())
 		entry.lokiSyncer.AddLabel("entry_type", e.GetType())
@@ -327,14 +296,14 @@ func (entry *EventLoggerEntry) AddEntryLabelToLokiSyncer(e Entry) {
 }
 
 // AddLabelToLokiSyncer add key value pair as label into loki syncer
-func (entry *EventLoggerEntry) AddLabelToLokiSyncer(k, v string) {
+func (entry *EventEntry) AddLabelToLokiSyncer(k, v string) {
 	if entry.lokiSyncer != nil {
 		entry.lokiSyncer.AddLabel(k, v)
 	}
 }
 
 // Sync underlying logger
-func (entry *EventLoggerEntry) Sync() {
+func (entry *EventEntry) Sync() {
 	if entry.baseLogger != nil {
 		entry.baseLogger.Sync()
 	}

@@ -3,22 +3,33 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// package rkmidcsrf provide auth related options
+// Package rkmidcsrf provide auth related options
 package rkmidcsrf
 
 import (
 	"context"
 	"crypto/subtle"
 	"errors"
-	"github.com/rookie-ninja/rk-common/common"
-	"github.com/rookie-ninja/rk-common/error"
+	"github.com/rookie-ninja/rk-entry/error"
 	"github.com/rookie-ninja/rk-entry/middleware"
-	"github.com/rs/xid"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 )
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+// RandString generate random string.
+func randString(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+
+	return string(b)
+}
 
 // ***************** OptionSet Interface *****************
 
@@ -92,7 +103,7 @@ type optionSet struct {
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName:      xid.New().String(),
+		entryName:      "fake-entry",
 		entryType:      "",
 		tokenLength:    32,
 		tokenLookup:    "header:" + rkmid.HeaderXCSRFToken,
@@ -141,7 +152,7 @@ func (set *optionSet) BeforeCtx(req *http.Request) *BeforeCtx {
 		ctx.Input.UrlPath = req.URL.Path
 		ctx.Input.Method = req.Method
 		if cookie, err := req.Cookie(set.cookieName); err != nil {
-			ctx.Input.Token = rkcommon.RandString(set.tokenLength)
+			ctx.Input.Token = randString(set.tokenLength)
 		} else {
 			ctx.Input.Token, _ = url.QueryUnescape(cookie.Value)
 		}
@@ -172,19 +183,13 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		}
 
 		if err != nil {
-			ctx.Output.ErrResp = rkerror.New(
-				rkerror.WithHttpCode(http.StatusBadRequest),
-				rkerror.WithMessage("failed to extract client token"),
-				rkerror.WithDetails(err))
+			ctx.Output.ErrResp = rkerror.NewBadRequest("Failed to extract client token", err)
 			return
 		}
 
 		// 3.3: return 403 to client if token is not matched
 		if !set.isValidToken(ctx.Input.Token, clientToken) {
-			ctx.Output.ErrResp = rkerror.New(
-				rkerror.WithHttpCode(http.StatusForbidden),
-				rkerror.WithMessage("invalid csrf token"),
-				rkerror.WithDetails(err))
+			ctx.Output.ErrResp = rkerror.NewForbidden("Invalid csrf token", err)
 			return
 		}
 	}

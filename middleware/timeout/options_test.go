@@ -39,7 +39,7 @@ func TestOptionSet_BeforeCtx(t *testing.T) {
 
 	// with req
 	req := httptest.NewRequest(http.MethodGet, "/ut", nil)
-	event := rkentry.NoopEventLoggerEntry().GetEventFactory().CreateEventNoop()
+	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
 	ctx = set.BeforeCtx(req, event)
 
 	assert.Equal(t, "/ut", ctx.Input.UrlPath)
@@ -68,7 +68,7 @@ func TestOptionSet_Before(t *testing.T) {
 	set := NewOptionSet(
 		WithTimeout(1 * time.Second))
 	req := httptest.NewRequest(http.MethodGet, "/ut", nil)
-	event := rkentry.NoopEventLoggerEntry().GetEventFactory().CreateEventNoop()
+	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
 	ctx := set.BeforeCtx(req, event)
 
 	ctx.Input.InitHandler = initF

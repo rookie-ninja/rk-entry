@@ -9,11 +9,9 @@ package rkmidtrace
 import (
 	"context"
 	"fmt"
-	"github.com/rookie-ninja/rk-common/common"
 	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-logger"
-	"github.com/rs/xid"
 	"go.opentelemetry.io/contrib"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -71,7 +69,7 @@ type optionSet struct {
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName:    xid.New().String(),
+		entryName:    "fake-entry",
 		entryType:    "",
 		ignorePrefix: []string{},
 	}
@@ -556,7 +554,7 @@ func NewJaegerExporter(opt jaeger.EndpointOption) sdktrace.SpanExporter {
 	exporter, err := jaeger.New(opt)
 
 	if err != nil {
-		rkcommon.ShutdownWithError(err)
+		rkentry.ShutdownWithError(err)
 	}
 
 	return exporter
