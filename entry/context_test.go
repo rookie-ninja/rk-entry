@@ -14,6 +14,55 @@ import (
 	"time"
 )
 
+func TestGetSpecificEntry(t *testing.T) {
+	defer GlobalAppCtx.clearEntries()
+
+	bootStr := `
+---
+config:
+  - name: ut-config
+logger:
+  - name: ut-logger
+event:
+  - name: ut-event
+cert:
+  - name: ut-cert
+`
+	raw := []byte(bootStr)
+	registerConfigEntry(raw)
+	registerLoggerEntry(raw)
+	registerEventEntry(raw)
+	registerCertEntry(raw)
+
+	assert.NotNil(t, GlobalAppCtx.GetConfigEntry("ut-config"))
+	assert.Nil(t, GlobalAppCtx.GetConfigEntry("ut-config-1"))
+
+	assert.NotNil(t, GlobalAppCtx.GetLoggerEntry("ut-logger"))
+	assert.Nil(t, GlobalAppCtx.GetLoggerEntry("ut-logger-1"))
+
+	assert.NotNil(t, GlobalAppCtx.GetEventEntry("ut-event"))
+	assert.Nil(t, GlobalAppCtx.GetEventEntry("ut-event-1"))
+
+	assert.NotNil(t, GlobalAppCtx.GetCertEntry("ut-cert"))
+	assert.Nil(t, GlobalAppCtx.GetCertEntry("ut-cert-1"))
+}
+
+func TestAppContext_RemoveEntryByType(t *testing.T) {
+	defer GlobalAppCtx.clearEntries()
+
+	bootStr := `
+---
+config:
+  - name: ut-config
+`
+	raw := []byte(bootStr)
+	registerConfigEntry(raw)
+
+	assert.Len(t, GlobalAppCtx.ListEntriesByType(ConfigEntryType), 1)
+	GlobalAppCtx.RemoveEntryByType(ConfigEntryType)
+	assert.Empty(t, GlobalAppCtx.ListEntriesByType(ConfigEntryType))
+}
+
 func TestGlobalAppCtx_init(t *testing.T) {
 	assert.NotNil(t, GlobalAppCtx)
 
@@ -31,7 +80,7 @@ func TestGlobalAppCtx_init(t *testing.T) {
 
 	// validate config entries.
 	configEntries := GlobalAppCtx.ListEntriesByType(appInfoEntryType)
-	assert.Equal(t, 1, len(configEntries))
+	assert.Equal(t, 0, len(configEntries))
 
 	// validate zap logger entries.
 	zapEntries := GlobalAppCtx.ListEntriesByType("non-exist")
@@ -255,7 +304,7 @@ func TestAppContext_AddEntry_WithEmptyName(t *testing.T) {
 		Name: name,
 	}
 	GlobalAppCtx.AddEntry(entry)
-	assert.Equal(t, 2, len(GlobalAppCtx.ListEntries()))
+	assert.Equal(t, 1, len(GlobalAppCtx.ListEntries()))
 	assert.Equal(t, entry, GlobalAppCtx.GetEntry(entry.GetType(), entry.GetName()))
 }
 

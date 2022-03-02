@@ -60,7 +60,7 @@ func RegisterEventEntry(boot *BootEvent) []*EventEntry {
 			event.Locale = "*::*::*::*"
 		}
 
-		if !IsLocaleValid(event.Locale) {
+		if len(event.Name) < 1 || !IsLocaleValid(event.Locale) {
 			continue
 		}
 
@@ -142,6 +142,7 @@ func RegisterEventEntry(boot *BootEvent) []*EventEntry {
 		entry.LoggerConfig = eventLoggerConfig
 		entry.LumberjackConfig = eventLoggerLumberjackConfig
 
+		GlobalAppCtx.AddEntry(entry)
 		res = append(res, entry)
 	}
 
