@@ -131,6 +131,7 @@ key: value
 	assert.NotEmpty(t, entries[0].GetName())
 	assert.NotEmpty(t, entries[0].GetType())
 	assert.NotEmpty(t, entries[0].GetDescription())
+	assert.NotEmpty(t, entries[0].String())
 	assert.Equal(t, "value", entries[0].GetViper().GetString("key"))
 
 	// unset domain

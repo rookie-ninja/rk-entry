@@ -11,6 +11,7 @@ import (
 	"crypto/x509"
 	"embed"
 	"encoding/json"
+	"encoding/pem"
 )
 
 const CertEntryType = "CertEntry"
@@ -25,7 +26,7 @@ func RegisterCertEntry(boot *BootCert) []*CertEntry {
 		}
 
 		if len(cert.Name) < 1 || !IsLocaleValid(cert.Locale) {
-			return nil
+			continue
 		}
 
 		entry := &CertEntry{
@@ -37,6 +38,7 @@ func RegisterCertEntry(boot *BootCert) []*CertEntry {
 			certPemPath:      cert.CertPemPath,
 		}
 
+		GlobalAppCtx.AddEntry(entry)
 		res = append(res, entry)
 	}
 
@@ -105,7 +107,12 @@ func (entry *CertEntry) Bootstrap(ctx context.Context) {
 	}
 
 	if len(entry.rootPemPath) > 0 {
-		cert, err := x509.ParseCertificate(readFile(entry.rootPemPath, entry.embedFS))
+		block, _ := pem.Decode(readFile(entry.rootPemPath, entry.embedFS))
+		if block == nil || block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+			return
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
 		if err != nil {
 			ShutdownWithError(err)
 		}
@@ -129,6 +136,9 @@ func (entry *CertEntry) MarshalJSON() ([]byte, error) {
 		"name":        entry.entryName,
 		"type":        entry.entryType,
 		"description": entry.entryDescription,
+		"rootPemPath": entry.rootPemPath,
+		"keyPemPath":  entry.keyPemPath,
+		"certPemPath": entry.certPemPath,
 	}
 
 	return json.Marshal(&m)

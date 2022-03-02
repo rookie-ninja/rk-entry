@@ -67,6 +67,7 @@ func RegisterConfigEntry(boot *BootConfig) []*ConfigEntry {
 		entry.vp.AutomaticEnv()
 		entry.vp.SetEnvPrefix(entry.EnvPrefix)
 
+		GlobalAppCtx.AddEntry(entry)
 		res = append(res, entry)
 	}
 

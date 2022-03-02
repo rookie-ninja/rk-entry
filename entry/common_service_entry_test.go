@@ -88,3 +88,10 @@ func TestCommonServiceEntry_Info(t *testing.T) {
 	assert.Equal(t, 200, writer.Code)
 	assert.NotEmpty(t, writer.Body.String())
 }
+
+func TestCommonServiceEntry_UnmarshalJSON(t *testing.T) {
+	entry := RegisterCommonServiceEntry(&BootCommonService{
+		Enabled: true,
+	})
+	assert.Nil(t, entry.UnmarshalJSON(nil))
+}

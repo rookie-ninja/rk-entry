@@ -52,7 +52,7 @@ func RegisterLoggerEntry(boot *BootLogger) []*LoggerEntry {
 			logger.Locale = "*::*::*::*"
 		}
 
-		if !IsLocaleValid(logger.Locale) {
+		if len(logger.Name) < 1 || !IsLocaleValid(logger.Locale) {
 			continue
 		}
 
@@ -121,6 +121,7 @@ func RegisterLoggerEntry(boot *BootLogger) []*LoggerEntry {
 		entry.LumberjackConfig = zapLoggerLumberjackConfig
 		entry.lokiSyncer = lokiSyncer
 
+		GlobalAppCtx.AddEntry(entry)
 		res = append(res, entry)
 	}
 

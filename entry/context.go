@@ -148,11 +148,11 @@ func (ctx *appContext) GetLoggerEntry(entryName string) *LoggerEntry {
 	return nil
 }
 
-func (ctx *appContext) GetEventEntry(entryName string) *LoggerEntry {
+func (ctx *appContext) GetEventEntry(entryName string) *EventEntry {
 	entries := ctx.entries[EventEntryType]
 
 	if v, ok := entries[entryName]; ok {
-		return v.(*LoggerEntry)
+		return v.(*EventEntry)
 	}
 
 	return nil

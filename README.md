@@ -10,33 +10,35 @@ The entry library mainly used by rk-boot.
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-  - [Entry](#entry)
-    - [Interact with rk-boot.Bootstrapper?](#interact-with-rk-bootbootstrapper)
-  - [AppCtx](#appctx)
-    - [Access AppCtx](#access-appctx)
-    - [Usage of AppCtx](#usage-of-appctx)
-- [Contributing](#contributing)
+- [Important!](#important)
+  - [Installation](#installation)
+  - [Quick Start](#quick-start)
+    - [Entry](#entry)
+      - [Interact with rk-boot.Bootstrapper?](#interact-with-rk-bootbootstrapper)
+    - [AppCtx](#appctx)
+      - [Access AppCtx](#access-appctx)
+      - [Usage of AppCtx](#usage-of-appctx)
+  - [Contributing](#contributing)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-> Important!
+# Important!
+> rookie-ninja/rk-entry is under big refactoring stage.
 > 
-> rookie-ninja/rk-xxx is under big refactoring stage.
+> New version will be start with v2.x.x and may not compatible with v1.x.x.
 > 
-> New version will be start with v2.x.x and comparable with v1.x.x.
+> Please do not upgrade to the newest master branch.
 
 ## Installation
 ```bash
-go get -u github.com/rookie-ninja/rk-entry
+go get github.com/rookie-ninja/rk-entry
 ```
 
 ## Quick Start
 ### Entry
-**rke.Entry** is an interface for rkb.Bootstrapper to bootstrap entry.
+**rkentry.Entry** is an interface for rkboot.Bootstrapper to bootstrap entry.
 
-Users can implement **rke.Entry** interface and bootstrap any service/process with **rkb.Bootstrapper**
+Users can implement **rkentry.Entry** interface and bootstrap any service/process with **rkb.Bootstrapper**
 
 [Example](example)
 
@@ -75,29 +77,29 @@ AppCtx
 - Access start time and uptime of application.
 ```go
 // Get start time of application
-startTime := rke.AppCtx.GetStartTime()
+startTime := rkentry.GlobalAppCtx.GetStartTime()
 
 // Get uptime of application/process.
-upTime := rkentry.AppCtx.GetUpTime()
+upTime := rkentry.GlobalAppCtx.GetUpTime()
 ```
 
 - Access AppInfoEntry
 ```go
-// Get AppInfoEntry from rke.AppCtx
-appInfoEntry := rke.AppCtx.GetAppInfoEntry()
+// Get AppInfoEntry from rkentry.GlobalAppCtx
+appInfoEntry := rkentry.GlobalAppCtx.GetAppInfoEntry()
 ```
 
 - Access entries
 Entries contains user defined entry.
 ```go
-// Access entries from rke.AppCtx
-entry := rke.AppCtx.GetEntry("entry type", "entry name")
+// Access entries from rkentry.GlobalAppCtx
+entry := rkentry.GlobalAppCtx.GetEntry("entry type", "entry name")
 
 // Access entries via utility function
-entries := rke.AppCtx.ListEntries()
+entries := rkentry.GlobalAppCtx.ListEntries()
 
 // Add entry
-rke.AppCtx.AddEntry()
+rkentry.GlobalAppCtx.AddEntry()
 ```
 
 - Access Values
@@ -107,28 +109,28 @@ User can add/get/list/remove any values into map of rke.AppCtx.UserValues as nee
 rke.AppCtx don't provide any locking mechanism.
 ```go
 // Add k/v value into AppCtx, key should be string and value could be any kind
-rke.AppCtx.AddValue(<"key">, <value interface{}>)
+rkentry.GlobalAppCtx.AddValue(<"key">, <value interface{}>)
 
 // Get value with key
-value := rke.AppCtx.GetValue(<"key">)
+value := rkentry.GlobalAppCtx.GetValue(<"key">)
 
 // List values
-entries := rke.AppCtx.ListValues()
+entries := rkentry.GlobalAppCtx.ListValues()
 
 // Remove value with key
-rke.AppCtx.RemoveValue(<"key">)
+rkentry.GlobalAppCtx.RemoveValue(<"key">)
 
 // Clear values
-rke.AppCtx.ClearValues()
+rkentry.GlobalAppCtx.ClearValues()
 ```
 
 - Access shutdown sig
 ```go
 // Access shutdown signal directly
-rke.AppCtx.GetShutdownSig()
+rkentry.GlobalAppCtx.GetShutdownSig()
 
 // Wait for shutdown signal via utility function, otherwise, user must call by himself
-rke.AppCtx.WaitForShutdownSig()
+rkentry.GlobalAppCtx.WaitForShutdownSig()
 ```
 
 - Access shutdown hooks
@@ -138,19 +140,19 @@ Users can add their own shutdown hook function into rke.AppCtx.
 rkb will iterate all shutdown hooks in rke.AppCtx and call every shutdown hook function.
 ```go
 // Get shutdown
-rke.AppCtx.GetShutdownHook("name of shutdown hook")
+rkentry.GlobalAppCtx.GetShutdownHook("name of shutdown hook")
 
 // Add shutdown hook function with name
-rke.AppCtx.AddShutdownHook(<"name">, <"function">)
+rkentry.GlobalAppCtx.AddShutdownHook(<"name">, <"function">)
 
 // List shutdown hooks
-rke.AppCtx.ListShutdownHooks()
+rkentry.GlobalAppCtx.ListShutdownHooks()
 
 // Remove shutdown hook
-success := rke.AppCtx.RemoveShutdownHook("name of shutdown hook")
+success := rkentry.GlobalAppCtx.RemoveShutdownHook("name of shutdown hook")
 
 // Internal 
-rke.AppCtx.GetShutdownHook("name of shutdown hook function")
+rkentry.GlobalAppCtx.GetShutdownHook("name of shutdown hook function")
 ```
 
 ## Contributing
