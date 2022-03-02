@@ -3,14 +3,13 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// package rkmidtimeout provide options
+// Package rkmidtimeout provide options
 package rkmidtimeout
 
 import (
-	"github.com/rookie-ninja/rk-common/error"
 	"github.com/rookie-ninja/rk-entry/entry"
+	rkerror "github.com/rookie-ninja/rk-entry/error"
 	"github.com/rookie-ninja/rk-query"
-	"github.com/rs/xid"
 	"net/http"
 	"strings"
 	"time"
@@ -19,9 +18,7 @@ import (
 const global = "rk-global"
 
 var (
-	defaultErrResp = rkerror.New(
-		rkerror.WithHttpCode(http.StatusRequestTimeout),
-		rkerror.WithMessage("Request timed out!"))
+	defaultErrResp = rkerror.NewTimeout()
 	defaultTimeout = 10 * time.Second
 )
 
@@ -51,7 +48,7 @@ type optionSet struct {
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName: xid.New().String(),
+		entryName: "fake-entry",
 		entryType: "",
 		timeouts:  make(map[string]time.Duration),
 	}
@@ -195,7 +192,7 @@ func (mock *optionSetMock) Before(ctx *BeforeCtx) {
 // NewBeforeCtx create new BeforeCtx with fields initialized
 func NewBeforeCtx() *BeforeCtx {
 	ctx := &BeforeCtx{}
-	ctx.Input.Event = rkentry.NoopEventLoggerEntry().GetEventFactory().CreateEventNoop()
+	ctx.Input.Event = rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
 	ctx.Input.TimeoutHandler = func() {}
 	ctx.Input.FinishHandler = func() {}
 	ctx.Input.InitHandler = func() {}

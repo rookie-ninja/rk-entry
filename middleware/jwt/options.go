@@ -11,9 +11,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/rookie-ninja/rk-common/error"
+	"github.com/rookie-ninja/rk-entry/error"
 	"github.com/rookie-ninja/rk-entry/middleware"
-	"github.com/rs/xid"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -24,12 +23,8 @@ import (
 // https://github.com/labstack/echo/blob/master/middleware/jwt.go
 
 var (
-	errJwtMissing = rkerror.New(
-		rkerror.WithHttpCode(http.StatusBadRequest),
-		rkerror.WithMessage("missing or malformed jwt"))
-	errJwtInvalid = rkerror.New(
-		rkerror.WithHttpCode(http.StatusUnauthorized),
-		rkerror.WithMessage("invalid or expired jwt"))
+	errJwtMissing = rkerror.NewBadRequest("Missing or malformed jwt")
+	errJwtInvalid = rkerror.NewBadRequest("Invalid or expired jwt")
 )
 
 const (
@@ -130,7 +125,7 @@ type optionSet struct {
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName:        xid.New().String(),
+		entryName:        "fake-entry",
 		entryType:        "",
 		signingKeys:      make(map[string]interface{}),
 		signingAlgorithm: AlgorithmHS256,

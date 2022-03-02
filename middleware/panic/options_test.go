@@ -6,8 +6,8 @@
 package rkmidpanic
 
 import (
-	"github.com/rookie-ninja/rk-common/error"
 	"github.com/rookie-ninja/rk-entry/entry"
+	rkerror "github.com/rookie-ninja/rk-entry/error"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
@@ -25,8 +25,8 @@ func TestNewOptionSet(t *testing.T) {
 }
 
 func TestOptionSet_BeforeCtx(t *testing.T) {
-	event := rkentry.NoopEventLoggerEntry().GetEventFactory().CreateEventNoop()
-	logger := rkentry.NoopZapLoggerEntry().GetLogger()
+	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
+	logger := rkentry.LoggerEntryNoop.Logger
 	handler := func(*rkerror.ErrorResp) {}
 
 	set := NewOptionSet()
@@ -37,8 +37,8 @@ func TestOptionSet_BeforeCtx(t *testing.T) {
 }
 
 func TestOptionSet_Before(t *testing.T) {
-	event := rkentry.NoopEventLoggerEntry().GetEventFactory().CreateEventNoop()
-	logger := rkentry.NoopZapLoggerEntry().GetLogger()
+	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
+	logger := rkentry.LoggerEntryNoop.Logger
 	handler := func(*rkerror.ErrorResp) {}
 
 	set := NewOptionSet()

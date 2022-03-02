@@ -7,7 +7,7 @@ package rkmidcsrf
 
 import (
 	"context"
-	"github.com/rookie-ninja/rk-entry/middleware"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"

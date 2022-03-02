@@ -9,200 +9,126 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/rookie-ninja/rk-common/common"
 	"github.com/spf13/viper"
 	"os"
 	"path"
 )
 
-const (
-	// ConfigEntryType is entry type of ConfigEntry
-	ConfigEntryType = "ConfigEntry"
-	// ConfigEntryDescription is default description of ConfigEntry
-	ConfigEntryDescription = "Internal RK entry which read user config file into viper instance."
-)
+const ConfigEntryType = "ConfigEntry"
 
-// BootConfigConfig is bootstrap config of ConfigEntry information.
-// 1: Config.Name: Name of viper entry.
-// 2: Config.Description: Description of viper entry.
-// 3: Config.Locale: <realm>::<region>::<az>::<domain>
-// 4: Config.Path: File path of config file, could be either relative or absolute path.
-//                 If relative path was provided, then current working directory would be joined as prefix.
-type BootConfigConfig struct {
-	Config []struct {
-		Name        string `yaml:"name" json:"name"`
-		Description string `yaml:"description" json:"description"`
-		Locale      string `yaml:"locale" json:"locale"`
-		Path        string `yaml:"path" json:"name"`
-		EnvPrefix   string `yaml:"envPrefix" json:"envPrefix"`
-	} `yaml:"config" json:"config"`
-}
+// RegisterConfigEntry create ConfigEntry with BootConfigConfig.
+func RegisterConfigEntry(boot *BootConfig) []*ConfigEntry {
+	res := make([]*ConfigEntry, 0)
 
-// ConfigEntry contains bellow fields.
-// 1: EntryName: Name of entry.
-// 2: EntryType: Type of entry which is ConfigEntryType.
-// 3: EntryDescription: Description of ConfigEntry.
-// 4: Locale: <realm>::<region>::<az>::<domain>
-// 4: Path: File path of config file, could be either relative or absolute path.
-//          If relative path was provided, then current working directory would be joined as prefix.
-// 5: vp: Viper instance, see viper.Viper for details.
-type ConfigEntry struct {
-	EntryName        string       `yaml:"entryName" json:"entryName"`
-	EntryType        string       `yaml:"entryType" json:"entryType"`
-	EntryDescription string       `yaml:"entryDescription" json:"entryDescription"`
-	Locale           string       `yaml:"locale" json:"locale"`
-	Path             string       `yaml:"path" json:"path"`
-	EnvPrefix        string       `yaml:"envPrefix" json:"envPrefix"`
-	vp               *viper.Viper `yaml:"-" json:"-"`
-}
-
-// ConfigEntryOption which used while registering entry from codes.
-type ConfigEntryOption func(*ConfigEntry)
-
-// WithNameConfig provide name of entry.
-func WithNameConfig(name string) ConfigEntryOption {
-	return func(entry *ConfigEntry) {
-		if len(name) > 0 {
-			entry.EntryName = name
+	for _, config := range boot.Config {
+		if len(config.Locale) < 1 {
+			config.Locale = "*::*::*::*"
 		}
-	}
-}
 
-// WithDescriptionConfig provide description of entry.
-func WithDescriptionConfig(description string) ConfigEntryOption {
-	return func(entry *ConfigEntry) {
-		if len(description) > 0 {
-			entry.EntryDescription = description
-		}
-	}
-}
-
-// WithEnvPrefixConfig provide environment variable prefix for viper instance.
-func WithEnvPrefixConfig(prefix string) ConfigEntryOption {
-	return func(entry *ConfigEntry) {
-		if len(prefix) > 0 {
-			entry.EnvPrefix = prefix
-		}
-	}
-}
-
-// WithLocaleConfig provide description of entry.
-func WithLocaleConfig(locale string) ConfigEntryOption {
-	return func(entry *ConfigEntry) {
-		if len(locale) > 0 {
-			entry.Locale = locale
-		}
-	}
-}
-
-// WithPathConfig provide path of entry.
-func WithPathConfig(path string) ConfigEntryOption {
-	return func(entry *ConfigEntry) {
-		entry.Path = path
-	}
-}
-
-// WithViperInstanceConfig provide viper instance of entry.
-func WithViperInstanceConfig(vp *viper.Viper) ConfigEntryOption {
-	return func(entry *ConfigEntry) {
-		if vp != nil {
-			entry.vp = vp
-		}
-	}
-}
-
-// RegisterConfigEntriesWithConfig create config entries with config file.
-// Currently, only YAML file is supported.
-// File path could be either relative or absolute.
-func RegisterConfigEntriesWithConfig(configFilePath string) map[string]Entry {
-	res := make(map[string]Entry)
-
-	// 1: unmarshal user provided config into boot config struct
-	config := &BootConfigConfig{}
-	rkcommon.UnmarshalBootConfig(configFilePath, config)
-	for i := range config.Config {
-		element := config.Config[i]
-
-		if len(element.Name) < 1 || !rkcommon.MatchLocaleWithEnv(element.Locale) {
+		if len(config.Name) < 1 || !IsLocaleValid(config.Locale) {
 			continue
 		}
 
-		entry := RegisterConfigEntry(
-			WithNameConfig(element.Name),
-			WithLocaleConfig(element.Locale),
-			WithDescriptionConfig(element.Description),
-			WithEnvPrefixConfig(element.EnvPrefix),
-			WithPathConfig(element.Path))
+		entry := &ConfigEntry{
+			entryName:        config.Name,
+			entryType:        ConfigEntryType,
+			entryDescription: config.Description,
+			content:          config.Content,
+			vp:               viper.New(),
+			Path:             config.Path,
+		}
 
-		res[element.Name] = entry
+		// if file path was provided
+		if len(entry.Path) > 0 {
+			if !path.IsAbs(entry.Path) {
+				if wd, err := os.Getwd(); err != nil {
+					ShutdownWithError(err)
+				} else {
+					entry.Path = path.Join(wd, entry.Path)
+				}
+			}
+
+			// skip this element if path is not valid
+			if fileExists(entry.Path) {
+				entry.vp.SetConfigFile(entry.Path)
+				if err := entry.vp.ReadInConfig(); err != nil {
+					ShutdownWithError(fmt.Errorf("failed to read file, path:%s", entry.Path))
+				}
+			}
+		}
+
+		// if content exist, then fill viper
+		for k, v := range entry.content {
+			entry.vp.Set(k, v)
+		}
+
+		// enable automatic env
+		// issue: https://github.com/rookie-ninja/rk-boot/issues/55
+		entry.vp.AutomaticEnv()
+		entry.vp.SetEnvPrefix(entry.EnvPrefix)
+
+		res = append(res, entry)
 	}
 
 	return res
 }
 
-// RegisterConfigEntry create ConfigEntry with options.
-func RegisterConfigEntry(opts ...ConfigEntryOption) *ConfigEntry {
-	entry := &ConfigEntry{
-		EntryType:        ConfigEntryType,
-		EntryDescription: ConfigEntryDescription,
+// registerConfigEntry register function
+func registerConfigEntry(raw []byte) map[string]Entry {
+	boot := &BootConfig{}
+	UnmarshalBoot(raw, boot)
+
+	res := map[string]Entry{}
+
+	entries := RegisterConfigEntry(boot)
+	for i := range entries {
+		entry := entries[i]
+		res[entry.GetName()] = entry
 	}
 
-	for i := range opts {
-		opts[i](entry)
-	}
+	return res
+}
 
-	if entry.vp == nil {
-		// join user provided path with working directory if it is relative path
-		if !path.IsAbs(entry.Path) {
-			if wd, err := os.Getwd(); err != nil {
-				rkcommon.ShutdownWithError(err)
-			} else {
-				entry.Path = path.Join(wd, entry.Path)
-			}
-		}
+// BootConfig is bootstrap config of ConfigEntry information.
+type BootConfig struct {
+	Config []*BootConfigE `yaml:"config" json:"config"`
+}
 
-		entry.vp = viper.New()
-		// skip this element if path is not valid
-		if rkcommon.FileExists(entry.Path) {
-			entry.vp.SetConfigFile(entry.Path)
-			if err := entry.vp.ReadInConfig(); err != nil {
-				rkcommon.ShutdownWithError(fmt.Errorf("failed to read file, path:%s", entry.Path))
-			}
-		}
-	}
+type BootConfigE struct {
+	Name        string                 `yaml:"name" json:"name"`
+	Description string                 `yaml:"description" json:"description"`
+	Locale      string                 `yaml:"locale" json:"locale"`
+	Path        string                 `yaml:"path" json:"name"`
+	EnvPrefix   string                 `yaml:"envPrefix" json:"envPrefix"`
+	Content     map[string]interface{} `yaml:"content" json:"content"`
+}
 
-	// enable automatic env
-	// issue: https://github.com/rookie-ninja/rk-boot/issues/55
-	entry.vp.AutomaticEnv()
-	entry.vp.SetEnvPrefix(entry.EnvPrefix)
-
-	if len(entry.EntryName) < 1 {
-		entry.EntryName = "config-" + rkcommon.RandString(4)
-	}
-
-	GlobalAppCtx.AddConfigEntry(entry)
-
-	return entry
+// ConfigEntry contains bellow fields.
+type ConfigEntry struct {
+	entryName        string                 `yaml:"-" json:"-"`
+	entryType        string                 `yaml:"-" json:"-"`
+	entryDescription string                 `yaml:"-" json:"-"`
+	Locale           string                 `yaml:"-" json:"-"`
+	Path             string                 `yaml:"-" json:"-"`
+	EnvPrefix        string                 `yaml:"-" json:"-"`
+	vp               *viper.Viper           `yaml:"-" json:"-"`
+	content          map[string]interface{} `yaml:"-" json:"-"`
 }
 
 // Bootstrap entry.
-func (entry *ConfigEntry) Bootstrap(context.Context) {
-	// no op
-}
+func (entry *ConfigEntry) Bootstrap(context.Context) {}
 
 // Interrupt entry.
-func (entry *ConfigEntry) Interrupt(context.Context) {
-	// no op
-}
+func (entry *ConfigEntry) Interrupt(context.Context) {}
 
 // GetName returns name of entry.
 func (entry *ConfigEntry) GetName() string {
-	return entry.EntryName
+	return entry.entryName
 }
 
 // GetType returns type of entry.
 func (entry *ConfigEntry) GetType() string {
-	return entry.EntryType
+	return entry.entryType
 }
 
 // String convert entry into JSON style string.
@@ -214,15 +140,15 @@ func (entry *ConfigEntry) String() string {
 // MarshalJSON marshal entry.
 func (entry *ConfigEntry) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
-		"entryName":        entry.EntryName,
-		"entryType":        entry.EntryType,
-		"entryDescription": entry.EntryDescription,
-		"locale":           entry.Locale,
-		"path":             entry.Path,
-		"viper":            rkcommon.GeneralizeMapKeyToString(entry.GetViper().AllSettings()),
+		"name":        entry.GetName(),
+		"type":        entry.GetType(),
+		"description": entry.GetDescription(),
+		"locale":      entry.Locale,
+		"path":        entry.Path,
+		"envPrefix":   entry.EnvPrefix,
 	}
 
-	return json.Marshal(&m)
+	return json.Marshal(m)
 }
 
 // UnmarshalJSON is not supported.
@@ -232,20 +158,10 @@ func (entry *ConfigEntry) UnmarshalJSON([]byte) error {
 
 // GetDescription return description of entry.
 func (entry *ConfigEntry) GetDescription() string {
-	return entry.EntryDescription
+	return entry.entryDescription
 }
 
 // GetViper returns viper instance.
 func (entry *ConfigEntry) GetViper() *viper.Viper {
 	return entry.vp
-}
-
-// GetViperAsMap convert values in viper instance into map.
-func (entry *ConfigEntry) GetViperAsMap() map[string]interface{} {
-	return rkcommon.GeneralizeMapKeyToString(entry.GetViper().AllSettings()).(map[string]interface{})
-}
-
-// GetLocale returns locale.
-func (entry *ConfigEntry) GetLocale() string {
-	return entry.Locale
 }

@@ -38,8 +38,7 @@ import (
 // 3: Application will wait for shutdown signal
 // 4: Interrupt will be called from Bootstrapper.Interrupt() function
 
-// EntryRegFunc create new entries based on config file which must be implemented
-type EntryRegFunc func(configFilePath string) map[string]Entry
+type RegFunc func(raw []byte) map[string]Entry
 
 // Entry interface which must be implemented for bootstrapper to bootstrap
 type Entry interface {

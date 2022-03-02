@@ -19,7 +19,7 @@ func TestNewOptionSet(t *testing.T) {
 	assert.NotEmpty(t, set.GetEntryName())
 	assert.Equal(t, DefaultLimit, set.reqPerSec)
 	assert.Empty(t, set.reqPerSecByPath)
-	assert.Equal(t, TokenBucket, set.algorithm)
+	assert.Equal(t, LeakyBucket, set.algorithm)
 	assert.NotEmpty(t, set.limiter)
 
 	// with option

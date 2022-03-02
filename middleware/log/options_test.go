@@ -88,11 +88,11 @@ func TestOptionSet_After(t *testing.T) {
 
 func TestToOptions(t *testing.T) {
 	config := &BootConfig{
-		Enabled:                false,
-		ZapLoggerEncoding:      json,
-		ZapLoggerOutputPaths:   []string{},
-		EventLoggerEncoding:    json,
-		EventLoggerOutputPaths: []string{},
+		Enabled:           false,
+		LoggerEncoding:    json,
+		LoggerOutputPaths: []string{},
+		EventEncoding:     json,
+		EventOutputPaths:  []string{},
 	}
 
 	// with disabled
@@ -107,8 +107,8 @@ func TestNewOptionSet(t *testing.T) {
 	// without options
 	set := NewOptionSet().(*optionSet)
 	assert.NotEmpty(t, set.GetEntryName())
-	assert.NotNil(t, set.ZapLoggerEntry())
-	assert.NotNil(t, set.EventLoggerEntry())
+	assert.NotNil(t, set.ZapEntry())
+	assert.NotNil(t, set.EventEntry())
 	assert.NotNil(t, set.zapLogger)
 	assert.NotNil(t, set.zapLoggerOutputPath)
 	assert.NotNil(t, set.eventLoggerOutputPath)
@@ -123,30 +123,30 @@ func TestWithEntryNameAndType(t *testing.T) {
 	assert.Equal(t, "ut-type", set.entryType)
 }
 
-func TestWithZapLoggerEntry(t *testing.T) {
-	entry := rkentry.NoopZapLoggerEntry()
+func TestWithLoggerEntry(t *testing.T) {
+	entry := rkentry.LoggerEntryNoop
 	set := NewOptionSet(
-		WithZapLoggerEntry(entry)).(*optionSet)
-	assert.Equal(t, entry, set.zapLoggerEntry)
+		WithLoggerEntry(entry)).(*optionSet)
+	assert.Equal(t, entry, set.loggerEntry)
 }
 
 func TestWithEventLoggerEntry(t *testing.T) {
-	entry := rkentry.NoopEventLoggerEntry()
+	entry := rkentry.EventEntryNoop
 	set := NewOptionSet(
-		WithEventLoggerEntry(entry)).(*optionSet)
-	assert.Equal(t, entry, set.eventLoggerEntry)
+		WithEventEntry(entry)).(*optionSet)
+	assert.Equal(t, entry, set.eventEntry)
 }
 
-func TestWithZapLoggerEncoding(t *testing.T) {
+func TestWithLoggerEncoding(t *testing.T) {
 	set := NewOptionSet(
-		WithZapLoggerEncoding(json)).(*optionSet)
+		WithLoggerEncoding(json)).(*optionSet)
 
 	assert.Equal(t, json, set.zapLoggerEncoding)
 }
 
-func TestWithZapLoggerOutputPaths(t *testing.T) {
+func TestWithLoggerOutputPaths(t *testing.T) {
 	set := NewOptionSet(
-		WithZapLoggerOutputPaths("ut-path")).(*optionSet)
+		WithLoggerOutputPaths("ut-path")).(*optionSet)
 
 	assert.Contains(t, set.zapLoggerOutputPath, "ut-path")
 }
@@ -154,23 +154,23 @@ func TestWithZapLoggerOutputPaths(t *testing.T) {
 func TestWithEventLoggerEncoding(t *testing.T) {
 	// Test with console encoding
 	set := NewOptionSet(
-		WithEventLoggerEncoding(console)).(*optionSet)
+		WithEventEncoding(console)).(*optionSet)
 	assert.Equal(t, rkquery.CONSOLE, set.eventLoggerEncoding)
 
 	// Test with json encoding
 	set = NewOptionSet(
-		WithEventLoggerEncoding(json)).(*optionSet)
+		WithEventEncoding(json)).(*optionSet)
 	assert.Equal(t, rkquery.JSON, set.eventLoggerEncoding)
 
 	// Test with non console and json
 	set = NewOptionSet(
-		WithEventLoggerEncoding("invalid")).(*optionSet)
+		WithEventEncoding("invalid")).(*optionSet)
 	assert.Equal(t, rkquery.CONSOLE, set.eventLoggerEncoding)
 }
 
 func TestWithEventLoggerOutputPaths(t *testing.T) {
 	set := NewOptionSet(
-		WithEventLoggerOutputPaths("ut-path")).(*optionSet)
+		WithEventOutputPaths("ut-path")).(*optionSet)
 	assert.Contains(t, set.eventLoggerOutputPath, "ut-path")
 }
 

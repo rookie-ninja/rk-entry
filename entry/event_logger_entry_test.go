@@ -7,321 +7,102 @@ package rkentry
 
 import (
 	"context"
-	"encoding/json"
-	"github.com/rookie-ninja/rk-query"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestNoopEventLoggerEntry_HappyCase(t *testing.T) {
-	entry := NoopEventLoggerEntry()
+func TestNewEventEntryNoop(t *testing.T) {
+	entry := NewEventEntryNoop()
 	assert.NotNil(t, entry)
-	assert.Equal(t, EventLoggerNameNoop, entry.EntryName)
-	assert.Equal(t, EventLoggerEntryType, entry.EntryType)
 	assert.NotNil(t, entry.EventFactory)
-	assert.NotNil(t, entry.EventHelper)
+	assert.Nil(t, entry.LoggerConfig)
 	assert.Nil(t, entry.LumberjackConfig)
+	assert.NotNil(t, entry.eventHelper)
 }
 
-func TestWithNameEvent_WithEmptyString(t *testing.T) {
-	entry := RegisterEventLoggerEntry(WithNameEvent(""))
+func TestNewEventEntryStdout(t *testing.T) {
+	entry := NewEventEntryStdout()
 	assert.NotNil(t, entry)
-	// default name should be assigned with random number
-	assert.NotEmpty(t, entry.EntryName)
-}
-
-func TestWithNameEvent_HappyCase(t *testing.T) {
-	entry := RegisterEventLoggerEntry(WithNameEvent("ut-event-logger"))
-	assert.NotNil(t, entry)
-	// default name would be assigned with random number
-	assert.Equal(t, "ut-event-logger", entry.EntryName)
-}
-
-func TestWithEventFactoryEvent_WithNilInput(t *testing.T) {
-	entry := RegisterEventLoggerEntry(WithEventFactoryEvent(nil))
-	assert.NotNil(t, entry)
-	// default event factory would be assigned
 	assert.NotNil(t, entry.EventFactory)
-	assert.NotNil(t, entry.EventHelper)
-}
-
-func TestWithEventFactoryEvent_HappyCase(t *testing.T) {
-	fac := rkquery.NewEventFactory()
-	entry := RegisterEventLoggerEntry(WithEventFactoryEvent(fac))
-	assert.NotNil(t, entry)
-
-	assert.Equal(t, fac, entry.EventFactory)
-	assert.NotNil(t, entry.EventHelper)
-}
-
-func TestRegisterEventLoggerEntriesWithConfig_WithoutRKAppName(t *testing.T) {
-	defer assertNotPanic(t)
-
-	configFile := `
----
-eventLogger:
-  - name: ut-event-logger
-`
-	// create bootstrap config file at ut temp dir
-	configFilePath := createFileAtTestTempDir(t, configFile)
-	// register entries with config file
-	entries := RegisterEventLoggerEntriesWithConfig(configFilePath)
-
-	assert.Len(t, entries, 1)
-
-	entry := convertToEventLoggerEntry(t, entries["ut-event-logger"])
-	// validate event factory
-	assert.NotNil(t, entry.EventFactory)
-}
-
-func TestRegisterEventLoggerEntriesWithConfig_WithoutElement(t *testing.T) {
-	defer assertNotPanic(t)
-
-	configFile := `
----
-eventLogger:
-`
-	// create bootstrap config file at ut temp dir
-	configFilePath := createFileAtTestTempDir(t, configFile)
-	// register entries with config file
-	entries := RegisterEventLoggerEntriesWithConfig(configFilePath)
-
-	assert.Empty(t, entries)
-}
-
-func TestRegisterEventLoggerEntriesWithConfig_HappyCase(t *testing.T) {
-	defer assertNotPanic(t)
-
-	configFile := `
----
-rk:
-  appName: ut-app
-eventLogger:
-  - name: ut-event-logger
-    format: RK
-    outputPaths: ["ut.log"]
-    loki:
-      enabled: true
-    lumberjack:
-      filename: "ut-lumberjack-filename"
-      maxsize: 1
-      maxage: 1
-      maxbackups: 1
-      localtime: true
-      compress: true
-`
-	// create bootstrap config file at ut temp dir
-	configFilePath := createFileAtTestTempDir(t, configFile)
-	// register entries with config file
-	entries := RegisterEventLoggerEntriesWithConfig(configFilePath)
-
-	assert.Len(t, entries, 1)
-
-	entry := convertToEventLoggerEntry(t, entries["ut-event-logger"])
-
-	// validate default fields
-	assert.Equal(t, "ut-event-logger", entry.EntryName)
-	assert.Equal(t, EventLoggerEntryType, entry.EntryType)
-
-	// validate event factory
-	assert.NotNil(t, entry.EventFactory)
-
-	// validate zap logger config in event factory
 	assert.NotNil(t, entry.LoggerConfig)
-	assert.Contains(t, entry.LoggerConfig.OutputPaths, "ut.log")
-
-	// validate lumberjack config
-	assert.NotNil(t, entry.LumberjackConfig)
-	assert.Equal(t, "ut-lumberjack-filename", entry.LumberjackConfig.Filename)
-	assert.Equal(t, 1, entry.LumberjackConfig.MaxSize)
-	assert.Equal(t, 1, entry.LumberjackConfig.MaxAge)
-	assert.Equal(t, 1, entry.LumberjackConfig.MaxBackups)
-	assert.True(t, entry.LumberjackConfig.LocalTime)
-	assert.True(t, entry.LumberjackConfig.Compress)
+	assert.Nil(t, entry.LumberjackConfig)
+	assert.NotNil(t, entry.eventHelper)
 }
 
-func TestRegisterEventLoggerEntry_WithoutOptions(t *testing.T) {
-	entry := RegisterEventLoggerEntry()
+func TestRegisterEventEntry(t *testing.T) {
+	boot := &BootEvent{
+		Event: []*BootEventE{
+			{
+				Name:        "ut-event",
+				Encoding:    "console",
+				OutputPaths: []string{"stdout"},
+				Loki: BootLoki{
+					Enabled: true,
+					Path:    "mock",
+					Addr:    "mock",
+				},
+			},
+		},
+	}
 
-	assert.NotNil(t, entry)
-
-	// validate default fields
-	assert.Contains(t, entry.EntryName, "eventLogger")
-	assert.Equal(t, EventLoggerEntryType, entry.EntryType)
-
-	// validate event factory
-	assert.NotNil(t, entry.EventFactory)
-}
-
-func TestRegisterEventLoggerEntry_HappyCase(t *testing.T) {
-	fac := rkquery.NewEventFactory()
-	entry := RegisterEventLoggerEntry(
-		WithNameEvent("ut-event-logger"),
-		WithEventFactoryEvent(fac))
-
-	assert.NotNil(t, entry)
-
-	// validate default fields
-	assert.Equal(t, "ut-event-logger", entry.EntryName)
-	assert.Equal(t, EventLoggerEntryType, entry.EntryType)
-
-	// validate event factory
-	assert.Equal(t, fac, entry.EventFactory)
-}
-
-func TestEventLoggerEntry_Bootstrap_HappyCase(t *testing.T) {
-	assertNotPanic(t)
-	RegisterEventLoggerEntry().Bootstrap(context.Background())
-}
-
-func TestEventLoggerEntry_Interrupt_HappyCase(t *testing.T) {
-	assertNotPanic(t)
-	RegisterEventLoggerEntry().Interrupt(context.Background())
-}
-
-func TestEventLoggerEntry_GetName_HappyCase(t *testing.T) {
-	fac := rkquery.NewEventFactory()
-	entry := RegisterEventLoggerEntry(
-		WithNameEvent("ut-event-logger"),
-		WithEventFactoryEvent(fac))
-
-	assert.NotNil(t, entry)
-
-	// validate default fields
-	assert.Equal(t, "ut-event-logger", entry.GetName())
-}
-
-func TestEventLoggerEntry_GetType_HappyCase(t *testing.T) {
-	fac := rkquery.NewEventFactory()
-	entry := RegisterEventLoggerEntry(
-		WithNameEvent("ut-event-logger"),
-		WithEventFactoryEvent(fac))
-
-	assert.NotNil(t, entry)
-
-	// validate default fields
-	assert.Equal(t, EventLoggerEntryType, entry.GetType())
-}
-
-func TestEventLoggerEntry_String_HappyCase(t *testing.T) {
-	defer assertNotPanic(t)
-
-	configFile := `
----
-rk:
-  appName: ut-app
-eventLogger:
-  - name: ut-event-logger
-    format: RK
-    outputPaths: ["ut.log"]
-    lumberjack:
-      filename: "ut-lumberjack-filename"
-      maxsize: 1
-      maxage: 1
-      maxbackups: 1
-      localtime: true
-      compress: true
-`
-	// create bootstrap config file at ut temp dir
-	configFilePath := createFileAtTestTempDir(t, configFile)
-	// register entries with config file
-	entries := RegisterEventLoggerEntriesWithConfig(configFilePath)
+	entries := RegisterEventEntry(boot)
 
 	assert.Len(t, entries, 1)
-
-	entry := convertToEventLoggerEntry(t, entries["ut-event-logger"])
-
-	m := make(map[string]interface{})
-	assert.Nil(t, json.Unmarshal([]byte(entry.String()), &m))
-
-	assert.Contains(t, m, "entryName")
-	assert.Contains(t, m, "entryType")
-	assert.Contains(t, m, "zapConfig")
-	assert.Contains(t, m, "lumberjackConfig")
+	assert.NotNil(t, entries[0].EventFactory)
+	assert.NotNil(t, entries[0].eventHelper)
+	assert.NotNil(t, entries[0].lokiSyncer)
+	assert.NotNil(t, entries[0].baseLogger)
+	assert.NotNil(t, entries[0].EventFactory)
+	assert.NotNil(t, entries[0].LoggerConfig)
+	assert.NotNil(t, entries[0].LumberjackConfig)
+	assert.NotEmpty(t, entries[0].GetName())
+	assert.NotEmpty(t, entries[0].GetType())
+	assert.Empty(t, entries[0].GetDescription())
+	assert.NotEmpty(t, entries[0].String())
 }
 
-func TestEventLoggerEntry_GetEventFactory_HappyCase(t *testing.T) {
-	fac := rkquery.NewEventFactory()
-	entry := RegisterEventLoggerEntry(WithEventFactoryEvent(fac))
-
-	assert.NotNil(t, entry)
-	assert.Equal(t, fac, entry.GetEventFactory())
+func TestEventEntry_UnmarshalJSON(t *testing.T) {
+	assert.Nil(t, NewEventEntryNoop().UnmarshalJSON(nil))
 }
 
-func TestEventLoggerEntry_GetEventHelper_HappyCase(t *testing.T) {
-	fac := rkquery.NewEventFactory()
-	entry := RegisterEventLoggerEntry(WithEventFactoryEvent(fac))
+func TestEventEntry_EventRelated(t *testing.T) {
+	entry := NewEventEntryNoop()
 
-	assert.NotNil(t, entry)
-	assert.NotNil(t, fac, entry.GetEventHelper())
+	assert.NotNil(t, entry.CreateEvent("op"))
+	entry.FinishEvent(entry.CreateEvent("op"))
+	entry.FinishEventWithError(entry.CreateEvent("op"), nil)
+	entry.FinishEventWithCond(entry.CreateEvent("op"), true)
 }
 
-func TestEventLoggerEntry_GetLumberjackConfig_HappyCase(t *testing.T) {
+func TestEventEntry_Bootstrap_Interrupt(t *testing.T) {
 	defer assertNotPanic(t)
 
-	configFile := `
----
-eventLogger:
-  - name: ut-event-logger
-    format: RK
-    outputPaths: ["ut.log"]
-    lumberjack:
-      filename: "ut-lumberjack-filename"
-      maxsize: 1
-      maxage: 1
-      maxbackups: 1
-      localtime: true
-      compress: true
-`
-	// create bootstrap config file at ut temp dir
-	configFilePath := createFileAtTestTempDir(t, configFile)
-	// register entries with config file
-	entries := RegisterEventLoggerEntriesWithConfig(configFilePath)
-
-	assert.Len(t, entries, 1)
-
-	entry := convertToEventLoggerEntry(t, entries["ut-event-logger"])
-	assert.NotNil(t, entry.GetEventHelper())
+	entry := NewEventEntryStdout()
+	entry.Bootstrap(context.TODO())
+	entry.Interrupt(context.TODO())
 }
 
-func TestEventLoggerEntry_UnmarshalJSON(t *testing.T) {
-	assert.Nil(t, NoopEventLoggerEntry().UnmarshalJSON(nil))
-}
-
-func TestEventLoggerEntry_GetDescription(t *testing.T) {
-	assert.NotEmpty(t, NoopEventLoggerEntry().GetDescription())
-}
-
-func TestEventLoggerEntry_GetLumberjackConfig(t *testing.T) {
+func TestEventEntry_Syncer(t *testing.T) {
 	defer assertNotPanic(t)
 
-	configFile := `
----
-eventLogger:
-  - name: ut-event-logger
-    format: RK
-    outputPaths: ["ut.log"]
-    lumberjack:
-      filename: "ut-lumberjack-filename"
-      maxsize: 1
-      maxage: 1
-      maxbackups: 1
-      localtime: true
-      compress: true
-`
-	// create bootstrap config file at ut temp dir
-	configFilePath := createFileAtTestTempDir(t, configFile)
-	// register entries with config file
-	entries := RegisterEventLoggerEntriesWithConfig(configFilePath)
+	boot := &BootEvent{
+		Event: []*BootEventE{
+			{
+				Name:        "ut-event",
+				Encoding:    "console",
+				OutputPaths: []string{"stdout"},
+				Loki: BootLoki{
+					Enabled: true,
+					Path:    "mock",
+					Addr:    "mock",
+				},
+			},
+		},
+	}
 
-	assert.Len(t, entries, 1)
+	entries := RegisterEventEntry(boot)
 
-	entry := convertToEventLoggerEntry(t, entries["ut-event-logger"])
-	assert.NotNil(t, entry.GetLumberjackConfig())
-}
-
-func convertToEventLoggerEntry(t *testing.T, raw Entry) *EventLoggerEntry {
-	entry, ok := raw.(*EventLoggerEntry)
-	assert.True(t, ok)
-	return entry
+	entries[0].AddEntryLabelToLokiSyncer(GlobalAppCtx.GetAppInfoEntry())
+	entries[0].AddLabelToLokiSyncer("key", "value")
+	entries[0].Sync()
 }

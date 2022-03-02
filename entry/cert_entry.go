@@ -7,415 +7,115 @@ package rkentry
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
+	"embed"
 	"encoding/json"
-	"encoding/pem"
-	"errors"
-	"github.com/grantae/certinfo"
-	"github.com/rookie-ninja/rk-common/common"
 )
 
-const (
-	// CertEntryName name of default entry
-	CertEntryName = "CertDefault"
-	// CertEntryType type name of CertEntry
-	CertEntryType = "CertEntry"
-	// CertEntryDescription is default description of CertEntry
-	CertEntryDescription = "Internal RK entry which retrieves certificates from localFs, remoteFs, etcd or consul."
-)
+const CertEntryType = "CertEntry"
 
-// BootConfigCert is bootstrap config of CertEntry.
-// etcd:
-// 1: Cert.Name: Name of section, required.
-// 2: Cert.Provider: etcd.
-// 3: Cert.Locale: <realm>::<region>::<az>::<domain>
-// 4: Cert.Endpoint: Endpoint of etcd server, http://x.x.x.x or x.x.x.x both acceptable.
-// 5: Cert.BasicAuth: Basic auth for etcd server, like <user:pass>.
-// 6: Cert.ServerCertPath: Key of server cert in etcd server.
-// 7: Cert.ServerKeyPath: Key of server key in etcd server.
-// 8: Cert.ClientCertPath: Key of client cert in etcd server.
-// 9: Cert.ClientKeyPath: Key of client cert in etcd server.
-//
-// localFs
-// 1: Cert.Local.Name: Name of section, required.
-// 2: Cert.Provider: localFS.
-// 3: Cert.Locale: <realm>::<region>::<az>::<domain>
-// 4: Cert.ServerCertPath: Key of server cert in local fs.
-// 5: Cert.ServerKeyPath: Key of server key in local fs.
-// 6: Cert.ClientCertPath: Key of client cert in local fs.
-// 7: Cert.ClientKeyPath: Key of client cert in local fs.
-//
-// consul
-// 1: Cert.Name: Name of section, required.
-// 2: Cert.Provider: consul.
-// 3: Cert.Locale: <realm>::<region>::<az>::<domain>
-// 4: Cert.Endpoint: Endpoint of consul server, http://x.x.x.x or x.x.x.x both acceptable.
-// 5: Cert.Datacenter: Consul datacenter.
-// 6: Cert.Token: Token for access consul.
-// 7: Cert.BasicAuth: Basic auth for consul server, like <user:pass>.
-// 8: Cert.ServerCertPath: Key of server cert in consul server.
-// 9: Cert.ServerKeyPath: Key of server key in consul server.
-// 10: Cert.ClientCertPath: Key of client cert in consul server.
-// 11: Cert.ClientKeyPath: Key of client cert in consul server.
-//
-// remoteFs:
-// 1: Cert.Name: Name of section, required.
-// 2: Cert.Provider: remoteFs.
-// 3: Cert.Locale: <realm>::<region>::<az>::<domain>
-// 4: Cert.Endpoint: Endpoint of remoteFs server, http://x.x.x.x or x.x.x.x both acceptable.
-// 5: Cert.BasicAuth: Basic auth for remoteFs server, like <user:pass>.
-// 6: Cert.ServerCertPath: Key of server cert in remoteFs server.
-// 7: Cert.ServerKeyPath: Key of server key in remoteFs server.
-// 8: Cert.ClientCertPath: Key of client cert in remoteFs server.
-// 9: Cert.ClientKeyPath: Key of client cert in remoteFs server.
-//
-// Logger:
-// 1: Cert.Logger.ZapLogger.Ref: Name of zap logger entry defined in ZapLoggerEntry.
-// 2: Cert.Logger.EventLogger.Ref: Name of event logger entry defined in EventLoggerEntry.
-type BootConfigCert struct {
-	Cert []struct {
-		Name           string `yaml:"name" json:"name"`
-		Description    string `yaml:"description" json:"description"`
-		Provider       string `yaml:"provider" json:"provider"`
-		Locale         string `yaml:"locale" json:"locale"`
-		Endpoint       string `yaml:"endpoint" json:"endpoint"`
-		Datacenter     string `yaml:"datacenter" json:"datacenter"`
-		Token          string `yaml:"token" json:"token"`
-		BasicAuth      string `yaml:"basicAuth" json:"basicAuth"`
-		ServerCertPath string `yaml:"serverCertPath" json:"serverCertPath"`
-		ServerKeyPath  string `yaml:"serverKeyPath" json:"serverKeyPath"`
-		ClientCertPath string `yaml:"clientCertPath" json:"clientCertPath"`
-		ClientKeyPath  string `yaml:"clientKeyPath" json:"clientKeyPath"`
-		Logger         struct {
-			ZapLogger struct {
-				Ref string `yaml:"ref" json:"ref"`
-			} `yaml:"zapLogger" json:"zapLogger"`
-			EventLogger struct {
-				Ref string `yaml:"ref" json:"ref"`
-			} `yaml:"eventLogger" json:"eventLogger"`
-		} `yaml:"logger" json:"logger"`
-	} `yaml:"cert" json:"cert"`
-}
+// RegisterCertEntry create cert entry with options.
+func RegisterCertEntry(boot *BootCert) []*CertEntry {
+	res := make([]*CertEntry, 0)
 
-// CertStore stores certificate as byte array.
-// ServerCert: Server certificate.
-// ServerKey: Private key of server certificate.
-// ClientCert: Client certificate.
-// ClientKey: Private key of client certificate.
-type CertStore struct {
-	// Server certificate
-	ServerCert []byte `json:"-" yaml:"-"`
-	// Server key
-	ServerKey []byte `json:"-" yaml:"-"`
-	// Client certificate, useful while client authentication was enabled from server
-	ClientCert []byte `json:"-" yaml:"-"`
-	// Client key (private), useful while client authentication was enabled from server
-	ClientKey []byte `json:"-" yaml:"-"`
-}
+	for _, cert := range boot.Cert {
+		if len(cert.Locale) < 1 {
+			cert.Locale = "*::*::*::*"
+		}
 
-// SeverCertString parse server certificate to human readable string.
-func (store *CertStore) SeverCertString() string {
-	if len(store.ServerCert) < 1 {
-		return ""
-	}
+		if len(cert.Name) < 1 || !IsLocaleValid(cert.Locale) {
+			return nil
+		}
 
-	cert, err := store.parseCert(store.ServerCert)
-	if err != nil {
-		return ""
-	}
+		entry := &CertEntry{
+			entryName:        cert.Name,
+			entryType:        CertEntryType,
+			entryDescription: cert.Description,
+			rootPemPath:      cert.RootPemPath,
+			keyPemPath:       cert.KeyPemPath,
+			certPemPath:      cert.CertPemPath,
+		}
 
-	res, err := certinfo.CertificateText(cert)
-	if err != nil {
-		return ""
+		res = append(res, entry)
 	}
 
 	return res
 }
 
-// ClientCertString parse client certificate to human readable string.
-func (store *CertStore) ClientCertString() string {
-	if len(store.ClientCert) < 1 {
-		return ""
-	}
+// registerCertEntry register function
+func registerCertEntry(raw []byte) map[string]Entry {
+	boot := &BootCert{}
+	UnmarshalBoot(raw, boot)
 
-	cert, err := store.parseCert(store.ClientCert)
-	if err != nil {
-		return ""
-	}
+	res := map[string]Entry{}
 
-	res, err := certinfo.CertificateText(cert)
-	if err != nil {
-		return ""
-	}
-
-	return res
-}
-
-// Parse bytes into Certificate instance, used for stringfy certificate.
-func (store *CertStore) parseCert(bytes []byte) (*x509.Certificate, error) {
-	block, _ := pem.Decode(bytes)
-	if block == nil {
-		return nil, errors.New("failed to decode cert")
-	}
-
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	return cert, nil
-}
-
-// MarshalJSON marshal entry
-func (store *CertStore) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
-		"serverCert": store.SeverCertString(),
-		"clientCert": store.ClientCertString(),
-	}
-
-	return json.Marshal(&m)
-}
-
-// UnmarshalJSON unmarshal entry
-func (store *CertStore) UnmarshalJSON([]byte) error {
-	return nil
-}
-
-// CertEntry contains bellow fields.
-// 1: EntryName: Name of entry.
-// 2: EntryType: Type of entry which is CertEntry.
-// 3: EntryDescription: Description of entry.
-// 4: ZapLoggerEntry: ZapLoggerEntry was initialized at the beginning.
-// 5: EventLoggerEntry: EventLoggerEntry was initialized at the beginning.
-// 6: Store: Certificate store.
-// 7: Retriever: Certificate retriever.
-type CertEntry struct {
-	EntryName        string            `json:"entryName" yaml:"entryName"`
-	EntryType        string            `json:"entryType" yaml:"entryType"`
-	EntryDescription string            `json:"entryDescription" yaml:"entryDescription"`
-	ZapLoggerEntry   *ZapLoggerEntry   `json:"-" yaml:"-"`
-	EventLoggerEntry *EventLoggerEntry `json:"-" yaml:"-"`
-	Store            *CertStore        `json:"store" yaml:"store"`
-	Retriever        Retriever         `json:"retriever" yaml:"retriever"`
-	ServerKeyPath    string            `json:"serverKeyPath" yaml:"serverKeyPath"`
-	ServerCertPath   string            `json:"serverCertPath" yaml:"serverCertPath"`
-	ClientKeyPath    string            `json:"clientKeyPath" yaml:"clientKeyPath"`
-	ClientCertPath   string            `json:"clientKeyPath" yaml:"clientKeyPath"`
-}
-
-// CertEntryOption Option which used while registering entry from codes.
-type CertEntryOption func(entry *CertEntry)
-
-// WithNameCert provide name.
-func WithNameCert(name string) CertEntryOption {
-	return func(entry *CertEntry) {
-		entry.EntryName = name
-	}
-}
-
-// WithDescriptionCert provide description.
-func WithDescriptionCert(description string) CertEntryOption {
-	return func(entry *CertEntry) {
-		entry.EntryDescription = description
-	}
-}
-
-// WithZapLoggerEntryCert provide ZapLoggerEntry.
-func WithZapLoggerEntryCert(logger *ZapLoggerEntry) CertEntryOption {
-	return func(entry *CertEntry) {
-		if logger != nil {
-			entry.ZapLoggerEntry = logger
-		}
-	}
-}
-
-// WithEventLoggerEntryCert provide EventLoggerEntry.
-func WithEventLoggerEntryCert(logger *EventLoggerEntry) CertEntryOption {
-	return func(entry *CertEntry) {
-		if logger != nil {
-			entry.EventLoggerEntry = logger
-		}
-	}
-}
-
-// WithRetrieverCert provide Retriever.
-func WithRetrieverCert(retriever Retriever) CertEntryOption {
-	return func(entry *CertEntry) {
-		entry.Retriever = retriever
-	}
-}
-
-// WithServerKeyPath provide server key path.
-func WithServerKeyPath(serverKeyPath string) CertEntryOption {
-	return func(entry *CertEntry) {
-		entry.ServerKeyPath = serverKeyPath
-	}
-}
-
-// WithServerCertPath provide server cert path.
-func WithServerCertPath(serverCertPath string) CertEntryOption {
-	return func(entry *CertEntry) {
-		entry.ServerCertPath = serverCertPath
-	}
-}
-
-// WithClientKeyPath provide client key path.
-func WithClientKeyPath(clientKeyPath string) CertEntryOption {
-	return func(entry *CertEntry) {
-		entry.ClientKeyPath = clientKeyPath
-	}
-}
-
-// WithClientCertPath provide client cert path.
-func WithClientCertPath(clientCertPath string) CertEntryOption {
-	return func(entry *CertEntry) {
-		entry.ClientCertPath = clientCertPath
-	}
-}
-
-// RegisterCertEntriesFromConfig implements rkentry.EntryRegFunc which generate Entry based on boot configuration file.
-// Currently, only YAML file is supported.
-// File path could be either relative or absolute.
-func RegisterCertEntriesFromConfig(configFilePath string) map[string]Entry {
-	config := &BootConfigCert{}
-
-	rkcommon.UnmarshalBootConfig(configFilePath, config)
-
-	res := make(map[string]Entry)
-
-	for i := range config.Cert {
-		element := config.Cert[i]
-
-		if len(element.Name) < 1 || !rkcommon.MatchLocaleWithEnv(element.Locale) {
-			continue
-		}
-
-		zapLoggerEntry := GlobalAppCtx.GetZapLoggerEntry(element.Logger.ZapLogger.Ref)
-		if zapLoggerEntry == nil {
-			zapLoggerEntry = GlobalAppCtx.GetZapLoggerEntryDefault()
-		}
-
-		eventLoggerEntry := GlobalAppCtx.GetEventLoggerEntry(element.Logger.EventLogger.Ref)
-		if eventLoggerEntry == nil {
-			eventLoggerEntry = GlobalAppCtx.GetEventLoggerEntryDefault()
-		}
-
-		var retriever Retriever
-
-		switch element.Provider {
-		case ProviderConsul:
-			retriever = &CredRetrieverConsul{
-				Provider:         element.Provider,
-				Locale:           element.Locale,
-				Endpoint:         element.Endpoint,
-				ZapLoggerEntry:   zapLoggerEntry,
-				EventLoggerEntry: eventLoggerEntry,
-				Datacenter:       element.Datacenter,
-				Token:            element.Token,
-				BasicAuth:        element.BasicAuth,
-				Paths: []string{
-					element.ServerKeyPath,
-					element.ServerCertPath,
-					element.ClientKeyPath,
-					element.ClientCertPath,
-				},
-			}
-		case ProviderEtcd:
-			retriever = &CredRetrieverEtcd{
-				Provider:         element.Provider,
-				ZapLoggerEntry:   zapLoggerEntry,
-				EventLoggerEntry: eventLoggerEntry,
-				Locale:           element.Locale,
-				Endpoint:         element.Endpoint,
-				BasicAuth:        element.BasicAuth,
-				Paths: []string{
-					element.ServerKeyPath,
-					element.ServerCertPath,
-					element.ClientKeyPath,
-					element.ClientCertPath,
-				},
-			}
-		case ProviderLocalFs:
-			retriever = &CredRetrieverLocalFs{
-				Provider:         element.Provider,
-				Locale:           element.Locale,
-				ZapLoggerEntry:   zapLoggerEntry,
-				EventLoggerEntry: eventLoggerEntry,
-				Paths: []string{
-					element.ServerKeyPath,
-					element.ServerCertPath,
-					element.ClientKeyPath,
-					element.ClientCertPath,
-				},
-			}
-		case ProviderRemoteFs:
-			retriever = &CredRetrieverRemoteFs{
-				Provider:         element.Provider,
-				ZapLoggerEntry:   zapLoggerEntry,
-				EventLoggerEntry: eventLoggerEntry,
-				Locale:           element.Locale,
-				Endpoint:         element.Endpoint,
-				BasicAuth:        element.BasicAuth,
-				Paths: []string{
-					element.ServerKeyPath,
-					element.ServerCertPath,
-					element.ClientKeyPath,
-					element.ClientCertPath,
-				},
-			}
-		}
-
-		entry := RegisterCertEntry(
-			WithNameCert(element.Name),
-			WithDescriptionCert(element.Description),
-			WithZapLoggerEntryCert(zapLoggerEntry),
-			WithEventLoggerEntryCert(eventLoggerEntry),
-			WithRetrieverCert(retriever),
-			WithServerKeyPath(element.ServerKeyPath),
-			WithServerCertPath(element.ServerCertPath),
-			WithClientKeyPath(element.ClientKeyPath),
-			WithClientCertPath(element.ClientCertPath))
-
+	entries := RegisterCertEntry(boot)
+	for i := range entries {
+		entry := entries[i]
 		res[entry.GetName()] = entry
 	}
 
 	return res
 }
 
-// RegisterCertEntry create cert entry with options.
-func RegisterCertEntry(opts ...CertEntryOption) *CertEntry {
-	entry := &CertEntry{
-		EventLoggerEntry: GlobalAppCtx.GetEventLoggerEntryDefault(),
-		ZapLoggerEntry:   GlobalAppCtx.GetZapLoggerEntryDefault(),
-		EntryName:        CertEntryName,
-		EntryType:        CertEntryType,
-		EntryDescription: CertEntryDescription,
-		Store:            &CertStore{},
-	}
+// BootCert is bootstrap config of CertEntry.
+type BootCert struct {
+	Cert []*BootCertE `yaml:"cert" json:"cert"`
+}
 
-	for i := range opts {
-		opts[i](entry)
-	}
+type BootCertE struct {
+	Name        string `yaml:"name" json:"name"`
+	Description string `yaml:"description" json:"description"`
+	Locale      string `yaml:"locale" json:"locale"`
+	RootPemPath string `yaml:"rootPemPath" json:"rootPemPath"`
+	CertPemPath string `yaml:"certPemPath" json:"certPemPath"`
+	KeyPemPath  string `yaml:"keyPemPath" json:"keyPemPath"`
+}
 
-	GlobalAppCtx.AddCertEntry(entry)
+// CertEntry contains bellow fields.
+type CertEntry struct {
+	entryName        string            `json:"-" yaml:"-"`
+	entryType        string            `json:"-" yaml:"-"`
+	entryDescription string            `json:"-" yaml:"-"`
+	rootPemPath      string            `json:"-" yaml:"-"`
+	keyPemPath       string            `json:"-" yaml:"-"`
+	certPemPath      string            `json:"-" yaml:"-"`
+	embedFS          *embed.FS         `json:"-" yaml:"-"`
+	RootCA           *x509.Certificate `json:"-" json:"-"`
+	Certificate      *tls.Certificate  `json:"-" yaml:"-"`
+}
 
-	return entry
+func (entry *CertEntry) SetEmbedFS(fs *embed.FS) {
+	entry.embedFS = fs
 }
 
 // Bootstrap iterate retrievers and call Retrieve() for each of them.
 func (entry *CertEntry) Bootstrap(ctx context.Context) {
-	credStore := entry.Retriever.Retrieve(ctx)
+	// server cert path
+	if len(entry.keyPemPath) > 0 && len(entry.certPemPath) > 0 {
+		cert, err := tls.X509KeyPair(
+			readFile(entry.certPemPath, entry.embedFS),
+			readFile(entry.keyPemPath, entry.embedFS))
+		if err != nil {
+			ShutdownWithError(err)
+		}
 
-	entry.Store.ServerCert = credStore.GetCred(entry.ServerCertPath)
-	entry.Store.ServerKey = credStore.GetCred(entry.ServerKeyPath)
-	entry.Store.ClientCert = credStore.GetCred(entry.ClientCertPath)
-	entry.Store.ClientKey = credStore.GetCred(entry.ClientKeyPath)
+		entry.Certificate = &cert
+	}
+
+	if len(entry.rootPemPath) > 0 {
+		cert, err := x509.ParseCertificate(readFile(entry.rootPemPath, entry.embedFS))
+		if err != nil {
+			ShutdownWithError(err)
+		}
+
+		entry.RootCA = cert
+	}
 }
 
 // Interrupt entry.
-func (entry *CertEntry) Interrupt(context.Context) {
-	// no op
-}
+func (entry *CertEntry) Interrupt(context.Context) {}
 
 // String return string of entry.
 func (entry *CertEntry) String() string {
@@ -426,11 +126,9 @@ func (entry *CertEntry) String() string {
 // MarshalJSON marshal entry
 func (entry *CertEntry) MarshalJSON() ([]byte, error) {
 	m := map[string]interface{}{
-		"entryName":        entry.EntryName,
-		"entryType":        entry.EntryType,
-		"entryDescription": entry.EntryDescription,
-		"store":            entry.Store,
-		"retriever":        entry.Retriever,
+		"name":        entry.entryName,
+		"type":        entry.entryType,
+		"description": entry.entryDescription,
 	}
 
 	return json.Marshal(&m)
@@ -443,15 +141,15 @@ func (entry *CertEntry) UnmarshalJSON([]byte) error {
 
 // GetName return name of entry.
 func (entry *CertEntry) GetName() string {
-	return entry.EntryName
+	return entry.entryName
 }
 
 // GetType return type of entry.
 func (entry *CertEntry) GetType() string {
-	return entry.EntryType
+	return entry.entryType
 }
 
 // GetDescription return description of entry
 func (entry *CertEntry) GetDescription() string {
-	return entry.EntryDescription
+	return entry.entryDescription
 }

@@ -1,10 +1,12 @@
 package rkmid
 
 import (
-	"github.com/rookie-ninja/rk-common/common"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"net"
 	"net/http"
+	"os"
+	"regexp"
 	"strings"
 )
 
@@ -51,21 +53,20 @@ var (
 	JwtTokenKey       = &jwtTokenKey{}
 	CsrfTokenKey      = &csrfTokenKey{}
 	// Realm environment variable
-	Realm = zap.String("realm", rkcommon.GetEnvValueOrDefault("REALM", "*"))
+	Realm = zap.String("realm", getEnvValueOrDefault("REALM", "*"))
 	// Region environment variable
-	Region = zap.String("region", rkcommon.GetEnvValueOrDefault("REGION", "*"))
+	Region = zap.String("region", getEnvValueOrDefault("REGION", "*"))
 	// AZ environment variable
-	AZ = zap.String("az", rkcommon.GetEnvValueOrDefault("AZ", "*"))
+	AZ = zap.String("az", getEnvValueOrDefault("AZ", "*"))
 	// Domain environment variable
-	Domain = zap.String("domain", rkcommon.GetEnvValueOrDefault("DOMAIN", "*"))
+	Domain = zap.String("domain", getEnvValueOrDefault("DOMAIN", "*"))
 	// LocalIp read local IP from localhost
-	LocalIp = zap.String("localIp", rkcommon.GetLocalIP())
+	LocalIp = zap.String("localIp", getLocalIP())
 	// LocalHostname read hostname from localhost
-	LocalHostname = zap.String("localHostname", rkcommon.GetLocalHostname())
+	LocalHostname = zap.String("localHostname", getLocalHostname())
 
 	ignorePrefix = []string{
 		"/rk/v1/assets",
-		"/rk/v1/tv",
 	}
 
 	IgnorePrefixGlobal = ignorePathPrefix
@@ -172,4 +173,90 @@ func ignorePathPrefix(urlPath string) bool {
 	}
 
 	return false
+}
+
+// GenerateRequestId generate request id based on google/uuid.
+// UUIDs are based on RFC 4122 and DCE 1.1: Authentication and Security Services.
+//
+// A UUID is a 16 byte (128 bit) array. UUIDs may be used as keys to maps or compared directly.
+func GenerateRequestId() string {
+	// do not use uuid.New() since it would panic if any error occurs
+	requestId, err := uuid.NewRandom()
+
+	// currently, we will return empty string if error occurs
+	if err != nil {
+		return ""
+	}
+
+	return requestId.String()
+}
+
+// GenerateRequestIdWithPrefix generate request id based on google/uuid.
+// UUIDs are based on RFC 4122 and DCE 1.1: Authentication and Security Services.
+//
+// A UUID is a 16 byte (128 bit) array. UUIDs may be used as keys to maps or compared directly.
+func GenerateRequestIdWithPrefix(prefix string) string {
+	// Do not use uuid.New() since it would panic if any error occurs
+	requestId, err := uuid.NewRandom()
+
+	// Currently, we will return empty string if error occurs
+	if err != nil {
+		return ""
+	}
+
+	if len(prefix) > 0 {
+		return prefix + "-" + requestId.String()
+	}
+
+	return requestId.String()
+}
+
+// getEnvValueOrDefault returns default value if environment variable is empty or not exist.
+func getEnvValueOrDefault(key, defaultValue string) string {
+	value := os.Getenv(key)
+
+	if len(value) < 1 {
+		return defaultValue
+	}
+
+	return value
+}
+
+// getLocalHostname returns hostname of localhost, return "" if error occurs or hostname is empty.
+func getLocalHostname() string {
+	hostname, err := os.Hostname()
+	if err != nil || len(hostname) < 1 {
+		hostname = ""
+	}
+
+	return hostname
+}
+
+// getLocalIP
+// This is a tricky function.
+// We will iterate through all the network interfaces，but will choose the first one since we are assuming that
+// eth0 will be the default one to use in most of the case.
+//
+// Currently, we do not have any interfaces for selecting the network interface yet.
+func getLocalIP() string {
+	localIP := "localhost"
+
+	// skip the error since we don't want to break RPC calls because of it
+	addresses, err := net.InterfaceAddrs()
+	if err != nil {
+		return localIP
+	}
+
+	for _, addr := range addresses {
+		items := strings.Split(addr.String(), "/")
+		if len(items) < 2 || items[0] == "127.0.0.1" {
+			continue
+		}
+
+		if match, err := regexp.MatchString(`\d+\.\d+\.\d+\.\d+`, items[0]); err == nil && match {
+			localIP = items[0]
+		}
+	}
+
+	return localIP
 }

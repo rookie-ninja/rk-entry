@@ -35,7 +35,7 @@ func TestNewOptionSet(t *testing.T) {
 
 func TestOptionSet_BeforeCtx(t *testing.T) {
 	set := NewOptionSet().(*optionSet)
-	event := rkentry.NoopEventLoggerEntry().GetEventFactory().CreateEventNoop()
+	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
 	ctx := set.BeforeCtx(event)
 
 	assert.Equal(t, event, ctx.Input.Event)
@@ -49,7 +49,7 @@ func TestOptionSet_Before(t *testing.T) {
 	set := NewOptionSet()
 	set.Before(nil)
 
-	ctx := set.BeforeCtx(rkentry.NoopEventLoggerEntry().GetEventFactory().CreateEventNoop())
+	ctx := set.BeforeCtx(rkentry.EventEntryNoop.EventFactory.CreateEventNoop())
 	set.Before(ctx)
 	assert.NotEmpty(t, ctx.Output.HeadersToReturn)
 }

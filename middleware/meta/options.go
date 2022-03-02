@@ -8,11 +8,9 @@ package rkmidmeta
 
 import (
 	"fmt"
-	"github.com/rookie-ninja/rk-common/common"
 	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-query"
-	"github.com/rs/xid"
 	"strings"
 	"time"
 )
@@ -48,7 +46,7 @@ type optionSet struct {
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName: xid.New().String(),
+		entryName: "fake-entry",
 		entryType: "",
 		prefix:    "RK",
 	}
@@ -98,7 +96,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		return
 	}
 
-	reqId := rkcommon.GenerateRequestId()
+	reqId := rkmid.GenerateRequestId()
 	now := time.Now().Format(time.RFC3339Nano)
 
 	if ctx.Input.Event != nil {

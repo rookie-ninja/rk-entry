@@ -3,12 +3,11 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// package rkmidcors provide cors related options
+// Package rkmidcors provide cors related options
 package rkmidcors
 
 import (
 	"github.com/rookie-ninja/rk-entry/middleware"
-	"github.com/rs/xid"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -69,7 +68,7 @@ type optionSet struct {
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName:        xid.New().String(),
+		entryName:        "fake-entry",
 		entryType:        "",
 		ignorePrefix:     []string{},
 		allowOrigins:     []string{},

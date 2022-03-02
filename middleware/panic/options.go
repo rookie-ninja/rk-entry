@@ -3,14 +3,13 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// package rkmidpanic provide options
+// Package rkmidpanic provide options
 package rkmidpanic
 
 import (
 	"fmt"
-	"github.com/rookie-ninja/rk-common/error"
+	rkerror "github.com/rookie-ninja/rk-entry/error"
 	"github.com/rookie-ninja/rk-query"
-	"github.com/rs/xid"
 	"go.uber.org/zap"
 	"runtime/debug"
 )
@@ -40,7 +39,7 @@ type optionSet struct {
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName: xid.New().String(),
+		entryName: "fake-entry",
 		entryType: "",
 	}
 
@@ -90,7 +89,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 			} else if re, ok := recv.(error); ok {
 				res = rkerror.FromError(re)
 			} else {
-				res = rkerror.New(rkerror.WithMessage(fmt.Sprintf("%v", recv)))
+				res = rkerror.NewInternalError(fmt.Sprintf("%v", recv))
 			}
 
 			if ctx.Input.Event != nil {
