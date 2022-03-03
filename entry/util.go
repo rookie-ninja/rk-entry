@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"github.com/mitchellh/mapstructure"
+	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -16,7 +17,7 @@ import (
 	"strings"
 )
 
-// UnmarshalBoot this function will parse boot config file with ENV and pflag overrides.
+// UnmarshalBootYAML this function will parse boot config file with ENV and pflag overrides.
 //
 // User who want to implement his/her own entry, may use this function to parse YAML config into struct.
 // This function would also parse --rkset flags.
@@ -69,7 +70,7 @@ import (
 // os.Setenv("RK_GIN[0]_COMMONSERVICE_ENABLED", "false")
 //
 // ./your_compiled_binary
-func UnmarshalBoot(raw []byte, config interface{}) {
+func UnmarshalBootYAML(raw []byte, config interface{}) {
 	// 1: unmarshal original
 	originalBootM := map[interface{}]interface{}{}
 	vp := viper.New()
@@ -101,12 +102,13 @@ func UnmarshalBoot(raw []byte, config interface{}) {
 	if err := mapstructure.Decode(originalBootM, config); err != nil {
 		ShutdownWithError(err)
 	}
-
-	GlobalAppCtx.bootConfig = config
 }
 
 // ShutdownWithError shuts down and panic.
 func ShutdownWithError(err error) {
+	if err == nil {
+		err = errors.New("Internal error")
+	}
 	panic(err)
 }
 
@@ -184,7 +186,7 @@ func IsLocaleValid(locale string) bool {
 	}
 
 	if tokens[2] != "*" && azFromEnv != "*" {
-		if tokens[0] != azFromEnv {
+		if tokens[2] != azFromEnv {
 			return false
 		}
 	}
@@ -202,10 +204,10 @@ func IsLocaleValid(locale string) bool {
 //
 // 1: Read from embed.FS if not nil
 // 2: Read from local FS
-func readFile(filePath string, fs *embed.FS) []byte {
+func readFile(filePath string, fs *embed.FS, shouldPanic bool) []byte {
 	if fs != nil {
 		data, err := fs.ReadFile(filePath)
-		if err != nil {
+		if err != nil && shouldPanic {
 			ShutdownWithError(err)
 		}
 		return data
@@ -218,7 +220,7 @@ func readFile(filePath string, fs *embed.FS) []byte {
 	}
 
 	data, err := ioutil.ReadFile(filePath)
-	if err != nil {
+	if err != nil && shouldPanic {
 		ShutdownWithError(err)
 	}
 	return data

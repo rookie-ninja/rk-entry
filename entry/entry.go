@@ -9,6 +9,20 @@ import (
 	"context"
 )
 
+const (
+	appInfoEntryType = "AppInfo"
+	appInfoEntryName = "AppInfo"
+
+	// CertEntryType public access
+	CertEntryType = "CertEntry"
+	// ConfigEntryType public access
+	ConfigEntryType = "ConfigEntry"
+	// EventEntryType public access
+	EventEntryType = "EventEntry"
+	// LoggerEntryType public access
+	LoggerEntryType = "LoggerEntry"
+)
+
 // An entry could be any kinds of services or pieces of codes which
 // needs to be bootstrap/initialized while application starts.
 //
@@ -37,7 +51,6 @@ import (
 // 2: Bootstrap will be called from Bootstrapper.Bootstrap() function
 // 3: Application will wait for shutdown signal
 // 4: Interrupt will be called from Bootstrapper.Interrupt() function
-
 type RegFunc func(raw []byte) map[string]Entry
 
 // Entry interface which must be implemented for bootstrapper to bootstrap

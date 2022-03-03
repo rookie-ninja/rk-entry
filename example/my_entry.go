@@ -54,7 +54,7 @@ func RegisterMyEntryFromConfig(raw []byte) map[string]rkentry.Entry {
 
 	// 1: decode config map into boot config struct
 	config := &BootConfig{}
-	rkentry.UnmarshalBoot(raw, config)
+	rkentry.UnmarshalBootYAML(raw, config)
 
 	// 3: construct entry
 	if config.MyEntry.Enabled {

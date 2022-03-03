@@ -14,8 +14,6 @@ import (
 	"encoding/pem"
 )
 
-const CertEntryType = "CertEntry"
-
 // RegisterCertEntry create cert entry with options.
 func RegisterCertEntry(boot *BootCert) []*CertEntry {
 	res := make([]*CertEntry, 0)
@@ -33,7 +31,7 @@ func RegisterCertEntry(boot *BootCert) []*CertEntry {
 			entryName:        cert.Name,
 			entryType:        CertEntryType,
 			entryDescription: cert.Description,
-			rootPemPath:      cert.RootPemPath,
+			caPath:           cert.CAPath,
 			keyPemPath:       cert.KeyPemPath,
 			certPemPath:      cert.CertPemPath,
 		}
@@ -45,10 +43,10 @@ func RegisterCertEntry(boot *BootCert) []*CertEntry {
 	return res
 }
 
-// registerCertEntry register function
-func registerCertEntry(raw []byte) map[string]Entry {
+// RegisterCertEntryYAML register function
+func RegisterCertEntryYAML(raw []byte) map[string]Entry {
 	boot := &BootCert{}
-	UnmarshalBoot(raw, boot)
+	UnmarshalBootYAML(raw, boot)
 
 	res := map[string]Entry{}
 
@@ -70,7 +68,7 @@ type BootCertE struct {
 	Name        string `yaml:"name" json:"name"`
 	Description string `yaml:"description" json:"description"`
 	Locale      string `yaml:"locale" json:"locale"`
-	RootPemPath string `yaml:"rootPemPath" json:"rootPemPath"`
+	CAPath      string `yaml:"caPath" json:"caPath"`
 	CertPemPath string `yaml:"certPemPath" json:"certPemPath"`
 	KeyPemPath  string `yaml:"keyPemPath" json:"keyPemPath"`
 }
@@ -80,7 +78,7 @@ type CertEntry struct {
 	entryName        string            `json:"-" yaml:"-"`
 	entryType        string            `json:"-" yaml:"-"`
 	entryDescription string            `json:"-" yaml:"-"`
-	rootPemPath      string            `json:"-" yaml:"-"`
+	caPath           string            `json:"-" yaml:"-"`
 	keyPemPath       string            `json:"-" yaml:"-"`
 	certPemPath      string            `json:"-" yaml:"-"`
 	embedFS          *embed.FS         `json:"-" yaml:"-"`
@@ -97,8 +95,8 @@ func (entry *CertEntry) Bootstrap(ctx context.Context) {
 	// server cert path
 	if len(entry.keyPemPath) > 0 && len(entry.certPemPath) > 0 {
 		cert, err := tls.X509KeyPair(
-			readFile(entry.certPemPath, entry.embedFS),
-			readFile(entry.keyPemPath, entry.embedFS))
+			readFile(entry.certPemPath, entry.embedFS, true),
+			readFile(entry.keyPemPath, entry.embedFS, true))
 		if err != nil {
 			ShutdownWithError(err)
 		}
@@ -106,8 +104,8 @@ func (entry *CertEntry) Bootstrap(ctx context.Context) {
 		entry.Certificate = &cert
 	}
 
-	if len(entry.rootPemPath) > 0 {
-		block, _ := pem.Decode(readFile(entry.rootPemPath, entry.embedFS))
+	if len(entry.caPath) > 0 {
+		block, _ := pem.Decode(readFile(entry.caPath, entry.embedFS, true))
 		if block == nil || block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
 			return
 		}
@@ -136,7 +134,7 @@ func (entry *CertEntry) MarshalJSON() ([]byte, error) {
 		"name":        entry.entryName,
 		"type":        entry.entryType,
 		"description": entry.entryDescription,
-		"rootPemPath": entry.rootPemPath,
+		"caPath":      entry.caPath,
 		"keyPemPath":  entry.keyPemPath,
 		"certPemPath": entry.certPemPath,
 	}

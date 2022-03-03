@@ -19,6 +19,34 @@
         "version": "2.0"
     },
     "paths": {
+        "/rk/v1/alive": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "JWT": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get application liveness status",
+                "operationId": "2",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rkentry.aliveResp"
+                        }
+                    }
+                }
+            }
+        },
         "/rk/v1/gc": {
             "get": {
                 "security": [
@@ -36,40 +64,12 @@
                     "application/json"
                 ],
                 "summary": "Trigger Gc",
-                "operationId": "2",
+                "operationId": "3",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/rkentry.gcResp"
-                        }
-                    }
-                }
-            }
-        },
-        "/rk/v1/healthy": {
-            "get": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    },
-                    {
-                        "BasicAuth": []
-                    },
-                    {
-                        "JWT": []
-                    }
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Get application healthy status",
-                "operationId": "1",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/rkentry.healthyResp"
                         }
                     }
                 }
@@ -92,12 +92,40 @@
                     "application/json"
                 ],
                 "summary": "Get application and process info",
-                "operationId": "3",
+                "operationId": "4",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/rkentry.ProcessInfo"
+                        }
+                    }
+                }
+            }
+        },
+        "/rk/v1/ready": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "JWT": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get application readiness status",
+                "operationId": "1",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rkentry.readyResp"
                         }
                     }
                 }
@@ -182,6 +210,14 @@
                 }
             }
         },
+        "rkentry.aliveResp": {
+            "type": "object",
+            "properties": {
+                "alive": {
+                    "type": "boolean"
+                }
+            }
+        },
         "rkentry.gcResp": {
             "type": "object",
             "properties": {
@@ -193,10 +229,10 @@
                 }
             }
         },
-        "rkentry.healthyResp": {
+        "rkentry.readyResp": {
             "type": "object",
             "properties": {
-                "healthy": {
+                "ready": {
                     "type": "boolean"
                 }
             }

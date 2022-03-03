@@ -11,6 +11,7 @@ import (
 	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-query"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -25,7 +26,7 @@ type OptionSetInterface interface {
 
 	Before(*BeforeCtx)
 
-	BeforeCtx(rkquery.Event) *BeforeCtx
+	BeforeCtx(*http.Request, rkquery.Event) *BeforeCtx
 }
 
 // ***************** OptionSet Implementation *****************
@@ -40,15 +41,17 @@ type optionSet struct {
 	appVersionKey   string
 	appUnixTimeKey  string
 	receivedTimeKey string
+	ignorePrefix    []string
 	mock            OptionSetInterface
 }
 
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName: "fake-entry",
-		entryType: "",
-		prefix:    "RK",
+		entryName:    "fake-entry",
+		entryType:    "",
+		prefix:       "RK",
+		ignorePrefix: []string{},
 	}
 
 	for i := range opts {
@@ -83,8 +86,14 @@ func (set *optionSet) GetEntryType() string {
 }
 
 // BeforeCtx should be created before Before()
-func (set *optionSet) BeforeCtx(event rkquery.Event) *BeforeCtx {
+func (set *optionSet) BeforeCtx(req *http.Request, event rkquery.Event) *BeforeCtx {
 	ctx := NewBeforeCtx()
+
+	ctx.Input.Request = req
+	if req != nil && req.URL != nil {
+		ctx.Input.UrlPath = req.URL.Path
+	}
+
 	ctx.Output.HeadersToReturn = make(map[string]string)
 	ctx.Input.Event = event
 	return ctx
@@ -93,6 +102,11 @@ func (set *optionSet) BeforeCtx(event rkquery.Event) *BeforeCtx {
 // Before should run before user handler
 func (set *optionSet) Before(ctx *BeforeCtx) {
 	if ctx == nil {
+		return
+	}
+
+	// case 0: ignore path
+	if set.ignore(ctx.Input.UrlPath) {
 		return
 	}
 
@@ -114,6 +128,17 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-App-Locale", set.prefix)] = strings.Join([]string{
 		rkmid.Realm.String, rkmid.Region.String, rkmid.AZ.String, rkmid.Domain.String,
 	}, "::")
+}
+
+// Ignore determine whether auth should be ignored based on path
+func (set *optionSet) ignore(path string) bool {
+	for i := range set.ignorePrefix {
+		if strings.HasPrefix(path, set.ignorePrefix[i]) {
+			return true
+		}
+	}
+
+	return rkmid.IgnorePrefixGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -140,7 +165,7 @@ func (mock *optionSetMock) GetEntryType() string {
 }
 
 // BeforeCtx should be created before Before()
-func (mock *optionSetMock) BeforeCtx(event rkquery.Event) *BeforeCtx {
+func (mock *optionSetMock) BeforeCtx(req *http.Request, event rkquery.Event) *BeforeCtx {
 	return mock.before
 }
 
@@ -161,7 +186,9 @@ func NewBeforeCtx() *BeforeCtx {
 // BeforeCtx context for Before() function
 type BeforeCtx struct {
 	Input struct {
-		Event rkquery.Event
+		UrlPath string
+		Request *http.Request
+		Event   rkquery.Event
 	}
 	Output struct {
 		RequestId       string
@@ -173,8 +200,9 @@ type BeforeCtx struct {
 
 // BootConfig for YAML
 type BootConfig struct {
-	Enabled bool   `yaml:"enabled" json:"enabled"`
-	Prefix  string `yaml:"prefix" json:"prefix"`
+	Enabled      bool     `yaml:"enabled" json:"enabled"`
+	Prefix       string   `yaml:"prefix" json:"prefix"`
+	IgnorePrefix []string `yaml:"ignorePrefix" json:"ignorePrefix"`
 }
 
 // ToOptions convert BootConfig into Option list
@@ -207,6 +235,14 @@ func WithEntryNameAndType(entryName, entryType string) Option {
 func WithPrefix(prefix string) Option {
 	return func(opt *optionSet) {
 		opt.prefix = prefix
+	}
+}
+
+// WithIgnorePrefix provide paths prefix that will ignore.
+// Mainly used for swagger main page and RK TV entry.
+func WithIgnorePrefix(paths ...string) Option {
+	return func(set *optionSet) {
+		set.ignorePrefix = append(set.ignorePrefix, paths...)
 	}
 }
 

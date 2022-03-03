@@ -30,8 +30,8 @@ func TestRegisterConfigEntry(t *testing.T) {
 	assert.NotEmpty(t, entries[0].GetName())
 	assert.NotEmpty(t, entries[0].GetType())
 	assert.NotEmpty(t, entries[0].GetDescription())
-	assert.NotNil(t, entries[0].GetViper())
-	assert.Empty(t, entries[0].GetViper().AllKeys())
+	assert.NotNil(t, entries[0].Viper)
+	assert.Empty(t, entries[0].Viper.AllKeys())
 
 	// register with content
 	entries = RegisterConfigEntry(&BootConfig{
@@ -50,8 +50,8 @@ func TestRegisterConfigEntry(t *testing.T) {
 	assert.NotEmpty(t, entries[0].GetName())
 	assert.NotEmpty(t, entries[0].GetType())
 	assert.NotEmpty(t, entries[0].GetDescription())
-	assert.NotNil(t, entries[0].GetViper())
-	assert.Equal(t, "content-value", entries[0].GetViper().GetString("content-key"))
+	assert.NotNil(t, entries[0].Viper)
+	assert.Equal(t, "content-value", entries[0].GetString("content-key"))
 
 	// register with file
 	viperConfig := `
@@ -78,9 +78,8 @@ key: value
 	assert.NotEmpty(t, entries[0].GetName())
 	assert.NotEmpty(t, entries[0].GetType())
 	assert.NotEmpty(t, entries[0].GetDescription())
-	assert.NotNil(t, entries[0].GetViper())
-	assert.Equal(t, "content-value", entries[0].GetViper().GetString("content-key"))
-	assert.Equal(t, "value", entries[0].GetViper().GetString("key"))
+	assert.Equal(t, "content-value", entries[0].GetString("content-key"))
+	assert.Equal(t, "value", entries[0].GetString("key"))
 }
 
 func TestRegisterConfigEntry_WithNonExistPath(t *testing.T) {
@@ -100,8 +99,7 @@ func TestRegisterConfigEntry_WithNonExistPath(t *testing.T) {
 	assert.NotEmpty(t, entries[0].GetName())
 	assert.NotEmpty(t, entries[0].GetType())
 	assert.NotEmpty(t, entries[0].GetDescription())
-	assert.NotNil(t, entries[0].GetViper())
-	assert.Empty(t, entries[0].GetViper().AllKeys())
+	assert.Empty(t, entries[0].AllKeys())
 }
 
 func TestRegisterConfigEntry_WithDomainAndFileNotExist(t *testing.T) {
@@ -132,7 +130,7 @@ key: value
 	assert.NotEmpty(t, entries[0].GetType())
 	assert.NotEmpty(t, entries[0].GetDescription())
 	assert.NotEmpty(t, entries[0].String())
-	assert.Equal(t, "value", entries[0].GetViper().GetString("key"))
+	assert.Equal(t, "value", entries[0].GetString("key"))
 
 	// unset domain
 	assert.Nil(t, os.Setenv("DOMAIN", ""))
@@ -165,8 +163,7 @@ key: value
 	assert.NotEmpty(t, entries[0].GetName())
 	assert.NotEmpty(t, entries[0].GetType())
 	assert.NotEmpty(t, entries[0].GetDescription())
-	assert.NotNil(t, entries[0].GetViper())
-	assert.Equal(t, "value", entries[0].GetViper().GetString("key"))
+	assert.Equal(t, "value", entries[0].GetString("key"))
 
 	// unset domain
 	assert.Nil(t, os.Setenv("DOMAIN", ""))
@@ -216,8 +213,7 @@ key: prod
 	assert.NotEmpty(t, entries[0].GetName())
 	assert.NotEmpty(t, entries[0].GetType())
 	assert.NotEmpty(t, entries[0].GetDescription())
-	assert.NotNil(t, entries[0].GetViper())
-	assert.Equal(t, "prod", entries[0].GetViper().GetString("key"))
+	assert.Equal(t, "prod", entries[0].GetString("key"))
 
 	// unset domain
 	assert.Nil(t, os.Setenv("DOMAIN", ""))
@@ -258,7 +254,7 @@ key: prod
 	assert.NotEmpty(t, entries[0].GetName())
 	assert.NotEmpty(t, entries[0].GetType())
 	assert.NotEmpty(t, entries[0].GetDescription())
-	assert.Equal(t, "value", entries[0].GetViper().GetString("key"))
+	assert.Equal(t, "value", entries[0].GetString("key"))
 
 	// unset domain
 	assert.Nil(t, os.Setenv("DOMAIN", ""))

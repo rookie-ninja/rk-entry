@@ -38,7 +38,7 @@ app:
   maintainers: ["ut-maintainer"]
 `
 
-	entries := registerAppInfoEntry([]byte(bootStr))
+	entries := registerAppInfoEntryYAML([]byte(bootStr))
 	entry := entries[appInfoEntryName].(*appInfoEntry)
 
 	assert.Equal(t, "rk", entry.AppName)

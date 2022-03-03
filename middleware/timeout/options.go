@@ -9,6 +9,7 @@ package rkmidtimeout
 import (
 	"github.com/rookie-ninja/rk-entry/entry"
 	rkerror "github.com/rookie-ninja/rk-entry/error"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
 	"github.com/rookie-ninja/rk-query"
 	"net/http"
 	"strings"
@@ -39,18 +40,20 @@ type OptionSetInterface interface {
 
 // Options which is used while initializing extension interceptor
 type optionSet struct {
-	entryName string
-	entryType string
-	timeouts  map[string]time.Duration
-	mock      OptionSetInterface
+	entryName    string
+	entryType    string
+	ignorePrefix []string
+	timeouts     map[string]time.Duration
+	mock         OptionSetInterface
 }
 
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName: "fake-entry",
-		entryType: "",
-		timeouts:  make(map[string]time.Duration),
+		entryName:    "fake-entry",
+		entryType:    "",
+		ignorePrefix: []string{},
+		timeouts:     make(map[string]time.Duration),
 	}
 
 	for i := range opts {
@@ -97,6 +100,11 @@ func (set *optionSet) BeforeCtx(req *http.Request, event rkquery.Event) *BeforeC
 // Before should run before user handler
 func (set *optionSet) Before(ctx *BeforeCtx) {
 	if ctx == nil {
+		return
+	}
+
+	// case 0: ignore path
+	if set.ignore(ctx.Input.UrlPath) {
 		return
 	}
 
@@ -152,6 +160,17 @@ func (set *optionSet) getTimeout(path string) time.Duration {
 	}
 
 	return set.timeouts[global]
+}
+
+// Ignore determine whether auth should be ignored based on path
+func (set *optionSet) ignore(path string) bool {
+	for i := range set.ignorePrefix {
+		if strings.HasPrefix(path, set.ignorePrefix[i]) {
+			return true
+		}
+	}
+
+	return rkmid.IgnorePrefixGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -223,9 +242,10 @@ type BeforeCtx struct {
 
 // BootConfig for YAML
 type BootConfig struct {
-	Enabled   bool `yaml:"enabled" json:"enabled"`
-	TimeoutMs int  `yaml:"timeoutMs" json:"timeoutMs"`
-	Paths     []struct {
+	Enabled      bool     `yaml:"enabled" json:"enabled"`
+	TimeoutMs    int      `yaml:"timeoutMs" json:"timeoutMs"`
+	IgnorePrefix []string `yaml:"ignorePrefix" json:"ignorePrefix"`
+	Paths        []struct {
 		Path      string `yaml:"path" json:"path"`
 		TimeoutMs int    `yaml:"timeoutMs" json:"timeoutMs"`
 	} `yaml:"paths" json:"paths"`
@@ -246,6 +266,8 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 			timeout := time.Duration(e.TimeoutMs) * time.Millisecond
 			opts = append(opts, WithTimeoutByPath(e.Path, timeout))
 		}
+
+		opts = append(opts, WithIgnorePrefix(config.IgnorePrefix...))
 	}
 
 	return opts
@@ -264,7 +286,7 @@ func WithEntryNameAndType(entryName, entryType string) Option {
 	}
 }
 
-// WithTimeoutAndResp Provide global timeout and response handler.
+// WithTimeout Provide global timeout and response handler.
 // If response is nil, default globalResponse will be assigned
 func WithTimeout(timeout time.Duration) Option {
 	return func(set *optionSet) {
@@ -276,7 +298,7 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
-// WithTimeoutAndRespByPath Provide timeout and response handler by path.
+// WithTimeoutByPath Provide timeout and response handler by path.
 // If response is nil, default globalResponse will be assigned
 func WithTimeoutByPath(path string, timeout time.Duration) Option {
 	return func(set *optionSet) {
@@ -289,6 +311,14 @@ func WithTimeoutByPath(path string, timeout time.Duration) Option {
 		}
 
 		set.timeouts[path] = timeout
+	}
+}
+
+// WithIgnorePrefix provide paths prefix that will ignore.
+// Mainly used for swagger main page and RK TV entry.
+func WithIgnorePrefix(paths ...string) Option {
+	return func(set *optionSet) {
+		set.ignorePrefix = append(set.ignorePrefix, paths...)
 	}
 }
 

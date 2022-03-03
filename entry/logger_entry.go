@@ -17,8 +17,6 @@ import (
 	"time"
 )
 
-const LoggerEntryType = "LoggerEntry"
-
 // NewLoggerEntryNoop create zap logger entry with noop.
 func NewLoggerEntryNoop() *LoggerEntry {
 	return &LoggerEntry{
@@ -128,10 +126,10 @@ func RegisterLoggerEntry(boot *BootLogger) []*LoggerEntry {
 	return res
 }
 
-// registerLoggerEntry register function
-func registerLoggerEntry(raw []byte) map[string]Entry {
+// RegisterLoggerEntryYAML register function
+func RegisterLoggerEntryYAML(raw []byte) map[string]Entry {
 	boot := &BootLogger{}
-	UnmarshalBoot(raw, boot)
+	UnmarshalBootYAML(raw, boot)
 
 	res := map[string]Entry{}
 
@@ -160,10 +158,10 @@ type BootLoggerE struct {
 
 // LoggerEntry contains bellow fields.
 type LoggerEntry struct {
+	*zap.Logger
 	entryName        string               `yaml:"name" json:"name"`
 	entryType        string               `yaml:"type" json:"type"`
 	entryDescription string               `yaml:"description" json:"description"`
-	Logger           *zap.Logger          `yaml:"-" json:"-"`
 	LoggerConfig     *zap.Config          `yaml:"zapConfig" json:"zapConfig"`
 	LumberjackConfig *lumberjack.Logger   `yaml:"lumberjackConfig" json:"lumberjackConfig"`
 	lokiSyncer       *rklogger.LokiSyncer `yaml:"lokiSyncer" json:"lokiSyncer"`
@@ -257,38 +255,38 @@ func (entry *LoggerEntry) Sync() {
 	}
 }
 
-func (entry *LoggerEntry) WithOptions(opts ...zap.Option) *zap.Logger {
-	return entry.Logger.WithOptions(opts...)
-}
-
-func (entry *LoggerEntry) With(fields ...zap.Field) *zap.Logger {
-	return entry.Logger.With(fields...)
-}
-
-func (entry *LoggerEntry) Debug(msg string, fields ...zap.Field) {
-	entry.Logger.Debug(msg, fields...)
-}
-
-func (entry *LoggerEntry) Info(msg string, fields ...zap.Field) {
-	entry.Logger.Info(msg, fields...)
-}
-
-func (entry *LoggerEntry) Warn(msg string, fields ...zap.Field) {
-	entry.Logger.Warn(msg, fields...)
-}
-
-func (entry *LoggerEntry) Error(msg string, fields ...zap.Field) {
-	entry.Logger.Error(msg, fields...)
-}
-
-func (entry *LoggerEntry) DPanic(msg string, fields ...zap.Field) {
-	entry.Logger.DPanic(msg, fields...)
-}
-
-func (entry *LoggerEntry) Panic(msg string, fields ...zap.Field) {
-	entry.Logger.Panic(msg, fields...)
-}
-
-func (entry *LoggerEntry) Fatal(msg string, fields ...zap.Field) {
-	entry.Logger.Fatal(msg, fields...)
-}
+//func (entry *LoggerEntry) WithOptions(opts ...zap.Option) *zap.Logger {
+//	return entry.Logger.WithOptions(opts...)
+//}
+//
+//func (entry *LoggerEntry) With(fields ...zap.Field) *zap.Logger {
+//	return entry.Logger.With(fields...)
+//}
+//
+//func (entry *LoggerEntry) Debug(msg string, fields ...zap.Field) {
+//	entry.Logger.Debug(msg, fields...)
+//}
+//
+//func (entry *LoggerEntry) Info(msg string, fields ...zap.Field) {
+//	entry.Logger.Info(msg, fields...)
+//}
+//
+//func (entry *LoggerEntry) Warn(msg string, fields ...zap.Field) {
+//	entry.Logger.Warn(msg, fields...)
+//}
+//
+//func (entry *LoggerEntry) Error(msg string, fields ...zap.Field) {
+//	entry.Logger.Error(msg, fields...)
+//}
+//
+//func (entry *LoggerEntry) DPanic(msg string, fields ...zap.Field) {
+//	entry.Logger.DPanic(msg, fields...)
+//}
+//
+//func (entry *LoggerEntry) Panic(msg string, fields ...zap.Field) {
+//	entry.Logger.Panic(msg, fields...)
+//}
+//
+//func (entry *LoggerEntry) Fatal(msg string, fields ...zap.Field) {
+//	entry.Logger.Fatal(msg, fields...)
+//}
