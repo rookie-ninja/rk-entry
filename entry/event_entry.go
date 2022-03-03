@@ -18,8 +18,6 @@ import (
 	"time"
 )
 
-const EventEntryType = "EventEntry"
-
 // NewEventEntryNoop create event logger entry with noop event factory.
 // Event factory and event helper will be created with noop zap logger.
 // Since we don't need any log rotation in case of noop, lumberjack config will be nil.
@@ -31,7 +29,7 @@ func NewEventEntryNoop() *EventEntry {
 		EventFactory:     rkquery.NewEventFactory(rkquery.WithZapLogger(rklogger.NoopLogger)),
 	}
 
-	entry.eventHelper = rkquery.NewEventHelper(entry.EventFactory)
+	entry.EventHelper = rkquery.NewEventHelper(entry.EventFactory)
 
 	return entry
 }
@@ -46,7 +44,7 @@ func NewEventEntryStdout() *EventEntry {
 		baseLogger:       rklogger.EventLogger,
 	}
 
-	entry.eventHelper = rkquery.NewEventHelper(entry.EventFactory)
+	entry.EventHelper = rkquery.NewEventHelper(entry.EventFactory)
 
 	return entry
 }
@@ -136,7 +134,7 @@ func RegisterEventEntry(boot *BootEvent) []*EventEntry {
 		}
 
 		entry.EventFactory = eventFactory
-		entry.eventHelper = rkquery.NewEventHelper(eventFactory)
+		entry.EventHelper = rkquery.NewEventHelper(eventFactory)
 		entry.lokiSyncer = lokiSyncer
 		entry.baseLogger = eventLogger
 		entry.LoggerConfig = eventLoggerConfig
@@ -149,10 +147,10 @@ func RegisterEventEntry(boot *BootEvent) []*EventEntry {
 	return res
 }
 
-// registerEventEntry register function
-func registerEventEntry(raw []byte) map[string]Entry {
+// RegisterEventEntryYAML register function
+func RegisterEventEntryYAML(raw []byte) map[string]Entry {
 	boot := &BootEvent{}
-	UnmarshalBoot(raw, boot)
+	UnmarshalBootYAML(raw, boot)
 
 	res := map[string]Entry{}
 
@@ -194,15 +192,15 @@ type BootEventE struct {
 
 // EventEntry contains bellow fields.
 type EventEntry struct {
-	entryName        string                `yaml:"-" json:"-"`
-	entryType        string                `yaml:"-" json:"-"`
-	entryDescription string                `yaml:"-" json:"-"`
-	EventFactory     *rkquery.EventFactory `yaml:"-" json:"-"`
-	LoggerConfig     *zap.Config           `yaml:"-" json:"-"`
-	LumberjackConfig *lumberjack.Logger    `yaml:"-" json:"-"`
-	eventHelper      *rkquery.EventHelper  `yaml:"-" json:"-"`
-	lokiSyncer       *rklogger.LokiSyncer  `yaml:"-" json:"-"`
-	baseLogger       *zap.Logger           `yaml:"-" json:"-"`
+	*rkquery.EventFactory
+	*rkquery.EventHelper
+	entryName        string               `yaml:"-" json:"-"`
+	entryType        string               `yaml:"-" json:"-"`
+	entryDescription string               `yaml:"-" json:"-"`
+	LoggerConfig     *zap.Config          `yaml:"-" json:"-"`
+	LumberjackConfig *lumberjack.Logger   `yaml:"-" json:"-"`
+	lokiSyncer       *rklogger.LokiSyncer `yaml:"-" json:"-"`
+	baseLogger       *zap.Logger          `yaml:"-" json:"-"`
 }
 
 // Bootstrap entry.
@@ -270,22 +268,6 @@ func (entry *EventEntry) UnmarshalJSON([]byte) error {
 // GetDescription return description of entry.
 func (entry *EventEntry) GetDescription() string {
 	return entry.entryDescription
-}
-
-func (entry *EventEntry) CreateEvent(op string, opts ...rkquery.EventOption) rkquery.Event {
-	return entry.eventHelper.Start(op, opts...)
-}
-
-func (entry *EventEntry) FinishEvent(event rkquery.Event) {
-	entry.eventHelper.Finish(event)
-}
-
-func (entry *EventEntry) FinishEventWithCond(event rkquery.Event, succ bool) {
-	entry.eventHelper.FinishWithCond(event, succ)
-}
-
-func (entry *EventEntry) FinishEventWithError(event rkquery.Event, err error) {
-	entry.eventHelper.FinishWithError(event, err)
 }
 
 // AddEntryLabelToLokiSyncer add entry name entry type into loki syncer

@@ -14,8 +14,6 @@ import (
 	"path"
 )
 
-const ConfigEntryType = "ConfigEntry"
-
 // RegisterConfigEntry create ConfigEntry with BootConfigConfig.
 func RegisterConfigEntry(boot *BootConfig) []*ConfigEntry {
 	res := make([]*ConfigEntry, 0)
@@ -34,7 +32,7 @@ func RegisterConfigEntry(boot *BootConfig) []*ConfigEntry {
 			entryType:        ConfigEntryType,
 			entryDescription: config.Description,
 			content:          config.Content,
-			vp:               viper.New(),
+			Viper:            viper.New(),
 			Path:             config.Path,
 		}
 
@@ -50,8 +48,8 @@ func RegisterConfigEntry(boot *BootConfig) []*ConfigEntry {
 
 			// skip this element if path is not valid
 			if fileExists(entry.Path) {
-				entry.vp.SetConfigFile(entry.Path)
-				if err := entry.vp.ReadInConfig(); err != nil {
+				entry.Viper.SetConfigFile(entry.Path)
+				if err := entry.Viper.ReadInConfig(); err != nil {
 					ShutdownWithError(fmt.Errorf("failed to read file, path:%s", entry.Path))
 				}
 			}
@@ -59,13 +57,13 @@ func RegisterConfigEntry(boot *BootConfig) []*ConfigEntry {
 
 		// if content exist, then fill viper
 		for k, v := range entry.content {
-			entry.vp.Set(k, v)
+			entry.Viper.Set(k, v)
 		}
 
 		// enable automatic env
 		// issue: https://github.com/rookie-ninja/rk-boot/issues/55
-		entry.vp.AutomaticEnv()
-		entry.vp.SetEnvPrefix(entry.EnvPrefix)
+		entry.Viper.AutomaticEnv()
+		entry.Viper.SetEnvPrefix(entry.EnvPrefix)
 
 		GlobalAppCtx.AddEntry(entry)
 		res = append(res, entry)
@@ -74,10 +72,10 @@ func RegisterConfigEntry(boot *BootConfig) []*ConfigEntry {
 	return res
 }
 
-// registerConfigEntry register function
-func registerConfigEntry(raw []byte) map[string]Entry {
+// RegisterConfigEntryYAML register function
+func RegisterConfigEntryYAML(raw []byte) map[string]Entry {
 	boot := &BootConfig{}
-	UnmarshalBoot(raw, boot)
+	UnmarshalBootYAML(raw, boot)
 
 	res := map[string]Entry{}
 
@@ -106,13 +104,14 @@ type BootConfigE struct {
 
 // ConfigEntry contains bellow fields.
 type ConfigEntry struct {
+	*viper.Viper
+
 	entryName        string                 `yaml:"-" json:"-"`
 	entryType        string                 `yaml:"-" json:"-"`
 	entryDescription string                 `yaml:"-" json:"-"`
 	Locale           string                 `yaml:"-" json:"-"`
 	Path             string                 `yaml:"-" json:"-"`
 	EnvPrefix        string                 `yaml:"-" json:"-"`
-	vp               *viper.Viper           `yaml:"-" json:"-"`
 	content          map[string]interface{} `yaml:"-" json:"-"`
 }
 
@@ -160,9 +159,4 @@ func (entry *ConfigEntry) UnmarshalJSON([]byte) error {
 // GetDescription return description of entry.
 func (entry *ConfigEntry) GetDescription() string {
 	return entry.entryDescription
-}
-
-// GetViper returns viper instance.
-func (entry *ConfigEntry) GetViper() *viper.Viper {
-	return entry.vp
 }

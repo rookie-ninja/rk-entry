@@ -12,9 +12,14 @@ import (
 	"time"
 )
 
-// healthyResp response of /healthy
-type healthyResp struct {
-	Healthy bool `json:"healthy" yaml:"healthy"`
+// aliveResp response of /alive
+type aliveResp struct {
+	Alive bool `json:"alive" yaml:"alive"`
+}
+
+// readyResp response of /ready
+type readyResp struct {
+	Ready bool `json:"ready" yaml:"ready"`
 }
 
 // gcResp response of /gc

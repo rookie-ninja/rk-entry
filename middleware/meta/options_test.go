@@ -8,6 +8,8 @@ package rkmidmeta
 import (
 	"github.com/rookie-ninja/rk-entry/entry"
 	"github.com/stretchr/testify/assert"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -36,9 +38,12 @@ func TestNewOptionSet(t *testing.T) {
 func TestOptionSet_BeforeCtx(t *testing.T) {
 	set := NewOptionSet().(*optionSet)
 	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
-	ctx := set.BeforeCtx(event)
+	req := httptest.NewRequest(http.MethodGet, "/ut", nil)
+	ctx := set.BeforeCtx(req, event)
 
 	assert.Equal(t, event, ctx.Input.Event)
+	assert.Equal(t, req, ctx.Input.Request)
+
 	assert.NotNil(t, ctx.Output.HeadersToReturn)
 }
 
@@ -49,7 +54,9 @@ func TestOptionSet_Before(t *testing.T) {
 	set := NewOptionSet()
 	set.Before(nil)
 
-	ctx := set.BeforeCtx(rkentry.EventEntryNoop.EventFactory.CreateEventNoop())
+	req := httptest.NewRequest(http.MethodGet, "/ut", nil)
+
+	ctx := set.BeforeCtx(req, rkentry.EventEntryNoop.EventFactory.CreateEventNoop())
 	set.Before(ctx)
 	assert.NotEmpty(t, ctx.Output.HeadersToReturn)
 }
@@ -58,7 +65,7 @@ func TestNewOptionSetMock(t *testing.T) {
 	mock := NewOptionSetMock(NewBeforeCtx())
 	assert.NotEmpty(t, mock.GetEntryName())
 	assert.NotEmpty(t, mock.GetEntryType())
-	assert.NotNil(t, mock.BeforeCtx(nil))
+	assert.NotNil(t, mock.BeforeCtx(nil, nil))
 	mock.Before(nil)
 }
 

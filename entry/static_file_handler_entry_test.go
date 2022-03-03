@@ -17,10 +17,10 @@ func TestRegisterStaticFileHandlerEntry(t *testing.T) {
 	// without options
 	entry := RegisterStaticFileHandlerEntry(&BootStaticFileHandler{
 		Enabled: true,
-		Path:    "/rk/v1/static/",
+		Path:    "/static/",
 	})
 	assert.NotEmpty(t, entry)
-	assert.Equal(t, "/rk/v1/static/", entry.Path)
+	assert.Equal(t, "/static/", entry.Path)
 	assert.NotNil(t, entry.httpFS)
 	assert.NotNil(t, entry.Template)
 	assert.NotEmpty(t, entry.GetName())
@@ -36,7 +36,7 @@ func TestStaticFileHandlerEntry_Bootstrap_Interrupt(t *testing.T) {
 	// without eventId in context
 	entry := RegisterStaticFileHandlerEntry(&BootStaticFileHandler{
 		Enabled: true,
-		Path:    "/rk/v1/static/",
+		Path:    "/static/",
 	})
 	entry.Bootstrap(context.TODO())
 	entry.Interrupt(context.TODO())
@@ -45,7 +45,7 @@ func TestStaticFileHandlerEntry_Bootstrap_Interrupt(t *testing.T) {
 func TestStaticFileHandlerEntry_EntryFunctions(t *testing.T) {
 	entry := RegisterStaticFileHandlerEntry(&BootStaticFileHandler{
 		Enabled: true,
-		Path:    "/rk/v1/static/",
+		Path:    "/static/",
 	})
 	assert.Nil(t, entry.UnmarshalJSON([]byte{}))
 }
@@ -66,7 +66,7 @@ func TestStaticFileHandlerEntry_GetFileHandler(t *testing.T) {
 	writer := httptest.NewRecorder()
 	req := &http.Request{
 		URL: &url.URL{
-			Path: "/rk/v1/static/",
+			Path: "/static/",
 		},
 	}
 	handler(writer, req)
@@ -78,7 +78,7 @@ func TestStaticFileHandlerEntry_GetFileHandler(t *testing.T) {
 	writer = httptest.NewRecorder()
 	req = &http.Request{
 		URL: &url.URL{
-			Path: "/rk/v1/static/ut-file",
+			Path: "/static/ut-file",
 		},
 	}
 	handler(writer, req)

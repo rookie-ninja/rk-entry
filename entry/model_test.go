@@ -26,4 +26,9 @@ func TestProcessInfo_HappyCase(t *testing.T) {
 	assert.Equal(t, "unit-test-region", info.Region)
 	assert.Equal(t, "unit-test-az", info.AZ)
 	assert.Equal(t, "unit-test-domain", info.Domain)
+
+	assert.Nil(t, os.Setenv("REALM", ""))
+	assert.Nil(t, os.Setenv("REGION", ""))
+	assert.Nil(t, os.Setenv("AZ", ""))
+	assert.Nil(t, os.Setenv("DOMAIN", ""))
 }

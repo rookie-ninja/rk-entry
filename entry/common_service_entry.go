@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/pkg/errors"
+	rkembed "github.com/rookie-ninja/rk-entry"
 	"github.com/rookie-ninja/rk-entry/os"
 	"net/http"
 	"path"
@@ -46,7 +47,8 @@ type CommonServiceEntry struct {
 	entryType        string `json:"-" yaml:"-"`
 	entryDescription string `json:"-" yaml:"-"`
 	pathPrefix       string `json:"-" yaml:"-"`
-	HealthyPath      string `json:"-" yaml:"-"`
+	ReadyPath        string `json:"-" yaml:"-"`
+	AlivePath        string `json:"-" yaml:"-"`
 	GcPath           string `json:"-" yaml:"-"`
 	InfoPath         string `json:"-" yaml:"-"`
 }
@@ -58,23 +60,25 @@ func RegisterCommonServiceEntry(boot *BootCommonService) *CommonServiceEntry {
 			entryName:        "CommonServiceEntry",
 			entryType:        "CommonServiceEntry",
 			entryDescription: "Internal RK entry which implements commonly used API.",
-			HealthyPath:      "healthy",
+			ReadyPath:        "ready",
+			AlivePath:        "alive",
 			GcPath:           "gc",
 			InfoPath:         "info",
 			pathPrefix:       boot.PathPrefix,
 		}
 
 		if len(boot.PathPrefix) < 1 {
-			boot.PathPrefix = "/rk/v1"
+			entry.pathPrefix = "/rk/v1"
 		}
 
 		// append prefix
-		entry.HealthyPath = path.Join("/", entry.pathPrefix, entry.HealthyPath)
+		entry.ReadyPath = path.Join("/", entry.pathPrefix, entry.ReadyPath)
+		entry.AlivePath = path.Join("/", entry.pathPrefix, entry.AlivePath)
 		entry.GcPath = path.Join("/", entry.pathPrefix, entry.GcPath)
 		entry.InfoPath = path.Join("/", entry.pathPrefix, entry.InfoPath)
 
 		// change swagger config file
-		oldSwAssets := readFileFromEmbed("assets/sw/config/swagger.json")
+		oldSwAssets := readFile("assets/sw/config/swagger.json", &rkembed.AssetsFS, true)
 		m := map[string]interface{}{}
 
 		if err := json.Unmarshal(oldSwAssets, &m); err != nil {
@@ -89,14 +93,27 @@ func RegisterCommonServiceEntry(boot *BootCommonService) *CommonServiceEntry {
 
 			for p, v := range inner {
 				switch p {
-				case "/rk/v1/healthy":
-					inner[entry.HealthyPath] = v
+				case "/rk/v1/ready":
+					if p != entry.ReadyPath {
+						inner[entry.ReadyPath] = v
+						delete(inner, p)
+					}
+				case "/rk/v1/alive":
+					if p != entry.AlivePath {
+						inner[entry.AlivePath] = v
+						delete(inner, p)
+					}
 				case "/rk/v1/gc":
-					inner[entry.HealthyPath] = v
+					if p != entry.GcPath {
+						inner[entry.GcPath] = v
+						delete(inner, p)
+					}
 				case "/rk/v1/info":
-					inner[entry.HealthyPath] = v
+					if p != entry.InfoPath {
+						inner[entry.InfoPath] = v
+						delete(inner, p)
+					}
 				}
-				delete(inner, p)
 			}
 		}
 
@@ -145,7 +162,8 @@ func (entry *CommonServiceEntry) MarshalJSON() ([]byte, error) {
 		"name":        entry.GetName(),
 		"type":        entry.GetType(),
 		"description": entry.GetDescription(),
-		"healthyPath": entry.HealthyPath,
+		"readyPath":   entry.ReadyPath,
+		"alivePath":   entry.AlivePath,
 		"gcPath":      entry.GcPath,
 		"infoPath":    entry.InfoPath,
 	}
@@ -158,28 +176,53 @@ func (entry *CommonServiceEntry) UnmarshalJSON([]byte) error {
 	return nil
 }
 
-// Healthy handler
-// @Summary Get application healthy status
+// Ready handler
+// @Summary Get application readiness status
 // @Id 1
 // @version 1.0
 // @Security ApiKeyAuth
 // @Security BasicAuth
 // @Security JWT
 // @produce application/json
-// @Success 200 {object} healthyResp
-// @Router /rk/v1/healthy [get]
-func (entry *CommonServiceEntry) Healthy(writer http.ResponseWriter, request *http.Request) {
-	writer.WriteHeader(http.StatusOK)
+// @Success 200 {object} readyResp
+// @Router /rk/v1/ready [get]
+func (entry *CommonServiceEntry) Ready(writer http.ResponseWriter, request *http.Request) {
+	if GlobalAppCtx.readinessCheck != nil && !GlobalAppCtx.readinessCheck(request, writer) {
+		return
+	}
 
-	bytes, _ := json.MarshalIndent(&healthyResp{
-		Healthy: true,
+	writer.WriteHeader(http.StatusOK)
+	bytes, _ := json.MarshalIndent(&readyResp{
+		Ready: true,
+	}, "", "  ")
+	writer.Write(bytes)
+}
+
+// Alive handler
+// @Summary Get application liveness status
+// @Id 2
+// @version 1.0
+// @Security ApiKeyAuth
+// @Security BasicAuth
+// @Security JWT
+// @produce application/json
+// @Success 200 {object} aliveResp
+// @Router /rk/v1/alive [get]
+func (entry *CommonServiceEntry) Alive(writer http.ResponseWriter, request *http.Request) {
+	if GlobalAppCtx.livenessCheck != nil && !GlobalAppCtx.livenessCheck(request, writer) {
+		return
+	}
+
+	writer.WriteHeader(http.StatusOK)
+	bytes, _ := json.MarshalIndent(&aliveResp{
+		Alive: true,
 	}, "", "  ")
 	writer.Write(bytes)
 }
 
 // Gc handler
 // @Summary Trigger Gc
-// @Id 2
+// @Id 3
 // @version 1.0
 // @Security ApiKeyAuth
 // @Security BasicAuth
@@ -202,7 +245,7 @@ func (entry *CommonServiceEntry) Gc(writer http.ResponseWriter, request *http.Re
 
 // Info handler
 // @Summary Get application and process info
-// @Id 3
+// @Id 4
 // @version 1.0
 // @Security ApiKeyAuth
 // @Security BasicAuth

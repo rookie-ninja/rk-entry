@@ -11,11 +11,6 @@ import (
 	"strings"
 )
 
-const (
-	appInfoEntryType = "AppInfo"
-	appInfoEntryName = "AppInfo"
-)
-
 // bootConfigAppInfo is config of application's basic information.
 type bootConfigAppInfo struct {
 	App struct {
@@ -50,7 +45,7 @@ func appInfoEntryDefault() *appInfoEntry {
 		entryType:        appInfoEntryType,
 		entryDescription: "Internal RK entry which describes application with fields of appName, version and etc.",
 		AppName:          "rk-app",
-		Version:          "unset",
+		Version:          "v0.0.0",
 		Lang:             "golang",
 		Keywords:         []string{},
 		HomeUrl:          "",
@@ -59,11 +54,11 @@ func appInfoEntryDefault() *appInfoEntry {
 	}
 }
 
-// registerAppInfoEntry register appInfoEntry with bytes of YAML
-func registerAppInfoEntry(raw []byte) map[string]Entry {
+// registerAppInfoEntryYAML register appInfoEntry with bytes of YAML
+func registerAppInfoEntryYAML(raw []byte) map[string]Entry {
 	// Unmarshal user provided config into boot config struct
 	config := &bootConfigAppInfo{}
-	UnmarshalBoot(raw, config)
+	UnmarshalBootYAML(raw, config)
 	res := map[string]Entry{}
 
 	entry := appInfoEntryDefault()
@@ -74,6 +69,18 @@ func registerAppInfoEntry(raw []byte) map[string]Entry {
 	entry.HomeUrl = config.App.HomeUrl
 	entry.DocsUrl = config.App.DocsUrl
 	entry.Maintainers = config.App.Maintainers
+
+	if entry.Keywords == nil {
+		entry.Keywords = make([]string, 0)
+	}
+
+	if entry.DocsUrl == nil {
+		entry.DocsUrl = make([]string, 0)
+	}
+
+	if entry.Maintainers == nil {
+		entry.Maintainers = make([]string, 0)
+	}
 
 	GlobalAppCtx.appInfoEntry = entry
 

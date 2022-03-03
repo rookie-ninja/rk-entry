@@ -16,11 +16,56 @@ import (
 	"time"
 )
 
-var (
-	// Why 1608? It is the year of first telescope was invented
-	defaultPort = uint64(1608)
-	defaultPath = "/metrics"
-)
+func WithRegistryPromEntry(registry *prometheus.Registry) PromEntryOption {
+	return func(entry *PromEntry) {
+		entry.Registry = registry
+	}
+}
+
+// RegisterPromEntry Create a prom entry with options and add prom entry to rkentry.GlobalAppCtx
+func RegisterPromEntry(boot *BootProm, opts ...PromEntryOption) *PromEntry {
+	if !boot.Enabled {
+		return nil
+	}
+
+	entry := &PromEntry{
+		entryName:        "PromEntry",
+		entryType:        "PromEntry",
+		entryDescription: "Internal RK entry which implements prometheus client.",
+		Registerer:       prometheus.DefaultRegisterer,
+		Gatherer:         prometheus.DefaultGatherer,
+	}
+
+	for i := range opts {
+		opts[i](entry)
+	}
+
+	if entry.Registry == nil {
+		entry.Registry = prometheus.NewRegistry()
+	}
+	entry.Registry.Register(collectors.NewGoCollector())
+
+	if entry.Registry != nil {
+		entry.Registerer = entry.Registry
+		entry.Gatherer = entry.Registry
+	}
+
+	// Trim space by default
+	entry.Path = strings.TrimSpace(entry.Path)
+
+	if len(entry.Path) < 1 {
+		// Invalid path, use default one
+		entry.Path = "/metrics"
+	}
+
+	if !strings.HasPrefix(entry.Path, "/") {
+		entry.Path = "/" + entry.Path
+	}
+
+	entry.Pusher = newPushGatewayPusher(boot, entry.Gatherer)
+
+	return entry
+}
 
 // BootProm Boot config which is for prom entry.
 type BootProm struct {
@@ -32,77 +77,25 @@ type BootProm struct {
 		JobName       string `yaml:"jobName" json:"jobName"`
 		RemoteAddress string `yaml:"remoteAddress" json:"remoteAddress"`
 		BasicAuth     string `yaml:"basicAuth" json:"basicAuth"`
-		Cert          struct {
-			RootCertPath   string `json:"rootCertPath" yaml:"rootCertPath"`
-			ClientKeyPath  string `json:"clientKeyPath" yaml:"clientKeyPath"`
-			ClientCertPath string `json:"clientCertPath" yaml:"clientCertPath"`
-		} `yaml:"cert" json:"cert"`
+		CertEntry     string `yaml:"certEntry" json:"certEntry"`
+		LoggerEntry   string `yaml:"loggerEntry" json:"loggerEntry"`
 	} `yaml:"pusher" json:"pusher"`
 }
 
 // PromEntry Prometheus entry which implements rkentry.Entry.
 type PromEntry struct {
-	entryName        string                `json:"-" yaml:"-"`
-	entryType        string                `json:"-" yaml:"-"`
-	entryDescription string                `json:"-" yaml:"-"`
-	Pusher           *PushGatewayPusher    `json:"-" yaml:"-"`
-	loggerEntry      *LoggerEntry          `json:"-" yaml:"-"`
-	Port             uint64                `json:"-" yaml:"-"`
-	Path             string                `json:"-" yaml:"-"`
-	Registry         *prometheus.Registry  `json:"-" yaml:"-"`
-	Registerer       prometheus.Registerer `json:"-" yaml:"-"`
-	Gatherer         prometheus.Gatherer   `json:"-" yaml:"-"`
+	*prometheus.Registry
+	prometheus.Registerer
+	prometheus.Gatherer
+
+	entryName        string             `json:"-" yaml:"-"`
+	entryType        string             `json:"-" yaml:"-"`
+	entryDescription string             `json:"-" yaml:"-"`
+	Path             string             `json:"-" yaml:"-"`
+	Pusher           *PushGatewayPusher `json:"-" yaml:"-"`
 }
 
-// RegisterPromEntry Create a prom entry with options and add prom entry to rkentry.GlobalAppCtx
-func RegisterPromEntry(boot *BootProm, port uint64, registry *prometheus.Registry, loggerEntry *LoggerEntry) *PromEntry {
-	if !boot.Enabled {
-		return nil
-	}
-
-	entry := &PromEntry{
-		Port:             port,
-		Path:             boot.Path,
-		loggerEntry:      loggerEntry,
-		entryName:        "PromEntry",
-		entryType:        "PromEntry",
-		entryDescription: "Internal RK entry which implements prometheus client.",
-		Registry:         registry,
-		Registerer:       prometheus.DefaultRegisterer,
-		Gatherer:         prometheus.DefaultGatherer,
-	}
-
-	if entry.Registry == nil {
-		entry.Registry = prometheus.NewRegistry()
-	}
-
-	entry.Registry.Register(collectors.NewGoCollector())
-
-	// Trim space by default
-	entry.Path = strings.TrimSpace(entry.Path)
-
-	if len(entry.Path) < 1 {
-		// Invalid path, use default one
-		entry.Path = defaultPath
-	}
-
-	if !strings.HasPrefix(entry.Path, "/") {
-		entry.Path = "/" + entry.Path
-	}
-
-	if entry.loggerEntry == nil {
-		entry.loggerEntry = LoggerEntryStdout
-	}
-
-	if entry.Registry != nil {
-		entry.Registerer = entry.Registry
-		entry.Gatherer = entry.Registry
-	}
-
-	entry.Pusher = newPushGatewayPusher(boot, entry.loggerEntry, entry.Gatherer)
-
-	return entry
-}
+type PromEntryOption func(entry *PromEntry)
 
 // Bootstrap Start prometheus client
 func (entry *PromEntry) Bootstrap(ctx context.Context) {
@@ -147,59 +140,49 @@ func (entry *PromEntry) MarshalJSON() ([]byte, error) {
 		"type":              entry.entryType,
 		"description":       entry.entryDescription,
 		"pushGateWayPusher": entry.Pusher,
-		"port":              entry.Port,
-		"path":              entry.Path,
 	}
 
 	return json.Marshal(&m)
 }
 
 // UnmarshalJSON Unmarshal entry
-func (entry *PromEntry) UnmarshalJSON(b []byte) error {
+func (entry *PromEntry) UnmarshalJSON([]byte) error {
 	return nil
 }
 
 // RegisterCollectors Register collectors in default registry
-func (entry *PromEntry) RegisterCollectors(collectors ...prometheus.Collector) error {
-	var err error
+func (entry *PromEntry) RegisterCollectors(collectors ...prometheus.Collector) {
 	for i := range collectors {
-		if innerErr := entry.Registerer.Register(collectors[i]); innerErr != nil {
-			err = innerErr
-		}
+		entry.Registerer.Register(collectors[i])
 	}
-
-	return err
 }
 
 // PushGatewayPusher is a pusher which contains bellow instances
 type PushGatewayPusher struct {
-	loggerEntry    *LoggerEntry  `json:"-" yaml:"-"`
-	Pusher         *push.Pusher  `json:"-" yaml:"-"`
-	IntervalMs     time.Duration `json:"-" yaml:"-"`
-	RemoteAddress  string        `json:"-" yaml:"-"`
-	JobName        string        `json:"-" yaml:"-"`
-	running        *atomic.Bool  `json:"-" yaml:"-"`
-	embedFS        *embed.FS     `json:"-" yaml:"-"`
-	clientCertPath string        `json:"-" yaml:"-"`
-	clientKeyPath  string        `json:"-" yaml:"-"`
-	rootCertPath   string        `json:"-" yaml:"-"`
+	loggerEntry   *LoggerEntry  `json:"-" yaml:"-"`
+	Pusher        *push.Pusher  `json:"-" yaml:"-"`
+	IntervalMs    time.Duration `json:"-" yaml:"-"`
+	RemoteAddress string        `json:"-" yaml:"-"`
+	JobName       string        `json:"-" yaml:"-"`
+	running       *atomic.Bool  `json:"-" yaml:"-"`
+	embedFS       *embed.FS     `json:"-" yaml:"-"`
+	certEntry     *CertEntry    `json:"-" yaml:"-"`
 }
 
 // newPushGatewayPusher creates a new pushGateway periodic job instances with intervalMS, remote URL and job name
-func newPushGatewayPusher(boot *BootProm, loggerEntry *LoggerEntry, gatherer prometheus.Gatherer) *PushGatewayPusher {
+func newPushGatewayPusher(boot *BootProm, gatherer prometheus.Gatherer) *PushGatewayPusher {
 	if !boot.Pusher.Enabled {
 		return nil
 	}
 
+	certEntry := GlobalAppCtx.GetCertEntry(boot.Pusher.CertEntry)
+
 	pg := &PushGatewayPusher{
-		loggerEntry:    loggerEntry,
-		IntervalMs:     time.Duration(boot.Pusher.IntervalMs) * time.Millisecond,
-		JobName:        boot.Pusher.JobName,
-		RemoteAddress:  boot.Pusher.RemoteAddress,
-		running:        atomic.NewBool(false),
-		clientCertPath: boot.Pusher.Cert.ClientCertPath,
-		clientKeyPath:  boot.Pusher.Cert.ClientKeyPath,
-		rootCertPath:   boot.Pusher.Cert.RootCertPath,
+		IntervalMs:    time.Duration(boot.Pusher.IntervalMs) * time.Millisecond,
+		JobName:       boot.Pusher.JobName,
+		RemoteAddress: boot.Pusher.RemoteAddress,
+		running:       atomic.NewBool(false),
+		certEntry:     certEntry,
 	}
 
 	if pg.IntervalMs < 1 {
@@ -214,6 +197,7 @@ func newPushGatewayPusher(boot *BootProm, loggerEntry *LoggerEntry, gatherer pro
 		pg.JobName = "rk"
 	}
 
+	pg.loggerEntry = GlobalAppCtx.GetLoggerEntry(boot.Pusher.LoggerEntry)
 	if pg.loggerEntry == nil {
 		pg.loggerEntry = LoggerEntryStdout
 	}
@@ -242,24 +226,29 @@ func (pub *PushGatewayPusher) SetEmbedFS(fs *embed.FS) {
 func (pub *PushGatewayPusher) Bootstrap(ctx context.Context) {
 	httpClient := http.DefaultClient
 
-	// deal with tls
-	if len(pub.clientCertPath) > 0 && len(pub.clientKeyPath) > 0 {
-		clientCert, err := tls.X509KeyPair(
-			readFile(pub.clientCertPath, pub.embedFS),
-			readFile(pub.clientKeyPath, pub.embedFS))
-		if err != nil {
-			ShutdownWithError(err)
+	var conf *tls.Config
+	if pub.certEntry != nil {
+		if pub.certEntry.Certificate != nil {
+			conf = &tls.Config{}
+			conf.Certificates = []tls.Certificate{
+				*pub.certEntry.Certificate,
+			}
 		}
 
-		rootCert := x509.NewCertPool()
-		rootCert.AppendCertsFromPEM(readFile(pub.rootCertPath, pub.embedFS))
-		conf := &tls.Config{
-			RootCAs: rootCert,
-			Certificates: []tls.Certificate{
-				clientCert,
-			},
-		}
+		if pub.certEntry.RootCA != nil {
+			caCert := x509.NewCertPool()
+			caCert.AddCert(pub.certEntry.RootCA)
 
+			if conf != nil {
+				conf.RootCAs = caCert
+			} else {
+				conf = &tls.Config{}
+				conf.RootCAs = caCert
+			}
+		}
+	}
+
+	if conf != nil {
 		httpClient.Transport = &http.Transport{
 			TLSClientConfig: conf,
 		}

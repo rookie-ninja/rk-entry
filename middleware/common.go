@@ -65,12 +65,14 @@ var (
 	// LocalHostname read hostname from localhost
 	LocalHostname = zap.String("localHostname", getLocalHostname())
 
-	ignorePrefix = []string{
-		"/rk/v1/assets",
-	}
+	ignorePrefix = []string{}
 
 	IgnorePrefixGlobal = ignorePathPrefix
 )
+
+func AddIgnorePrefixGlobal(prefix ...string) {
+	ignorePrefix = append(ignorePrefix, prefix...)
+}
 
 type entryNameKey struct{}
 

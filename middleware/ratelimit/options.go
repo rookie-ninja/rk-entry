@@ -9,6 +9,7 @@ package rkmidlimit
 import (
 	"fmt"
 	rkerror "github.com/rookie-ninja/rk-entry/error"
+	rkmid "github.com/rookie-ninja/rk-entry/middleware"
 	uber "go.uber.org/ratelimit"
 	"net/http"
 	"strings"
@@ -42,6 +43,7 @@ type optionSet struct {
 	reqPerSec       int
 	reqPerSecByPath map[string]int
 	algorithm       string
+	ignorePrefix    []string
 	limiter         map[string]Limiter
 	mock            OptionSetInterface
 }
@@ -55,6 +57,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 		reqPerSecByPath: make(map[string]int),
 		algorithm:       LeakyBucket,
 		limiter:         make(map[string]Limiter),
+		ignorePrefix:    []string{},
 	}
 
 	for i := range opts {
@@ -123,6 +126,11 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		return
 	}
 
+	// case 0: ignore path
+	if set.ignore(ctx.Input.UrlPath) {
+		return
+	}
+
 	limiter := set.getLimiter(ctx.Input.UrlPath)
 	if err := limiter(); err != nil {
 		ctx.Output.ErrResp = rkerror.NewTooManyRequests(err)
@@ -147,6 +155,17 @@ func (set *optionSet) setLimiter(method string, l Limiter) {
 	}
 
 	set.limiter[method] = l
+}
+
+// Ignore determine whether auth should be ignored based on path
+func (set *optionSet) ignore(path string) bool {
+	for i := range set.ignorePrefix {
+		if strings.HasPrefix(path, set.ignorePrefix[i]) {
+			return true
+		}
+	}
+
+	return rkmid.IgnorePrefixGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -204,10 +223,11 @@ type BeforeCtx struct {
 
 // BootConfig for YAML
 type BootConfig struct {
-	Enabled   bool   `yaml:"enabled" json:"enabled"`
-	Algorithm string `yaml:"algorithm" json:"algorithm"`
-	ReqPerSec int    `yaml:"reqPerSec" json:"reqPerSec"`
-	Paths     []struct {
+	Enabled      bool     `yaml:"enabled" json:"enabled"`
+	IgnorePrefix []string `yaml:"ignorePrefix" json:"ignorePrefix"`
+	Algorithm    string   `yaml:"algorithm" json:"algorithm"`
+	ReqPerSec    int      `yaml:"reqPerSec" json:"reqPerSec"`
+	Paths        []struct {
 		Path      string `yaml:"path" json:"path"`
 		ReqPerSec int    `yaml:"reqPerSec" json:"reqPerSec"`
 	} `yaml:"paths" json:"paths"`
@@ -218,7 +238,6 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 	opts := make([]Option, 0)
 
 	if config.Enabled {
-
 		opts = append(opts, WithEntryNameAndType(entryName, entryType))
 
 		if len(config.Algorithm) > 0 {
@@ -231,6 +250,8 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 			e := config.Paths[i]
 			opts = append(opts, WithReqPerSecByPath(e.Path, e.ReqPerSec))
 		}
+
+		opts = append(opts, WithIgnorePrefix(config.IgnorePrefix...))
 	}
 
 	return opts
@@ -272,7 +293,6 @@ func WithReqPerSecByPath(path string, reqPerSec int) Option {
 }
 
 // WithAlgorithm provide algorithm of rate limit.
-// - tokenBucket
 // - leakyBucket
 func WithAlgorithm(algo string) Option {
 	return func(opt *optionSet) {
@@ -299,6 +319,14 @@ func WithLimiterByPath(path string, l Limiter) Option {
 			path = "/" + path
 		}
 		opt.limiter[path] = l
+	}
+}
+
+// WithIgnorePrefix provide paths prefix that will ignore.
+// Mainly used for swagger main page and RK TV entry.
+func WithIgnorePrefix(paths ...string) Option {
+	return func(set *optionSet) {
+		set.ignorePrefix = append(set.ignorePrefix, paths...)
 	}
 }
 

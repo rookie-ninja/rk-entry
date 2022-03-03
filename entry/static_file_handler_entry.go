@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	rkembed "github.com/rookie-ninja/rk-entry"
 	"github.com/rookie-ninja/rk-entry/error"
 	"html/template"
 	"io/fs"
@@ -93,7 +94,7 @@ func RegisterStaticFileHandlerEntry(boot *BootStaticFileHandler) *StaticFileHand
 		entryType:        "StaticFileHandler",
 		entryDescription: "Internal RK entry which implements static file handler.",
 		Template:         template.New("rk-static"),
-		Path:             "/rk/v1/static",
+		Path:             boot.Path,
 		httpFS:           http.Dir(""),
 	}
 
@@ -104,6 +105,10 @@ func RegisterStaticFileHandlerEntry(boot *BootStaticFileHandler) *StaticFileHand
 			boot.SourcePath = path.Join(wd, boot.SourcePath)
 		}
 		entry.httpFS = http.Dir(boot.SourcePath)
+	}
+
+	if len(entry.Path) < 1 {
+		entry.Path = "/static"
 	}
 
 	// Deal with Path
@@ -130,7 +135,7 @@ func (entry *StaticFileHandlerEntry) SetHttpFS(fs http.FileSystem) {
 // Bootstrap entry.
 func (entry *StaticFileHandlerEntry) Bootstrap(context.Context) {
 	// parse template
-	if _, err := entry.Template.Parse(string(readFileFromEmbed("assets/static/index.tmpl"))); err != nil {
+	if _, err := entry.Template.Parse(string(readFile("assets/static/index.tmpl", &rkembed.AssetsFS, true))); err != nil {
 		ShutdownWithError(err)
 	}
 }
@@ -219,9 +224,8 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 
 			for _, v := range infos {
 				files = append(files, &fileResp{
-					isDir: v.IsDir(),
-					//Icon:     base64.StdEncoding.EncodeToString(readFileFromPkger(ModPath, path.Join("/assets/static/icons", getIconPath(v)))),
-					Icon:     base64.StdEncoding.EncodeToString(readFileFromEmbed(path.Join("/assets/static/icons", getIconPath(v)))),
+					isDir:    v.IsDir(),
+					Icon:     base64.StdEncoding.EncodeToString(readFile(path.Join("assets/static/icons", entry.getIconPath(v)), &rkembed.AssetsFS, false)),
 					FileUrl:  path.Join(entry.Path, p, v.Name()),
 					FileName: v.Name(),
 					Size:     v.Size(),
@@ -229,11 +233,10 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 				})
 			}
 
-			sortFiles(files)
+			entry.sortFiles(files)
 			resp := &resp{
 				PrevPath: path.Join(entry.Path, path.Dir(p)),
-				//PrevIcon: base64.StdEncoding.EncodeToString(readFileFromPkger(ModPath, path.Join("/assets/static/icons/folder.png"))),
-				PrevIcon: base64.StdEncoding.EncodeToString(readFileFromEmbed(path.Join("/assets/static/icons/folder.png"))),
+				PrevIcon: base64.StdEncoding.EncodeToString(readFile(path.Join("assets/static/icons/folder.png"), &rkembed.AssetsFS, false)),
 				Path:     p,
 				Files:    files,
 			}
@@ -258,7 +261,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 }
 
 // sort file response
-func sortFiles(res []*fileResp) {
+func (entry *StaticFileHandlerEntry) sortFiles(res []*fileResp) {
 	sort.SliceStable(res, func(i, j int) bool {
 		if res[i].isDir && res[j].isDir {
 			return strings.Compare(res[i].FileName, res[j].FileName) < 0
@@ -277,7 +280,7 @@ func sortFiles(res []*fileResp) {
 }
 
 // get icon path based on file information
-func getIconPath(info fs.FileInfo) string {
+func (entry *StaticFileHandlerEntry) getIconPath(info fs.FileInfo) string {
 	if info.IsDir() {
 		return exToIcon["folder"]
 	}

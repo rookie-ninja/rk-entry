@@ -9,15 +9,15 @@ package rkentry
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"strconv"
 	"strings"
 )
 
-// ErrNotList indicates that a non-list was treated as a list.
-var ErrNotList = errors.New("not a list")
+// errNotList indicates that a non-list was treated as a list.
+var errNotList = errors.New("Not a list")
 
 // parser is a simple parser that takes a strvals line and parses it into a
 // map representation.
@@ -100,7 +100,7 @@ func (t *parser) key(data map[interface{}]interface{}) error {
 			case io.EOF:
 				set(data, string(k), "")
 				return e
-			case ErrNotList:
+			case errNotList:
 				rs, e := t.val()
 				if e != nil && e != io.EOF {
 					return e
@@ -178,7 +178,7 @@ func (t *parser) listItem(list []interface{}, i int) ([]interface{}, error) {
 			return setIndex(list, i, vl), nil
 		case io.EOF:
 			return setIndex(list, i, ""), err
-		case ErrNotList:
+		case errNotList:
 			rs, e := t.val()
 			if e != nil && e != io.EOF {
 				return list, e
@@ -240,7 +240,7 @@ func (t *parser) valList() ([]interface{}, error) {
 
 	if r != '{' {
 		t.sc.UnreadRune()
-		return []interface{}{}, ErrNotList
+		return []interface{}{}, errNotList
 	}
 
 	list := []interface{}{}

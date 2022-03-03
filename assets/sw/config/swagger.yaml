@@ -50,6 +50,11 @@ definitions:
       version:
         type: string
     type: object
+  rkentry.aliveResp:
+    properties:
+      alive:
+        type: boolean
+    type: object
   rkentry.gcResp:
     properties:
       memStatAfterGc:
@@ -57,9 +62,9 @@ definitions:
       memStatBeforeGc:
         $ref: '#/definitions/rkos.MemInfo'
     type: object
-  rkentry.healthyResp:
+  rkentry.readyResp:
     properties:
-      healthy:
+      ready:
         type: boolean
     type: object
   rkos.CpuInfo:
@@ -150,9 +155,24 @@ info:
   title: RK Common Service
   version: "2.0"
 paths:
-  /rk/v1/gc:
+  /rk/v1/alive:
     get:
       operationId: "2"
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rkentry.aliveResp'
+      security:
+      - ApiKeyAuth: []
+      - BasicAuth: []
+      - JWT: []
+      summary: Get application liveness status
+  /rk/v1/gc:
+    get:
+      operationId: "3"
       produces:
       - application/json
       responses:
@@ -165,24 +185,9 @@ paths:
       - BasicAuth: []
       - JWT: []
       summary: Trigger Gc
-  /rk/v1/healthy:
-    get:
-      operationId: "1"
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/rkentry.healthyResp'
-      security:
-      - ApiKeyAuth: []
-      - BasicAuth: []
-      - JWT: []
-      summary: Get application healthy status
   /rk/v1/info:
     get:
-      operationId: "3"
+      operationId: "4"
       produces:
       - application/json
       responses:
@@ -195,6 +200,21 @@ paths:
       - BasicAuth: []
       - JWT: []
       summary: Get application and process info
+  /rk/v1/ready:
+    get:
+      operationId: "1"
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rkentry.readyResp'
+      security:
+      - ApiKeyAuth: []
+      - BasicAuth: []
+      - JWT: []
+      summary: Get application readiness status
 schemes:
 - http
 - https

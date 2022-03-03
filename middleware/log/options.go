@@ -430,14 +430,7 @@ func WithLoggerOutputPaths(path ...string) Option {
 // Console or Json is supported.
 func WithEventEncoding(ec string) Option {
 	return func(set *optionSet) {
-		switch strings.ToLower(ec) {
-		case console:
-			set.eventLoggerEncoding = rkquery.CONSOLE
-		case json:
-			set.eventLoggerEncoding = rkquery.JSON
-		default:
-			set.eventLoggerEncoding = rkquery.CONSOLE
-		}
+		set.eventLoggerEncoding = rkquery.ToEncoding(ec)
 	}
 }
 

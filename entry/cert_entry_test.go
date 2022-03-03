@@ -43,16 +43,16 @@ func TestRegisterCertEntry_FromYAML(t *testing.T) {
 ---
 cert:
   - name: ut-cert
-    rootPemPath: /ut-root
+    caPath: /ut-ca
     keyPemPath: /ut-key
     certPemPath: /ut-cert
 `
 
-	entries := registerCertEntry([]byte(bootStr))
+	entries := RegisterCertEntryYAML([]byte(bootStr))
 	assert.Len(t, entries, 1)
 
 	entry := entries["ut-cert"].(*CertEntry)
-	assert.Equal(t, "/ut-root", entry.rootPemPath)
+	assert.Equal(t, "/ut-ca", entry.caPath)
 	assert.Equal(t, "/ut-key", entry.keyPemPath)
 	assert.Equal(t, "/ut-cert", entry.certPemPath)
 	assert.Equal(t, "ut-cert", entry.GetName())
@@ -66,14 +66,14 @@ func TestCertEntry_Bootstrap(t *testing.T) {
 	//defer assertNotPanic(t)
 
 	// create root & key & cert pem
-	rootPem, _ := generateCerts(t)
+	caPem, _ := generateCerts(t)
 	certPem, keyPem := generateCerts(t)
 
-	rootPemDir := path.Join(t.TempDir(), "root.pem")
+	caDir := path.Join(t.TempDir(), "ca.pem")
 	certPemDir := path.Join(t.TempDir(), "cert.pem")
 	keyPemDir := path.Join(t.TempDir(), "key.pem")
 
-	assert.Nil(t, ioutil.WriteFile(rootPemDir, rootPem, os.ModePerm))
+	assert.Nil(t, ioutil.WriteFile(caDir, caPem, os.ModePerm))
 	assert.Nil(t, ioutil.WriteFile(certPemDir, certPem, os.ModePerm))
 	assert.Nil(t, ioutil.WriteFile(keyPemDir, keyPem, os.ModePerm))
 
@@ -83,7 +83,7 @@ func TestCertEntry_Bootstrap(t *testing.T) {
 				Name:        "ut-cert",
 				KeyPemPath:  keyPemDir,
 				CertPemPath: certPemDir,
-				RootPemPath: rootPemDir,
+				CAPath:      caDir,
 			},
 		},
 	})

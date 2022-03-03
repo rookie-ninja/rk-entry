@@ -16,7 +16,7 @@ The entry library mainly used by rk-boot.
     - [Entry](#entry)
       - [Interact with rk-boot.Bootstrapper?](#interact-with-rk-bootbootstrapper)
     - [AppCtx](#appctx)
-      - [Access AppCtx](#access-appctx)
+      - [Access GlobalAppCtx](#access-globalappctx)
       - [Usage of AppCtx](#usage-of-appctx)
   - [Contributing](#contributing)
 
@@ -38,26 +38,26 @@ go get github.com/rookie-ninja/rk-entry
 ### Entry
 **rkentry.Entry** is an interface for rkboot.Bootstrapper to bootstrap entry.
 
-Users can implement **rkentry.Entry** interface and bootstrap any service/process with **rkb.Bootstrapper**
+Users can implement **rkentry.Entry** interface and bootstrap any service/process with **rkboot.Bootstrapper**
 
 [Example](example)
 
 #### Interact with rk-boot.Bootstrapper?
 
-1: Entry will be created and registered into rke.AppCtx.
+1: Entry will be created and registered into rkentry.GlobalAppCtx.
 
-2: rkb.Bootstrap() function will iterator all entries in rke.AppCtx.Entries and call Bootstrap().
+2: rkboot.Bootstrap() function will iterator all entries in rkentry.GlobalAppCtx.Entries and call Bootstrap().
 
-3: Application will wait for shutdown signal via rke.AppCtx.ShutdownSig.
+3: Application will wait for shutdown signal via rkentry.GlobalAppCtx.ShutdownSig.
 
-4: rkb.Interrupt() function will iterate all entries in rke.AppCtx.Entries and call Interrupt().
+4: rkboot.Interrupt() function will iterate all entries in rkentry.GlobalAppCtx.Entries and call Interrupt().
 
 ### AppCtx
 A struct called AppContext witch contains RK style application metadata.
 
-#### Access AppCtx
+#### Access GlobalAppCtx
 
-Access it via AppCtx variable 
+Access it via GlobalAppCtx variable 
 ```go
 AppCtx
 ```
@@ -71,7 +71,6 @@ AppCtx
 | userValues    | User K/V registered from code.                                                                    | userValues      | empty map                                                                         |
 | shutdownSig   | Shutdown signals which includes syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT. | shutdown_sig    | channel includes syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT |
 | shutdownHooks | Shutdown hooks registered from user code.                                                         | shutdown_hooks  | empty list                                                                        |
-
 
 #### Usage of AppCtx
 - Access start time and uptime of application.
@@ -106,7 +105,7 @@ rkentry.GlobalAppCtx.AddEntry()
 
 User can add/get/list/remove any values into map of rke.AppCtx.UserValues as needed.
 
-rke.AppCtx don't provide any locking mechanism.
+rkentry.GlobalAppCtx don't provide any locking mechanism.
 ```go
 // Add k/v value into AppCtx, key should be string and value could be any kind
 rkentry.GlobalAppCtx.AddValue(<"key">, <value interface{}>)

@@ -6,10 +6,11 @@
 package rkentry
 
 import (
+	"bytes"
 	"context"
+	"embed"
 	"encoding/json"
-	"github.com/rookie-ninja/rk-entry"
-	"io/fs"
+	rkembed "github.com/rookie-ninja/rk-entry"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -54,9 +55,16 @@ type SWEntry struct {
 	JsonPath         string            `json:"-" yaml:"-"`
 	Path             string            `json:"-" yaml:"-"`
 	Headers          map[string]string `json:"-" yaml:"-"`
+	embedFS          *embed.FS         `json:"-" yaml:"-"`
 }
 
-func RegisterSWEntry(boot *BootSW) *SWEntry {
+func WithNameSWEntry(name string) SWEntryOption {
+	return func(entry *SWEntry) {
+		entry.entryName = name
+	}
+}
+
+func RegisterSWEntry(boot *BootSW, opts ...SWEntryOption) *SWEntry {
 	var swEntry *SWEntry
 	if boot.Enabled {
 		// Init swagger custom headers from config
@@ -78,6 +86,14 @@ func RegisterSWEntry(boot *BootSW) *SWEntry {
 			Headers:          headers,
 		}
 
+		for i := range opts {
+			opts[i](swEntry)
+		}
+
+		if len(swEntry.Path) < 1 {
+			swEntry.Path = "/sw"
+		}
+
 		// Deal with Path
 		// add "/" at start and end side if missing
 		if !strings.HasPrefix(swEntry.Path, "/") {
@@ -87,15 +103,17 @@ func RegisterSWEntry(boot *BootSW) *SWEntry {
 		if !strings.HasSuffix(swEntry.Path, "/") {
 			swEntry.Path = swEntry.Path + "/"
 		}
-
-		// init swagger configs
-		swEntry.initSwaggerConfig()
 	}
 
 	return swEntry
 }
 
-func (entry *SWEntry) Bootstrap(ctx context.Context) {}
+type SWEntryOption func(entry *SWEntry)
+
+func (entry *SWEntry) Bootstrap(ctx context.Context) {
+	// init swagger configs
+	entry.initSwaggerConfig()
+}
 
 func (entry *SWEntry) Interrupt(ctx context.Context) {}
 
@@ -135,6 +153,10 @@ func (entry *SWEntry) UnmarshalJSON([]byte) error {
 	return nil
 }
 
+func (entry *SWEntry) SetEmbedFS(fs *embed.FS) {
+	entry.embedFS = fs
+}
+
 // ConfigFileHandler handler for swagger config files.
 func (entry *SWEntry) ConfigFileHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
@@ -147,6 +169,12 @@ func (entry *SWEntry) ConfigFileHandler() http.HandlerFunc {
 		}
 
 		switch p {
+		case strings.TrimSuffix(entry.Path, "/"):
+			if file := readFile("assets/sw/index.html", &rkembed.AssetsFS, false); len(file) < 1 {
+				http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			} else {
+				http.ServeContent(writer, request, "index.html", time.Now(), bytes.NewReader(file))
+			}
 		case path.Join(entry.Path, "swagger-config.json"):
 			http.ServeContent(writer, request, "swagger-config.json", time.Now(), strings.NewReader(swConfigFileContents))
 		default:
@@ -208,6 +236,36 @@ func (entry *SWEntry) initSwaggerConfig() {
 // List files with .json suffix and store them into swaggerJsonFiles variable.
 func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath string, ignoreError bool) {
 	suffix := ".json"
+
+	if entry.embedFS != nil {
+		// 1: read dir
+		files, err := entry.embedFS.ReadDir(jsonPath)
+		if err != nil && !ignoreError {
+			return
+		}
+
+		for i := range files {
+			file := files[i]
+			if !file.IsDir() && strings.HasSuffix(file.Name(), suffix) {
+				bytes, err := entry.embedFS.ReadFile(path.Join(jsonPath, file.Name()))
+				key := entry.entryName + "-" + file.Name()
+
+				if err != nil && !ignoreError {
+					ShutdownWithError(err)
+				}
+
+				swaggerJsonFiles[key] = string(bytes)
+
+				urlConfig.Urls = append(urlConfig.Urls, &swUrl{
+					Name: key,
+					Url:  path.Join(entry.Path, key),
+				})
+			}
+		}
+
+		return
+	}
+
 	// re-path it with working directory if not absolute path
 	if !path.IsAbs(entry.JsonPath) {
 		wd, _ := os.Getwd()
@@ -237,20 +295,4 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 			})
 		}
 	}
-}
-
-func readFileFromEmbed(filePath string) []byte {
-	var file fs.File
-	var err error
-
-	if file, err = rkembed.AssetsFS.Open(filePath); err != nil {
-		return []byte{}
-	}
-
-	var bytes []byte
-	if bytes, err = ioutil.ReadAll(file); err != nil {
-		return []byte{}
-	}
-
-	return bytes
 }

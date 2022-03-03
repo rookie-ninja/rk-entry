@@ -29,10 +29,10 @@ cert:
   - name: ut-cert
 `
 	raw := []byte(bootStr)
-	registerConfigEntry(raw)
-	registerLoggerEntry(raw)
-	registerEventEntry(raw)
-	registerCertEntry(raw)
+	RegisterConfigEntryYAML(raw)
+	RegisterLoggerEntryYAML(raw)
+	RegisterEventEntryYAML(raw)
+	RegisterCertEntryYAML(raw)
 
 	assert.NotNil(t, GlobalAppCtx.GetConfigEntry("ut-config"))
 	assert.Nil(t, GlobalAppCtx.GetConfigEntry("ut-config-1"))
@@ -56,7 +56,7 @@ config:
   - name: ut-config
 `
 	raw := []byte(bootStr)
-	registerConfigEntry(raw)
+	RegisterConfigEntryYAML(raw)
 
 	assert.Len(t, GlobalAppCtx.ListEntriesByType(ConfigEntryType), 1)
 	GlobalAppCtx.RemoveEntryByType(ConfigEntryType)
@@ -73,7 +73,7 @@ func TestGlobalAppCtx_init(t *testing.T) {
 	assert.NotNil(t, GlobalAppCtx.GetAppInfoEntry())
 
 	// validate basic entry reg functions.
-	assert.Len(t, entryRegFuncList, 5)
+	assert.Empty(t, entryRegFuncList)
 
 	// validate app info entry
 	assert.NotNil(t, GlobalAppCtx.GetAppInfoEntry())

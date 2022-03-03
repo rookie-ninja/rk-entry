@@ -6,6 +6,8 @@
 package rkentry
 
 import (
+	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -28,12 +30,14 @@ var (
 	}
 
 	// List of entry registration function
-	entryRegFuncList = []RegFunc{
-		registerAppInfoEntry,
-		registerLoggerEntry,
-		registerEventEntry,
-		registerConfigEntry,
-		registerCertEntry,
+	entryRegFuncList = make([]RegFunc, 0)
+
+	builtinRegFuncList = []RegFunc{
+		registerAppInfoEntryYAML,
+		RegisterLoggerEntryYAML,
+		RegisterEventEntryYAML,
+		RegisterConfigEntryYAML,
+		RegisterCertEntryYAML,
 	}
 
 	LoggerEntryNoop   = NewLoggerEntryNoop()
@@ -44,6 +48,9 @@ var (
 
 // ShutdownHook defines interface of shutdown hook
 type ShutdownHook func()
+
+type ReadinessCheck func(req *http.Request, resp http.ResponseWriter) bool
+type LivenessCheck func(req *http.Request, resp http.ResponseWriter) bool
 
 // Init global app context with bellow fields.
 func init() {
@@ -60,7 +67,9 @@ type appContext struct {
 	// at beginning of go process in init() function.
 	startTime    time.Time     `json:"startTime" yaml:"startTime"`
 	appInfoEntry *appInfoEntry `json:"appInfoEntry" yaml:"appInfoEntry"`
-	bootConfig   interface{}   `json:"-" yaml:"-"`
+
+	readinessCheck ReadinessCheck `json:"-" yaml:"-"`
+	livenessCheck  LivenessCheck  `json:"-" yaml:"-"`
 
 	entries map[string]map[string]Entry `json:"-" yaml:"-"`
 
@@ -78,6 +87,15 @@ func RegisterEntryRegFunc(regFunc RegFunc) {
 	entryRegFuncList = append(entryRegFuncList, regFunc)
 }
 
+// RegisterPreloadRegFunc register user defined registration function.
+// Call this while you need provided Entry needs to be registered and bootstrapped before any other Entry.
+func RegisterPreloadRegFunc(regFunc RegFunc) {
+	if regFunc == nil {
+		return
+	}
+	builtinRegFuncList = append(builtinRegFuncList, regFunc)
+}
+
 // ListEntryRegFunc list user defined registration functions.
 func ListEntryRegFunc() []RegFunc {
 	// make a copy of the list
@@ -87,6 +105,28 @@ func ListEntryRegFunc() []RegFunc {
 	}
 
 	return res
+}
+
+// BootstrapPreloadEntryYAML register and bootstrap builtin entries first
+func BootstrapPreloadEntryYAML(raw []byte) {
+	ctx := context.Background()
+
+	for i := range builtinRegFuncList {
+		entries := builtinRegFuncList[i](raw)
+		for _, v := range entries {
+			v.Bootstrap(ctx)
+		}
+	}
+}
+
+// SetReadinessCheck set readiness check function
+func (ctx *appContext) SetReadinessCheck(f ReadinessCheck) {
+	ctx.readinessCheck = f
+}
+
+// SetLivenessCheck set liveness check function
+func (ctx *appContext) SetLivenessCheck(f LivenessCheck) {
+	ctx.livenessCheck = f
 }
 
 // ********************************

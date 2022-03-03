@@ -18,7 +18,8 @@ func TestRegisterCommonServiceEntry(t *testing.T) {
 		PathPrefix: "ut-prefix",
 	})
 
-	assert.Contains(t, entry.HealthyPath, "/ut-prefix")
+	assert.Contains(t, entry.ReadyPath, "/ut-prefix")
+	assert.Contains(t, entry.AlivePath, "/ut-prefix")
 	assert.Contains(t, entry.GcPath, "/ut-prefix")
 	assert.Contains(t, entry.InfoPath, "/ut-prefix")
 
@@ -56,7 +57,7 @@ func TestCommonServiceEntry_Healthy(t *testing.T) {
 
 	writer := httptest.NewRecorder()
 
-	entry.Healthy(writer, nil)
+	entry.Ready(writer, nil)
 	assert.Equal(t, 200, writer.Code)
 	assert.Contains(t, writer.Body.String(), "true")
 }
