@@ -67,7 +67,6 @@ type appContext struct {
 	// at beginning of go process in init() function.
 	startTime    time.Time     `json:"startTime" yaml:"startTime"`
 	appInfoEntry *appInfoEntry `json:"appInfoEntry" yaml:"appInfoEntry"`
-	bootConfig   interface{}   `json:"-" yaml:"-"`
 
 	readinessCheck ReadinessCheck `json:"-" yaml:"-"`
 	livenessCheck  LivenessCheck  `json:"-" yaml:"-"`
