@@ -14,7 +14,14 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strconv"
 	"strings"
+	"sync"
+)
+
+var (
+	envLogOnce  sync.Once
+	flagLogOnce sync.Once
 )
 
 // UnmarshalBootYAML this function will parse boot config file with ENV and pflag overrides.
@@ -81,18 +88,14 @@ func UnmarshalBootYAML(raw []byte, config interface{}) {
 	}
 
 	// 2: get ENV overrides
-	envOverridesBootM, err := parseEnvOverrides("RK")
-	if err != nil {
-		ShutdownWithError(err)
-	}
+	// ignoring error, output to stdout already
+	envOverridesBootM, _ := parseEnvOverrides("RK")
 
 	// 3: get flag overrides
 	pFlag := pflag.NewFlagSet("rk", pflag.ContinueOnError)
 	pFlag.String("rkset", "", "")
-	flagOverridesBootM, err := parseFlagOverrides(pFlag)
-	if err != nil {
-		ShutdownWithError(err)
-	}
+	// ignoring error, output to stdout already
+	flagOverridesBootM, _ := parseFlagOverrides(pFlag)
 
 	// 4: override environment first, and then flags
 	overrideMap(originalBootM, envOverridesBootM)
@@ -286,9 +289,41 @@ func overrideSlice(src []interface{}, override []interface{}) {
 	}
 }
 
+// reformatEnvKey will try to reformat array element
+// Example:
+// gin:
+//   - name: greeter
+//
+// In order to override name, env values should be like: RK_GIN_0_NAME=greeter-replaced
+//
+// This function will convert RK_GIN_0_NAME to rk.gin[0].name
+func reformatEnvKey(input string) string {
+	list := make([]string, 0)
+
+	tokens := strings.Split(input, ".")
+	for i := range tokens {
+		token := tokens[i]
+		index, err := strconv.Atoi(token)
+		if err != nil {
+			list = append(list, token)
+			continue
+		}
+
+		if i > 0 {
+			listLastIndex := len(list) - 1
+			if listLastIndex >= 0 {
+				list[listLastIndex] = fmt.Sprintf("%s[%d]", list[listLastIndex], index)
+			}
+		}
+	}
+
+	return strings.Join(list, ".")
+}
+
 // parseEnvOverrides read environment variables and convert to map
 func parseEnvOverrides(prefix string) (map[interface{}]interface{}, error) {
 	overrideValueList := make([]string, 0)
+	forLogList := make([]string, 0)
 
 	// 1: iterate ENV values and filter with prefix
 	for _, val := range os.Environ() {
@@ -303,7 +338,18 @@ func parseEnvOverrides(prefix string) (map[interface{}]interface{}, error) {
 
 		// convert key
 		newKey := strings.ToLower(strings.ReplaceAll(strings.TrimPrefix(tokens[0], strings.ToUpper(prefix)+"_"), "_", "."))
+		// Notice: in order to distinguish arrays in key, we defined a special case as bellow.
+		// 1: Environment variables allowed is [a-zA-Z_], so we will use [_number_] to represent arrays. The downside is do not start name with number
+		//
+		// Example:
+		// gin:
+		//   - name: greeter
+		//
+		// In order to override name, env values should be like: RK_GIN_0_NAME=greeter-replaced
+		newKey = reformatEnvKey(newKey)
 		newValue := tokens[1]
+
+		forLogList = append(forLogList, fmt.Sprintf("%s => %s=%s", val, newKey, newValue))
 
 		overrideValueList = append(overrideValueList, fmt.Sprintf("%s=%s", newKey, newValue))
 	}
@@ -312,7 +358,23 @@ func parseEnvOverrides(prefix string) (map[interface{}]interface{}, error) {
 	overrideValueFlatten := strings.Join(overrideValueList, ",")
 
 	// 3: parse to map
-	return parseBootOverrides(overrideValueFlatten)
+	res, err := parseBootOverrides(overrideValueFlatten)
+
+	envLogOnce.Do(func() {
+		if len(forLogList) > 0 {
+			zapFields := []zap.Field{
+				zap.Strings("env", forLogList),
+			}
+
+			if err != nil {
+				LoggerEntryStdout.Warn("Found ENV to override, but failed to parse, ignoring...", zapFields...)
+			} else {
+				LoggerEntryStdout.Info("Found ENV to override, applying...", zapFields...)
+			}
+		}
+	})
+
+	return res, err
 }
 
 // parseEnvOverrides read flag values and convert to map
@@ -329,7 +391,23 @@ func parseFlagOverrides(set *pflag.FlagSet) (map[interface{}]interface{}, error)
 	overrideValueFlatten := strings.Join(overrideValueList, ",")
 
 	// 3: parse to map
-	return parseBootOverrides(overrideValueFlatten)
+	res, err := parseBootOverrides(overrideValueFlatten)
+
+	flagLogOnce.Do(func() {
+		if len(overrideValueFlatten) > 0 {
+			zapFields := []zap.Field{
+				zap.Strings("flags", overrideValueList),
+			}
+
+			if err != nil {
+				LoggerEntryStdout.Warn("Found flag to override, but failed to parse, ignoring...", zapFields...)
+			} else {
+				LoggerEntryStdout.Info("Found flag to override, applying...", zapFields...)
+			}
+		}
+	})
+
+	return res, err
 }
 
 // overrideLumberjackConfig override lumberjack config.
