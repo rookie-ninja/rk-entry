@@ -8,8 +8,8 @@ package rkmidmeta
 
 import (
 	"fmt"
-	"github.com/rookie-ninja/rk-entry/entry"
-	"github.com/rookie-ninja/rk-entry/middleware"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
+	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"github.com/rookie-ninja/rk-query"
 	"net/http"
 	"strings"

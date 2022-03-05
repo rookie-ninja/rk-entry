@@ -10,7 +10,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
-	rkembed "github.com/rookie-ninja/rk-entry"
+	"github.com/rookie-ninja/rk-entry/v2"
 	"io/ioutil"
 	"net/http"
 	"os"

@@ -7,7 +7,7 @@
 package rkmidcors
 
 import (
-	"github.com/rookie-ninja/rk-entry/middleware"
+	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"net/http"
 	"regexp"
 	"strconv"

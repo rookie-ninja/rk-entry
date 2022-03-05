@@ -8,7 +8,7 @@ package rkmidpanic
 
 import (
 	"fmt"
-	rkerror "github.com/rookie-ninja/rk-entry/error"
+	"github.com/rookie-ninja/rk-entry/v2/error"
 	"github.com/rookie-ninja/rk-query"
 	"go.uber.org/zap"
 	"runtime/debug"

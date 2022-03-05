@@ -8,8 +8,8 @@ package rkmidlimit
 
 import (
 	"github.com/pkg/errors"
-	rkerror "github.com/rookie-ninja/rk-entry/error"
-	rkmid "github.com/rookie-ninja/rk-entry/middleware"
+	"github.com/rookie-ninja/rk-entry/v2/error"
+	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	uber "go.uber.org/ratelimit"
 	"net/http"
 	"strings"

@@ -9,7 +9,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
-	"github.com/rookie-ninja/rk-entry/entry"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
 	_ "github.com/rookie-ninja/rk-query"
 	"os"
 )

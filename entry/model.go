@@ -6,7 +6,7 @@
 package rkentry
 
 import (
-	"github.com/rookie-ninja/rk-entry/os"
+	"github.com/rookie-ninja/rk-entry/v2/os"
 	"os"
 	"os/user"
 	"time"

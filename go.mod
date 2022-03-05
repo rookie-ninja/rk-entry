@@ -1,4 +1,4 @@
-module github.com/rookie-ninja/rk-entry
+module github.com/rookie-ninja/rk-entry/v2
 
 go 1.17
 
