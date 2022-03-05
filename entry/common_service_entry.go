@@ -53,18 +53,32 @@ type CommonServiceEntry struct {
 	InfoPath         string `json:"-" yaml:"-"`
 }
 
+// CommonServiceEntryOption option for CommonServiceEntry
+type CommonServiceEntryOption func(entry *CommonServiceEntry)
+
+// WithNameCommonServiceEntry provide entry name
+func WithNameCommonServiceEntry(name string) CommonServiceEntryOption {
+	return func(entry *CommonServiceEntry) {
+		entry.entryName = name
+	}
+}
+
 // RegisterCommonServiceEntry Create new common service entry with options.
-func RegisterCommonServiceEntry(boot *BootCommonService) *CommonServiceEntry {
+func RegisterCommonServiceEntry(boot *BootCommonService, opts ...CommonServiceEntryOption) *CommonServiceEntry {
 	if boot.Enabled {
 		entry := &CommonServiceEntry{
 			entryName:        "CommonServiceEntry",
-			entryType:        "CommonServiceEntry",
+			entryType:        CommonServiceEntryType,
 			entryDescription: "Internal RK entry which implements commonly used API.",
 			ReadyPath:        "ready",
 			AlivePath:        "alive",
 			GcPath:           "gc",
 			InfoPath:         "info",
 			pathPrefix:       boot.PathPrefix,
+		}
+
+		for i := range opts {
+			opts[i](entry)
 		}
 
 		if len(boot.PathPrefix) < 1 {

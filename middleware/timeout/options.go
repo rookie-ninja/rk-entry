@@ -19,7 +19,7 @@ import (
 const global = "rk-global"
 
 var (
-	defaultErrResp = rkerror.NewTimeout()
+	defaultErrResp = rkerror.NewTimeout("")
 	defaultTimeout = 10 * time.Second
 )
 

@@ -13,7 +13,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	res := New(http.StatusInternalServerError)
+	res := New(http.StatusInternalServerError, "ut-error")
 
 	assert.NotNil(t, res)
 	assert.Equal(t, http.StatusInternalServerError, res.Err.Code)
@@ -26,7 +26,7 @@ func TestNewUnauthorized(t *testing.T) {
 	res := NewUnauthorized("rk error")
 	assert.Equal(t, http.StatusUnauthorized, res.Err.Code)
 	assert.Equal(t, http.StatusText(http.StatusUnauthorized), res.Err.Status)
-	assert.Equal(t, "rk error", res.Err.Details[0])
+	assert.Equal(t, "rk error", res.Err.Message)
 }
 
 func TestNewInternalError(t *testing.T) {
@@ -34,7 +34,7 @@ func TestNewInternalError(t *testing.T) {
 	res := NewInternalError("rk error")
 	assert.Equal(t, http.StatusInternalServerError, res.Err.Code)
 	assert.Equal(t, http.StatusText(http.StatusInternalServerError), res.Err.Status)
-	assert.Equal(t, "rk error", res.Err.Details[0])
+	assert.Equal(t, "rk error", res.Err.Message)
 }
 
 func TestNewBadRequest(t *testing.T) {
@@ -42,7 +42,7 @@ func TestNewBadRequest(t *testing.T) {
 	res := NewBadRequest("rk error")
 	assert.Equal(t, http.StatusBadRequest, res.Err.Code)
 	assert.Equal(t, http.StatusText(http.StatusBadRequest), res.Err.Status)
-	assert.Equal(t, "rk error", res.Err.Details[0])
+	assert.Equal(t, "rk error", res.Err.Message)
 }
 
 func TestNewForbidden(t *testing.T) {
@@ -50,7 +50,7 @@ func TestNewForbidden(t *testing.T) {
 	res := NewForbidden("rk error")
 	assert.Equal(t, http.StatusForbidden, res.Err.Code)
 	assert.Equal(t, http.StatusText(http.StatusForbidden), res.Err.Status)
-	assert.Equal(t, "rk error", res.Err.Details[0])
+	assert.Equal(t, "rk error", res.Err.Message)
 }
 
 func TestNewTooManyRequests(t *testing.T) {
@@ -58,7 +58,7 @@ func TestNewTooManyRequests(t *testing.T) {
 	res := NewTooManyRequests("rk error")
 	assert.Equal(t, http.StatusTooManyRequests, res.Err.Code)
 	assert.Equal(t, http.StatusText(http.StatusTooManyRequests), res.Err.Status)
-	assert.Equal(t, "rk error", res.Err.Details[0])
+	assert.Equal(t, "rk error", res.Err.Message)
 }
 
 func TestNewTimeout(t *testing.T) {
@@ -66,7 +66,7 @@ func TestNewTimeout(t *testing.T) {
 	res := NewTimeout("rk error")
 	assert.Equal(t, http.StatusRequestTimeout, res.Err.Code)
 	assert.Equal(t, http.StatusText(http.StatusRequestTimeout), res.Err.Status)
-	assert.Equal(t, "rk error", res.Err.Details[0])
+	assert.Equal(t, "rk error", res.Err.Message)
 }
 
 func TestFromError_WithNilError(t *testing.T) {

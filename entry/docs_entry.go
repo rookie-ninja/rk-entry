@@ -10,7 +10,6 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
-	"fmt"
 	rkembed "github.com/rookie-ninja/rk-entry"
 	"io/ioutil"
 	"net/http"
@@ -55,10 +54,7 @@ type BootDocs struct {
 	Style    struct {
 		Theme string `yaml:"theme" json:"theme"`
 	} `yaml:"style" json:"style"`
-	Debug struct {
-		Enabled bool   `yaml:"enabled" json:"enabled"`
-		Path    string `yaml:"path" json:"path"`
-	} `yaml:"debug" json:"debug"`
+	Debug bool `yaml:"debug" json:"debug"`
 }
 
 // DocsEntry implements rkentry.Entry interface.
@@ -69,21 +65,21 @@ type DocsEntry struct {
 	SpecPath         string            `json:"-" yaml:"-"`
 	Path             string            `json:"-" yaml:"-"`
 	Headers          map[string]string `json:"-" yaml:"-"`
-	Debug            struct {
-		Enabled bool `yaml:"-" json:"-"`
-	} `yaml:"-" json:"-"`
-	Style struct {
+	Debug            bool              `yaml:"-" json:"-"`
+	Style            struct {
 		Theme string `yaml:"-" json:"-"`
 	} `yaml:"-" json:"-"`
 	embedFS *embed.FS `json:"-" yaml:"-"`
 }
 
+// WithNameDocsEntry provide name of DocsEntry
 func WithNameDocsEntry(name string) DocsEntryOption {
 	return func(entry *DocsEntry) {
 		entry.entryName = name
 	}
 }
 
+// RegisterDocsEntry register DocsEntry
 func RegisterDocsEntry(boot *BootDocs, opts ...DocsEntryOption) *DocsEntry {
 	var docsEntry *DocsEntry
 	if boot.Enabled {
@@ -99,7 +95,7 @@ func RegisterDocsEntry(boot *BootDocs, opts ...DocsEntryOption) *DocsEntry {
 
 		docsEntry = &DocsEntry{
 			entryName:        "DocsEntry",
-			entryType:        "DocsEntry",
+			entryType:        DocsEntryType,
 			entryDescription: "Internal RK entry for documentation UI.",
 			Path:             boot.Path,
 			SpecPath:         boot.SpecPath,
@@ -110,11 +106,13 @@ func RegisterDocsEntry(boot *BootDocs, opts ...DocsEntryOption) *DocsEntry {
 			opts[i](docsEntry)
 		}
 
+		docsEntry.embedFS = GlobalAppCtx.GetEmbedFS(docsEntry.GetType(), docsEntry.GetName())
+
 		if len(docsEntry.Path) < 1 {
 			docsEntry.Path = "/docs"
 		}
 
-		docsEntry.Debug.Enabled = boot.Debug.Enabled
+		docsEntry.Debug = boot.Debug
 
 		docsEntry.Style.Theme = strings.ToLower(boot.Style.Theme)
 		if docsEntry.Style.Theme != "light" && docsEntry.Style.Theme != "dark" {
@@ -129,27 +127,34 @@ func RegisterDocsEntry(boot *BootDocs, opts ...DocsEntryOption) *DocsEntry {
 	return docsEntry
 }
 
+// DocsEntryOption option of DocsEntry
 type DocsEntryOption func(entry *DocsEntry)
 
+// Bootstrap Entry
 func (entry *DocsEntry) Bootstrap(ctx context.Context) {
 	// init swagger configs
 	entry.initDocsConfig()
 }
 
+// Interrupt Entry
 func (entry *DocsEntry) Interrupt(ctx context.Context) {}
 
+// GetName get name of Entry
 func (entry *DocsEntry) GetName() string {
 	return entry.entryName
 }
 
+// GetType get type of Entry
 func (entry *DocsEntry) GetType() string {
 	return entry.entryType
 }
 
+// GetDescription get description of Entry
 func (entry *DocsEntry) GetDescription() string {
 	return entry.entryDescription
 }
 
+// String get string of Entry
 func (entry *DocsEntry) String() string {
 	bytes, _ := json.Marshal(entry)
 	return string(bytes)
@@ -164,7 +169,7 @@ func (entry *DocsEntry) MarshalJSON() ([]byte, error) {
 		"specPath":    entry.SpecPath,
 		"path":        entry.Path,
 		"Headers":     entry.Headers,
-		"debug":       entry.Debug.Enabled,
+		"debug":       entry.Debug,
 	}
 
 	return json.Marshal(m)
@@ -173,10 +178,6 @@ func (entry *DocsEntry) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON Unmarshal entry
 func (entry *DocsEntry) UnmarshalJSON([]byte) error {
 	return nil
-}
-
-func (entry *DocsEntry) SetEmbedFS(fs *embed.FS) {
-	entry.embedFS = fs
 }
 
 // ConfigFileHandler handler for swagger config files.
@@ -255,7 +256,7 @@ func (entry *DocsEntry) initDocsConfig() {
 		config.Style.BgColor = "#FAFAFA"
 	}
 
-	if entry.Debug.Enabled {
+	if entry.Debug {
 		config.Style.RenderStyle = "focused"
 		config.Style.AllowTry = true
 	}
@@ -307,8 +308,6 @@ func (entry *DocsEntry) listFilesWithSuffix(config *docsConfig, specPath string,
 		wd, _ := os.Getwd()
 		specPath = path.Join(wd, specPath)
 	}
-
-	fmt.Println(specPath)
 
 	files, err := ioutil.ReadDir(specPath)
 	if err != nil && !ignoreError {

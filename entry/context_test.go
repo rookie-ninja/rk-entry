@@ -7,7 +7,9 @@ package rkentry
 
 import (
 	"context"
+	"embed"
 	"github.com/stretchr/testify/assert"
+	"net/http"
 	"os"
 	"syscall"
 	"testing"
@@ -371,6 +373,61 @@ func TestAppContext_WaitForShutdownSig(t *testing.T) {
 	}()
 
 	GlobalAppCtx.WaitForShutdownSig()
+}
+
+func TestRegisterPreloadRegFunc(t *testing.T) {
+	defer assertNotPanic(t)
+
+	m := map[string]Entry{}
+	f := func(raw []byte) map[string]Entry {
+		return m
+	}
+
+	RegisterPreloadRegFunc(f)
+	assert.True(t, len(builtinRegFuncList) > 0)
+}
+
+func TestBootstrapPreloadEntryYAML(t *testing.T) {
+	defer assertNotPanic(t)
+
+	m := map[string]Entry{}
+	f := func(raw []byte) map[string]Entry {
+		return m
+	}
+
+	RegisterPreloadRegFunc(f)
+	assert.True(t, len(builtinRegFuncList) > 0)
+
+	BootstrapPreloadEntryYAML([]byte{})
+}
+
+func TestAppContext_AddEmbedFS(t *testing.T) {
+	// invalid case
+	GlobalAppCtx.AddEmbedFS("", "name", &embed.FS{})
+	assert.Empty(t, GlobalAppCtx.embedFS)
+
+	GlobalAppCtx.AddEmbedFS("type", "", &embed.FS{})
+	assert.Empty(t, GlobalAppCtx.embedFS)
+
+	GlobalAppCtx.AddEmbedFS("type", "name", nil)
+	assert.Empty(t, GlobalAppCtx.embedFS)
+
+	// happy case
+	GlobalAppCtx.AddEmbedFS("type", "name", &embed.FS{})
+	assert.NotEmpty(t, GlobalAppCtx.embedFS)
+	assert.NotNil(t, GlobalAppCtx.GetEmbedFS("type", "name"))
+}
+
+func TestAppContext_SetReadinessCheck(t *testing.T) {
+	GlobalAppCtx.SetReadinessCheck(func(req *http.Request, resp http.ResponseWriter) bool {
+		return true
+	})
+	GlobalAppCtx.SetLivenessCheck(func(req *http.Request, resp http.ResponseWriter) bool {
+		return true
+	})
+
+	assert.NotNil(t, GlobalAppCtx.readinessCheck)
+	assert.NotNil(t, GlobalAppCtx.livenessCheck)
 }
 
 type EntryMock struct {

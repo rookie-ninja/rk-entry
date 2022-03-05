@@ -2,7 +2,6 @@ package rkentry
 
 import (
 	"context"
-	"embed"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/stretchr/testify/assert"
@@ -92,17 +91,4 @@ func TestPromEntry_Bootstrap(t *testing.T) {
 	time.Sleep(3 * time.Second)
 
 	entry.Interrupt(context.TODO())
-}
-
-func TestPushGatewayPusher_SetEmbedFS(t *testing.T) {
-	boot := &BootProm{
-		Enabled: true,
-	}
-	boot.Pusher.Enabled = true
-	entry := RegisterPromEntry(boot)
-
-	assert.Nil(t, entry.Pusher.embedFS)
-
-	entry.Pusher.SetEmbedFS(&embed.FS{})
-	assert.NotNil(t, entry.Pusher.embedFS)
 }

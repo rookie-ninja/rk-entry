@@ -23,8 +23,8 @@ import (
 // Since we don't need any log rotation in case of noop, lumberjack config will be nil.
 func NewEventEntryNoop() *EventEntry {
 	entry := &EventEntry{
-		entryName:        "EventLoggerNoop",
-		entryType:        "EventLoggerEntry",
+		entryName:        "EventNoop",
+		entryType:        EventEntryType,
 		entryDescription: "Internal RK entry which is used to log event such as RPC request or periodic jobs.",
 		EventFactory:     rkquery.NewEventFactory(rkquery.WithZapLogger(rklogger.NoopLogger)),
 	}
@@ -34,10 +34,11 @@ func NewEventEntryNoop() *EventEntry {
 	return entry
 }
 
+// NewEventEntryStdout create event logger entry with stdout event factory.
 func NewEventEntryStdout() *EventEntry {
 	entry := &EventEntry{
-		entryName:        "EventLoggerNoop",
-		entryType:        "EventLoggerEntry",
+		entryName:        "EventNoop",
+		entryType:        EventEntryType,
 		entryDescription: "Internal RK entry which is used to log event such as RPC request or periodic jobs.",
 		EventFactory:     rkquery.NewEventFactory(rkquery.WithZapLogger(rklogger.EventLogger)),
 		LoggerConfig:     rklogger.EventLoggerConfig,
@@ -168,6 +169,7 @@ type BootEvent struct {
 	Event []*BootEventE `yaml:"event" json:"event"`
 }
 
+// BootLoki bootstrap config of Loki
 type BootLoki struct {
 	Enabled            bool              `yaml:"enabled" json:"enabled"`
 	Addr               string            `yaml:"addr" json:"addr"`
@@ -180,6 +182,7 @@ type BootLoki struct {
 	MaxBatchSize       int               `yaml:"maxBatchSize" json:"maxBatchSize"`
 }
 
+// BootEventE bootstrap element of EventEntry
 type BootEventE struct {
 	Name        string             `yaml:"name" json:"name"`
 	Description string             `yaml:"description" json:"description"`

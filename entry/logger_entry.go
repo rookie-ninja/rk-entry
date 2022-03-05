@@ -20,8 +20,8 @@ import (
 // NewLoggerEntryNoop create zap logger entry with noop.
 func NewLoggerEntryNoop() *LoggerEntry {
 	return &LoggerEntry{
-		entryName:        "ZapLoggerEntryNoop",
-		entryType:        "ZapLoggerEntry",
+		entryName:        "LoggerEntryNoop",
+		entryType:        LoggerEntryType,
 		entryDescription: "Internal RK entry which is used for noop logging with zap.Logger.",
 		Logger:           rklogger.NoopLogger,
 		LoggerConfig:     nil,
@@ -32,8 +32,8 @@ func NewLoggerEntryNoop() *LoggerEntry {
 // NewLoggerEntryStdout create zap logger entry with STDOUT.
 func NewLoggerEntryStdout() *LoggerEntry {
 	return &LoggerEntry{
-		entryName:        "ZapLoggerEntryStdout",
-		entryType:        "ZapLoggerEntry",
+		entryName:        "LoggerEntryStdout",
+		entryType:        LoggerEntryType,
 		entryDescription: "Internal RK entry which is used for noop logging with zap.Logger.",
 		Logger:           rklogger.StdoutLogger,
 		LoggerConfig:     rklogger.StdoutLoggerConfig,
@@ -147,6 +147,7 @@ type BootLogger struct {
 	Logger []*BootLoggerE `json:"logger" yaml:"logger"`
 }
 
+// BootLoggerE bootstrap element of LoggerEntry
 type BootLoggerE struct {
 	Name        string                  `yaml:"name" json:"name"`
 	Description string                  `yaml:"description" json:"description"`
@@ -254,39 +255,3 @@ func (entry *LoggerEntry) Sync() {
 		entry.Logger.Sync()
 	}
 }
-
-//func (entry *LoggerEntry) WithOptions(opts ...zap.Option) *zap.Logger {
-//	return entry.Logger.WithOptions(opts...)
-//}
-//
-//func (entry *LoggerEntry) With(fields ...zap.Field) *zap.Logger {
-//	return entry.Logger.With(fields...)
-//}
-//
-//func (entry *LoggerEntry) Debug(msg string, fields ...zap.Field) {
-//	entry.Logger.Debug(msg, fields...)
-//}
-//
-//func (entry *LoggerEntry) Info(msg string, fields ...zap.Field) {
-//	entry.Logger.Info(msg, fields...)
-//}
-//
-//func (entry *LoggerEntry) Warn(msg string, fields ...zap.Field) {
-//	entry.Logger.Warn(msg, fields...)
-//}
-//
-//func (entry *LoggerEntry) Error(msg string, fields ...zap.Field) {
-//	entry.Logger.Error(msg, fields...)
-//}
-//
-//func (entry *LoggerEntry) DPanic(msg string, fields ...zap.Field) {
-//	entry.Logger.DPanic(msg, fields...)
-//}
-//
-//func (entry *LoggerEntry) Panic(msg string, fields ...zap.Field) {
-//	entry.Logger.Panic(msg, fields...)
-//}
-//
-//func (entry *LoggerEntry) Fatal(msg string, fields ...zap.Field) {
-//	entry.Logger.Fatal(msg, fields...)
-//}

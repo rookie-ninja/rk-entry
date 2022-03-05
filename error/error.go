@@ -18,7 +18,7 @@ type ErrorResp struct {
 }
 
 // New error response with options
-func New(code int, details ...interface{}) *ErrorResp {
+func New(code int, msg string, details ...interface{}) *ErrorResp {
 	resp := &ErrorResp{
 		Err: &Error{
 			Code:    code,
@@ -32,35 +32,34 @@ func New(code int, details ...interface{}) *ErrorResp {
 		resp.Err.Status = http.StatusText(http.StatusInternalServerError)
 	}
 
-	resp.Err.Message = http.StatusText(resp.Err.Code)
-
+	resp.Err.Message = msg
 	resp.Err.Details = append(resp.Err.Details, details...)
 
 	return resp
 }
 
-func NewUnauthorized(details ...interface{}) *ErrorResp {
-	return New(http.StatusUnauthorized, details...)
+func NewUnauthorized(msg string, details ...interface{}) *ErrorResp {
+	return New(http.StatusUnauthorized, msg, details...)
 }
 
-func NewInternalError(details ...interface{}) *ErrorResp {
-	return New(http.StatusInternalServerError, details...)
+func NewInternalError(msg string, details ...interface{}) *ErrorResp {
+	return New(http.StatusInternalServerError, msg, details...)
 }
 
-func NewBadRequest(details ...interface{}) *ErrorResp {
-	return New(http.StatusBadRequest, details...)
+func NewBadRequest(msg string, details ...interface{}) *ErrorResp {
+	return New(http.StatusBadRequest, msg, details...)
 }
 
-func NewForbidden(details ...interface{}) *ErrorResp {
-	return New(http.StatusForbidden, details...)
+func NewForbidden(msg string, details ...interface{}) *ErrorResp {
+	return New(http.StatusForbidden, msg, details...)
 }
 
-func NewTooManyRequests(details ...interface{}) *ErrorResp {
-	return New(http.StatusTooManyRequests, details...)
+func NewTooManyRequests(msg string, details ...interface{}) *ErrorResp {
+	return New(http.StatusTooManyRequests, msg, details...)
 }
 
-func NewTimeout(details ...interface{}) *ErrorResp {
-	return New(http.StatusRequestTimeout, details...)
+func NewTimeout(msg string, details ...interface{}) *ErrorResp {
+	return New(http.StatusRequestTimeout, msg, details...)
 }
 
 // FromError converts error to ErrorResp

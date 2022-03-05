@@ -6,7 +6,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"embed"
 	"encoding/pem"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -96,20 +95,6 @@ func TestCertEntry_Bootstrap(t *testing.T) {
 	assert.NotNil(t, entry.RootCA)
 
 	entry.Interrupt(context.TODO())
-}
-
-func TestCertEntry_SetEmbedFS(t *testing.T) {
-	entries := RegisterCertEntry(&BootCert{
-		Cert: []*BootCertE{
-			{
-				Name: "ut-cert",
-			},
-		},
-	})
-
-	entry := entries[0]
-	entry.SetEmbedFS(&embed.FS{})
-	assert.NotNil(t, entry.embedFS)
 }
 
 func TestCertEntry_UnmarshalJSON(t *testing.T) {

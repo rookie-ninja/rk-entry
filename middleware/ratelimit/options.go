@@ -7,7 +7,7 @@
 package rkmidlimit
 
 import (
-	"fmt"
+	"github.com/pkg/errors"
 	rkerror "github.com/rookie-ninja/rk-entry/error"
 	rkmid "github.com/rookie-ninja/rk-entry/middleware"
 	uber "go.uber.org/ratelimit"
@@ -135,7 +135,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 
 	limiter := set.getLimiter(ctx.Input.UrlPath)
 	if err := limiter(); err != nil {
-		ctx.Output.ErrResp = rkerror.NewTooManyRequests(err)
+		ctx.Output.ErrResp = rkerror.NewTooManyRequests(err.Error())
 		return
 	}
 
@@ -362,7 +362,7 @@ type ZeroRateLimiter struct{}
 
 // Limit will block request and return error
 func (l *ZeroRateLimiter) Limit() error {
-	return fmt.Errorf("slow down your request")
+	return errors.New("Slow down your request")
 }
 
 // leakyBucketLimiter delegates limit logic to uber.Limiter

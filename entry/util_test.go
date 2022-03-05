@@ -1,7 +1,6 @@
 package rkentry
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
@@ -492,9 +491,6 @@ func TestIsLocaleValid_WithInvalidLocale(t *testing.T) {
 }
 
 func TestIsLocaleValid_WithEmptyRealmEnv(t *testing.T) {
-
-	fmt.Println("HIHIHIHHIHIHHI")
-	fmt.Println(os.Getenv("REALM"))
 	// with realm exist in locale
 	assert.True(t, IsLocaleValid("fake-realm::*::*::*"))
 

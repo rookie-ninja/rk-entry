@@ -8,7 +8,6 @@ package rkentry
 import (
 	"bytes"
 	"context"
-	"embed"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -83,19 +82,37 @@ type StaticFileHandlerEntry struct {
 	httpFS           http.FileSystem    `yaml:"-" json:"-"`
 }
 
+// StaticFileHandlerEntryOption options for StaticFileHandlerEntry
+type StaticFileHandlerEntryOption func(entry *StaticFileHandlerEntry)
+
+// WithNameStaticFileHandlerEntry provide entry name
+func WithNameStaticFileHandlerEntry(name string) StaticFileHandlerEntryOption {
+	return func(entry *StaticFileHandlerEntry) {
+		entry.entryName = name
+	}
+}
+
 // RegisterStaticFileHandlerEntry Create new static file handler entry with config
-func RegisterStaticFileHandlerEntry(boot *BootStaticFileHandler) *StaticFileHandlerEntry {
+func RegisterStaticFileHandlerEntry(boot *BootStaticFileHandler, opts ...StaticFileHandlerEntryOption) *StaticFileHandlerEntry {
 	if !boot.Enabled {
 		return nil
 	}
 
 	entry := &StaticFileHandlerEntry{
 		entryName:        "StaticFileHandler",
-		entryType:        "StaticFileHandler",
+		entryType:        StaticFileHandlerEntryType,
 		entryDescription: "Internal RK entry which implements static file handler.",
 		Template:         template.New("rk-static"),
 		Path:             boot.Path,
 		httpFS:           http.Dir(""),
+	}
+
+	for i := range opts {
+		opts[i](entry)
+	}
+
+	if fs := GlobalAppCtx.GetEmbedFS(entry.GetType(), entry.GetName()); fs != nil {
+		entry.httpFS = http.FS(fs)
 	}
 
 	switch boot.SourceType {
@@ -122,14 +139,6 @@ func RegisterStaticFileHandlerEntry(boot *BootStaticFileHandler) *StaticFileHand
 	}
 
 	return entry
-}
-
-func (entry *StaticFileHandlerEntry) SetEmbedFS(fs embed.FS) {
-	entry.httpFS = http.FS(fs)
-}
-
-func (entry *StaticFileHandlerEntry) SetHttpFS(fs http.FileSystem) {
-	entry.httpFS = fs
 }
 
 // Bootstrap entry.
@@ -203,7 +212,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 		// open file
 		if file, err = entry.httpFS.Open(p); err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
-			bytes, _ := json.Marshal(rkerror.NewInternalError(err))
+			bytes, _ := json.Marshal(rkerror.NewInternalError("Failed to open file", err))
 			writer.Write(bytes)
 			return
 		}
@@ -212,7 +221,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 		fileInfo, err := file.Stat()
 		if err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
-			bytes, _ := json.Marshal(rkerror.NewInternalError(err))
+			bytes, _ := json.Marshal(rkerror.NewInternalError("Failed to stat file", err))
 			writer.Write(bytes)
 			return
 		}
@@ -244,7 +253,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 			buf := new(bytes.Buffer)
 			if err := entry.Template.ExecuteTemplate(buf, "index", resp); err != nil {
 				writer.WriteHeader(http.StatusInternalServerError)
-				bytes, _ := json.Marshal(rkerror.NewInternalError(err))
+				bytes, _ := json.Marshal(rkerror.NewInternalError("Failed to execute go template", err))
 				writer.Write(bytes)
 				return
 			}

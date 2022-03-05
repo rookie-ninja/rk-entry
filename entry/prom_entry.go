@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"embed"
 	"encoding/json"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -16,6 +15,7 @@ import (
 	"time"
 )
 
+// WithRegistryPromEntry provide prometheus.Registry
 func WithRegistryPromEntry(registry *prometheus.Registry) PromEntryOption {
 	return func(entry *PromEntry) {
 		entry.Registry = registry
@@ -30,7 +30,7 @@ func RegisterPromEntry(boot *BootProm, opts ...PromEntryOption) *PromEntry {
 
 	entry := &PromEntry{
 		entryName:        "PromEntry",
-		entryType:        "PromEntry",
+		entryType:        PromEntryType,
 		entryDescription: "Internal RK entry which implements prometheus client.",
 		Registerer:       prometheus.DefaultRegisterer,
 		Gatherer:         prometheus.DefaultGatherer,
@@ -165,7 +165,6 @@ type PushGatewayPusher struct {
 	RemoteAddress string        `json:"-" yaml:"-"`
 	JobName       string        `json:"-" yaml:"-"`
 	running       *atomic.Bool  `json:"-" yaml:"-"`
-	embedFS       *embed.FS     `json:"-" yaml:"-"`
 	certEntry     *CertEntry    `json:"-" yaml:"-"`
 }
 
@@ -216,10 +215,6 @@ func newPushGatewayPusher(boot *BootProm, gatherer prometheus.Gatherer) *PushGat
 	pg.Pusher.Gatherer(gatherer)
 
 	return pg
-}
-
-func (pub *PushGatewayPusher) SetEmbedFS(fs *embed.FS) {
-	pub.embedFS = fs
 }
 
 // Bootstrap starts a periodic job

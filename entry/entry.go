@@ -21,9 +21,19 @@ const (
 	EventEntryType = "EventEntry"
 	// LoggerEntryType public access
 	LoggerEntryType = "LoggerEntry"
+	// CommonServiceEntryType public access
+	CommonServiceEntryType = "CommonServiceEntry"
+	// SWEntryType public access
+	SWEntryType = "SWEntry"
+	// StaticFileHandlerEntryType public access
+	StaticFileHandlerEntryType = "StaticFileHandlerEntry"
+	// PromEntryType public access
+	PromEntryType = "PromEntry"
+	// DocsEntryType public access
+	DocsEntryType = "DocsEntry"
 )
 
-// An entry could be any kinds of services or pieces of codes which
+// RegFunc can be used to create an entry could be any kinds of services or pieces of codes which
 // needs to be bootstrap/initialized while application starts.
 //
 // A third party entry could be implemented and inject to rk-boot via rk-boot.yaml file
