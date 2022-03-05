@@ -149,15 +149,6 @@ info:
     name: rk-dev
     url: https://github.com/rookie-ninja/rk-entry
   description: |+
-    <!-- START doctoc generated TOC please keep comment here to allow auto update -->
-    <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-    **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
-    - [Description](#description)
-    - [APIs](#apis)
-
-    <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
     ## Description
     Builtin APIs supported via [rk-entry](https://github.com/rookie-ninja/rk-entry).
 

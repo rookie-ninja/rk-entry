@@ -6,22 +6,6 @@
 
 The entry library mainly used by rk-boot.
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
-
-- [Notice of V2!](#notice-of-v2)
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-  - [Entry](#entry)
-  - [Interact with rk-boot.Bootstrapper?](#interact-with-rk-bootbootstrapper)
-  - [GlobalAppCtx](#globalappctx)
-  - [Builtin Entry](#builtin-entry)
-- [How to use?](#how-to-use)
-- [Contributing](#contributing)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 ## Notice of V2!
 > rookie-ninja/rk-entry is under big refactoring stage.
 > 
