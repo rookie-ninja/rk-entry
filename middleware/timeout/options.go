@@ -7,9 +7,9 @@
 package rkmidtimeout
 
 import (
-	"github.com/rookie-ninja/rk-entry/entry"
-	rkerror "github.com/rookie-ninja/rk-entry/error"
-	rkmid "github.com/rookie-ninja/rk-entry/middleware"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
+	"github.com/rookie-ninja/rk-entry/v2/error"
+	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"github.com/rookie-ninja/rk-query"
 	"net/http"
 	"strings"

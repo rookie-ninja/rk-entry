@@ -6,7 +6,7 @@
 package rkmidmeta
 
 import (
-	"github.com/rookie-ninja/rk-entry/entry"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"

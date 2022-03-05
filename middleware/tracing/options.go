@@ -9,8 +9,8 @@ package rkmidtrace
 import (
 	"context"
 	"fmt"
-	"github.com/rookie-ninja/rk-entry/entry"
-	"github.com/rookie-ninja/rk-entry/middleware"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
+	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"github.com/rookie-ninja/rk-logger"
 	"go.opentelemetry.io/contrib"
 	"go.opentelemetry.io/otel/attribute"

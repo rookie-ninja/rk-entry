@@ -6,7 +6,7 @@
 package rkmidlog
 
 import (
-	"github.com/rookie-ninja/rk-entry/entry"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
 	"github.com/rookie-ninja/rk-query"
 	"github.com/stretchr/testify/assert"
 	"net/http"

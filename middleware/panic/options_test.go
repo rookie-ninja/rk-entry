@@ -6,8 +6,8 @@
 package rkmidpanic
 
 import (
-	"github.com/rookie-ninja/rk-entry/entry"
-	rkerror "github.com/rookie-ninja/rk-entry/error"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
+	"github.com/rookie-ninja/rk-entry/v2/error"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"

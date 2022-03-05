@@ -8,8 +8,8 @@ package rkmidprom
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rookie-ninja/rk-entry/entry"
-	"github.com/rookie-ninja/rk-entry/middleware"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
+	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"net/http"
 	"strings"
 	"time"

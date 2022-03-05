@@ -9,7 +9,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"github.com/rookie-ninja/rk-entry/middleware"
+	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"github.com/rookie-ninja/rk-logger"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

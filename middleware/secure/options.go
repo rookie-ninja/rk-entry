@@ -8,7 +8,7 @@ package rkmidsec
 
 import (
 	"fmt"
-	"github.com/rookie-ninja/rk-entry/middleware"
+	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"net/http"
 	"strings"
 )

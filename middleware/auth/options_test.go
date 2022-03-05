@@ -8,7 +8,7 @@ package rkmidauth
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/rookie-ninja/rk-entry/middleware"
+	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
