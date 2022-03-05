@@ -43,6 +43,8 @@ type OptionSetInterface interface {
 	Before(*BeforeCtx)
 
 	BeforeCtx(*http.Request, context.Context) *BeforeCtx
+
+	ShouldIgnore(string) bool
 }
 
 // ***************** OptionSet Implementation *****************
@@ -55,7 +57,7 @@ type optionSet struct {
 	// EntryType type of entry
 	entryType string
 
-	ignorePrefix []string
+	pathToIgnore []string
 
 	// extractors of JWT token from http.Request
 	extractors []jwtHttpExtractor
@@ -132,7 +134,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 		claims:           jwt.MapClaims{},
 		tokenLookup:      "header:" + rkmid.HeaderAuthorization,
 		authScheme:       "Bearer",
-		ignorePrefix:     []string{},
+		pathToIgnore:     []string{},
 	}
 
 	set.keyFunc = set.defaultKeyFunc
@@ -191,7 +193,7 @@ func (set *optionSet) BeforeCtx(req *http.Request, userCtx context.Context) *Bef
 
 // Before should run before user handler
 func (set *optionSet) Before(ctx *BeforeCtx) {
-	if ctx == nil || set.ignore(ctx.Input.UrlPath) {
+	if ctx == nil || set.ShouldIgnore(ctx.Input.UrlPath) {
 		return
 	}
 
@@ -243,15 +245,15 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 	ctx.Output.JwtToken = token
 }
 
-// Ignore determine whether auth should be ignored based on path
-func (set *optionSet) ignore(path string) bool {
-	for i := range set.ignorePrefix {
-		if strings.HasPrefix(path, set.ignorePrefix[i]) {
+// ShouldIgnore determine whether auth should be ignored based on path
+func (set *optionSet) ShouldIgnore(path string) bool {
+	for i := range set.pathToIgnore {
+		if strings.HasPrefix(path, set.pathToIgnore[i]) {
 			return true
 		}
 	}
 
-	return rkmid.IgnorePrefixGlobal(path)
+	return rkmid.ShouldIgnoreGlobal(path)
 }
 
 // Default key parsing func
@@ -337,6 +339,11 @@ func (mock *optionSetMock) Before(ctx *BeforeCtx) {
 	return
 }
 
+// ShouldIgnore should run before user handler
+func (mock *optionSetMock) ShouldIgnore(string) bool {
+	return false
+}
+
 // ***************** Context *****************
 
 // NewBeforeCtx create new BeforeCtx with fields initialized
@@ -362,13 +369,13 @@ type BeforeCtx struct {
 
 // BootConfig for YAML
 type BootConfig struct {
-	Enabled      bool     `yaml:"enabled" json:"enabled"`
-	IgnorePrefix []string `yaml:"ignorePrefix" json:"ignorePrefix"`
-	SigningKey   string   `yaml:"signingKey" json:"signingKey"`
-	SigningKeys  []string `yaml:"signingKeys" json:"signingKeys"`
-	SigningAlgo  string   `yaml:"signingAlgo" json:"signingAlgo"`
-	TokenLookup  string   `yaml:"tokenLookup" json:"tokenLookup"`
-	AuthScheme   string   `yaml:"authScheme" json:"authScheme"`
+	Enabled     bool     `yaml:"enabled" json:"enabled"`
+	Ignore      []string `yaml:"ignore" json:"ignore"`
+	SigningKey  string   `yaml:"signingKey" json:"signingKey"`
+	SigningKeys []string `yaml:"signingKeys" json:"signingKeys"`
+	SigningAlgo string   `yaml:"signingAlgo" json:"signingAlgo"`
+	TokenLookup string   `yaml:"tokenLookup" json:"tokenLookup"`
+	AuthScheme  string   `yaml:"authScheme" json:"authScheme"`
 }
 
 // ToOptions convert BootConfig into Option list
@@ -387,7 +394,7 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 			WithSigningAlgorithm(config.SigningAlgo),
 			WithTokenLookup(config.TokenLookup),
 			WithAuthScheme(config.AuthScheme),
-			WithIgnorePrefix(config.IgnorePrefix...),
+			WithPathToIgnore(config.Ignore...),
 		}
 
 		for _, v := range config.SigningKeys {
@@ -486,11 +493,11 @@ func WithAuthScheme(scheme string) Option {
 	}
 }
 
-// WithIgnorePrefix provide paths prefix that will ignore.
+// WithPathToIgnore provide paths prefix that will ignore.
 // Mainly used for swagger main page and RK TV entry.
-func WithIgnorePrefix(paths ...string) Option {
+func WithPathToIgnore(paths ...string) Option {
 	return func(set *optionSet) {
-		set.ignorePrefix = append(set.ignorePrefix, paths...)
+		set.pathToIgnore = append(set.pathToIgnore, paths...)
 	}
 }
 

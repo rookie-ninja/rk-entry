@@ -20,7 +20,7 @@ var swAssetsFile []byte
 
 // @title RK Common Service
 // @version 2.0
-// @description This is builtin RK common service.
+// @description.markdown This is builtin common service.
 // @contact.name rk-dev
 // @contact.url https://github.com/rookie-ninja/rk-entry
 // @contact.email lark@pointgoal.io

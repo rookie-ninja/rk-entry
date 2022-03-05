@@ -550,3 +550,16 @@ func fileExists(filePath string) bool {
 	}
 	return true
 }
+
+// slashPath add prefix and suffix with / if missing
+func slashPath(in string) string {
+	if !strings.HasPrefix(in, "/") {
+		in = "/" + in
+	}
+
+	if !strings.HasSuffix(in, "/") {
+		in = in + "/"
+	}
+
+	return in
+}

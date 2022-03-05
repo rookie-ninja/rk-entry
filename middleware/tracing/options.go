@@ -49,6 +49,8 @@ type OptionSetInterface interface {
 	GetProvider() *sdktrace.TracerProvider
 
 	GetPropagator() propagation.TextMapPropagator
+
+	ShouldIgnore(string) bool
 }
 
 // ***************** OptionSet Implementation *****************
@@ -62,7 +64,7 @@ type optionSet struct {
 	provider     *sdktrace.TracerProvider
 	propagator   propagation.TextMapPropagator
 	tracer       oteltrace.Tracer
-	ignorePrefix []string
+	pathToIgnore []string
 	mock         OptionSetInterface
 }
 
@@ -71,7 +73,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName:    "fake-entry",
 		entryType:    "",
-		ignorePrefix: []string{},
+		pathToIgnore: []string{},
 	}
 
 	for i := range opts {
@@ -176,7 +178,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		return
 	}
 
-	if set.ignore(ctx.Input.UrlPath) {
+	if set.ShouldIgnore(ctx.Input.UrlPath) {
 		return
 	}
 
@@ -216,7 +218,7 @@ func (set *optionSet) After(before *BeforeCtx, after *AfterCtx) {
 		return
 	}
 
-	if set.ignore(before.Input.UrlPath) {
+	if set.ShouldIgnore(before.Input.UrlPath) {
 		return
 	}
 
@@ -234,15 +236,15 @@ func (set *optionSet) After(before *BeforeCtx, after *AfterCtx) {
 	before.Output.Span.End()
 }
 
-// Ignore determine whether auth should be ignored based on path
-func (set *optionSet) ignore(path string) bool {
-	for i := range set.ignorePrefix {
-		if strings.HasPrefix(path, set.ignorePrefix[i]) {
+// ShouldIgnore determine whether auth should be ignored based on path
+func (set *optionSet) ShouldIgnore(path string) bool {
+	for i := range set.pathToIgnore {
+		if strings.HasPrefix(path, set.pathToIgnore[i]) {
 			return true
 		}
 	}
 
-	return rkmid.IgnorePrefixGlobal(path)
+	return rkmid.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -311,6 +313,11 @@ func (mock *optionSetMock) After(before *BeforeCtx, after *AfterCtx) {
 	return
 }
 
+// ShouldIgnore should run before user handler
+func (mock *optionSetMock) ShouldIgnore(string) bool {
+	return false
+}
+
 // ***************** Context *****************
 
 // NewBeforeCtx create new BeforeCtx with fields initialized
@@ -358,9 +365,9 @@ type AfterCtx struct {
 
 // BootConfig for YAML
 type BootConfig struct {
-	Enabled      bool     `yaml:"enabled" json:"enabled"`
-	IgnorePrefix []string `yaml:"ignorePrefix" json:"ignorePrefix"`
-	Exporter     struct {
+	Enabled  bool     `yaml:"enabled" json:"enabled"`
+	Ignore   []string `yaml:"ignore" json:"ignore"`
+	Exporter struct {
 		File struct {
 			Enabled    bool   `yaml:"enabled" json:"enabled"`
 			OutputPath string `yaml:"outputPath" json:"outputPath"`
@@ -421,7 +428,7 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 		opts = append(opts,
 			WithEntryNameAndType(entryName, entryType),
 			WithExporter(exporter),
-			WithIgnorePrefix(config.IgnorePrefix...))
+			WithPathToIgnore(config.Ignore...))
 	}
 
 	return opts
@@ -476,11 +483,11 @@ func WithEntryNameAndType(entryName, entryType string) Option {
 	}
 }
 
-// WithIgnorePrefix provide paths prefix that will ignore.
+// WithPathToIgnore provide paths prefix that will ignore.
 // Mainly used for swagger main page and RK TV entry.
-func WithIgnorePrefix(paths ...string) Option {
+func WithPathToIgnore(paths ...string) Option {
 	return func(set *optionSet) {
-		set.ignorePrefix = append(set.ignorePrefix, paths...)
+		set.pathToIgnore = append(set.pathToIgnore, paths...)
 	}
 }
 

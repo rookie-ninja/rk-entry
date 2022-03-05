@@ -154,8 +154,8 @@ func TestLabelerGrpc_Values(t *testing.T) {
 
 func TestToOptions(t *testing.T) {
 	config := &BootConfig{
-		Enabled:      false,
-		IgnorePrefix: []string{},
+		Enabled: false,
+		Ignore:  []string{},
 	}
 
 	// with disabled
@@ -170,7 +170,7 @@ func TestNewOptionSet(t *testing.T) {
 	// without options
 	set := NewOptionSet().(*optionSet)
 	assert.NotEmpty(t, set.GetEntryName())
-	assert.Empty(t, set.ignorePrefix)
+	assert.Empty(t, set.pathToIgnore)
 	assert.Equal(t, LabelerTypeHttp, set.labelerType)
 	assert.NotNil(t, set.registerer)
 	assert.NotNil(t, set.metricsSet)
@@ -186,12 +186,12 @@ func TestNewOptionSet(t *testing.T) {
 	set = NewOptionSet(
 		WithEntryNameAndType("name", "type"),
 		WithRegisterer(reg),
-		WithIgnorePrefix("/ut-ignore"),
+		WithPathToIgnore("/ut-ignore"),
 		WithLabelerType(LabelerTypeGrpc)).(*optionSet)
 
 	assert.NotEmpty(t, set.GetEntryName())
 	assert.NotEmpty(t, set.GetEntryType())
-	assert.Contains(t, set.ignorePrefix, "/ut-ignore")
+	assert.Contains(t, set.pathToIgnore, "/ut-ignore")
 	assert.Equal(t, LabelerTypeGrpc, set.labelerType)
 	assert.Equal(t, reg, set.registerer)
 	assert.NotNil(t, set.metricsSet)
@@ -202,9 +202,9 @@ func TestNewOptionSet(t *testing.T) {
 }
 
 func TestOptionSet_ignore(t *testing.T) {
-	set := NewOptionSet(WithIgnorePrefix("/ut-ignore")).(*optionSet)
-	assert.True(t, set.ignore("/ut-ignore"))
-	assert.False(t, set.ignore("/"))
+	set := NewOptionSet(WithPathToIgnore("/ut-ignore")).(*optionSet)
+	assert.True(t, set.ShouldIgnore("/ut-ignore"))
+	assert.False(t, set.ShouldIgnore("/"))
 
 	ClearAllMetrics()
 }

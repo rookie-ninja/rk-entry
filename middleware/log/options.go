@@ -41,6 +41,8 @@ type OptionSetInterface interface {
 	AfterCtx(reqId, traceId, resCode string) *AfterCtx
 
 	After(before *BeforeCtx, after *AfterCtx)
+
+	ShouldIgnore(string) bool
 }
 
 // ***************** OptionSet Implementation *****************
@@ -57,7 +59,7 @@ type optionSet struct {
 	zapLoggerOutputPath   []string
 	eventLoggerOutputPath []string
 	eventLoggerOverride   *zap.Logger
-	ignorePrefix          []string
+	pathToIgnore          []string
 	mock                  OptionSetInterface
 }
 
@@ -71,7 +73,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 		zapLogger:             rkentry.LoggerEntryStdout.Logger,
 		zapLoggerOutputPath:   make([]string, 0),
 		eventLoggerOutputPath: make([]string, 0),
-		ignorePrefix:          []string{},
+		pathToIgnore:          []string{},
 	}
 
 	for i := range opts {
@@ -219,7 +221,7 @@ func (set *optionSet) ZapEntry() *rkentry.LoggerEntry {
 
 // CreateEvent create event based on urlPath
 func (set *optionSet) createEvent(urlPath string, threadSafe bool) rkquery.Event {
-	if set.ignore(urlPath) {
+	if set.ShouldIgnore(urlPath) {
 		return set.EventEntry().EventFactory.CreateEventNoop()
 	}
 
@@ -247,15 +249,15 @@ func (set *optionSet) createEvent(urlPath string, threadSafe bool) rkquery.Event
 	return event
 }
 
-// Ignore determine whether auth should be ignored based on path
-func (set *optionSet) ignore(path string) bool {
-	for i := range set.ignorePrefix {
-		if strings.HasPrefix(path, set.ignorePrefix[i]) {
+// ShouldIgnore determine whether auth should be ignored based on path
+func (set *optionSet) ShouldIgnore(path string) bool {
+	for i := range set.pathToIgnore {
+		if strings.HasPrefix(path, set.pathToIgnore[i]) {
 			return true
 		}
 	}
 
-	return rkmid.IgnorePrefixGlobal(path)
+	return rkmid.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -301,6 +303,11 @@ func (mock *optionSetMock) AfterCtx(reqId, traceId, resCode string) *AfterCtx {
 // After should run after user handler
 func (mock *optionSetMock) After(before *BeforeCtx, after *AfterCtx) {
 	return
+}
+
+// ShouldIgnore should run before user handler
+func (mock *optionSetMock) ShouldIgnore(string) bool {
+	return false
 }
 
 // ***************** Context *****************
@@ -354,7 +361,7 @@ type BootConfig struct {
 	LoggerOutputPaths []string `yaml:"loggerOutputPaths" json:"loggerOutputPaths"`
 	EventEncoding     string   `yaml:"eventEncoding" json:"eventEncoding"`
 	EventOutputPaths  []string `yaml:"eventOutputPaths" json:"eventOutputPaths"`
-	IgnorePrefix      []string `yaml:"ignorePrefix" json:"ignorePrefix"`
+	Ignore            []string `yaml:"ignore" json:"ignore"`
 }
 
 // ToOptions convert BootConfig into Option list
@@ -373,7 +380,7 @@ func ToOptions(config *BootConfig,
 			WithEventEncoding(config.EventEncoding),
 			WithLoggerOutputPaths(config.LoggerOutputPaths...),
 			WithEventOutputPaths(config.EventOutputPaths...),
-			WithIgnorePrefix(config.IgnorePrefix...))
+			WithPathToIgnore(config.Ignore...))
 	}
 
 	return opts
@@ -442,11 +449,11 @@ func WithEventOutputPaths(path ...string) Option {
 	}
 }
 
-// WithIgnorePrefix provide paths prefix that will ignore.
+// WithPathToIgnore provide paths prefix that will ignore.
 // Mainly used for swagger main page and RK TV entry.
-func WithIgnorePrefix(paths ...string) Option {
+func WithPathToIgnore(paths ...string) Option {
 	return func(set *optionSet) {
-		set.ignorePrefix = append(set.ignorePrefix, paths...)
+		set.pathToIgnore = append(set.pathToIgnore, paths...)
 	}
 }
 

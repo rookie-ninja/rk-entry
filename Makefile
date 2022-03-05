@@ -35,6 +35,6 @@ pkger:
 .PHONY: swag
 swag:
 	@echo "[swag] Running swag..."
-	@swag init --generalInfo entry/common_service_entry.go --output assets/sw/config --propertyStrategy camelcase
+	@swag init --generalInfo entry/common_service_entry.go --output assets/sw/config --propertyStrategy camelcase --markdownFiles assets/docs
 	@rm -rf assets/sw/config/docs.go
 	@echo "------------------------------------[Done]"
