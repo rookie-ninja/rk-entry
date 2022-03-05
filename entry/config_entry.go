@@ -93,6 +93,7 @@ type BootConfig struct {
 	Config []*BootConfigE `yaml:"config" json:"config"`
 }
 
+// BootConfigE element of ConfigEntry
 type BootConfigE struct {
 	Name        string                 `yaml:"name" json:"name"`
 	Description string                 `yaml:"description" json:"description"`

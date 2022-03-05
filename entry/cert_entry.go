@@ -34,6 +34,7 @@ func RegisterCertEntry(boot *BootCert) []*CertEntry {
 			caPath:           cert.CAPath,
 			keyPemPath:       cert.KeyPemPath,
 			certPemPath:      cert.CertPemPath,
+			embedFS:          GlobalAppCtx.GetEmbedFS(CertEntryType, cert.Name),
 		}
 
 		GlobalAppCtx.AddEntry(entry)
@@ -64,6 +65,7 @@ type BootCert struct {
 	Cert []*BootCertE `yaml:"cert" json:"cert"`
 }
 
+// BootCertE element of CertEntry
 type BootCertE struct {
 	Name        string `yaml:"name" json:"name"`
 	Description string `yaml:"description" json:"description"`
@@ -84,10 +86,6 @@ type CertEntry struct {
 	embedFS          *embed.FS         `json:"-" yaml:"-"`
 	RootCA           *x509.Certificate `json:"-" json:"-"`
 	Certificate      *tls.Certificate  `json:"-" yaml:"-"`
-}
-
-func (entry *CertEntry) SetEmbedFS(fs *embed.FS) {
-	entry.embedFS = fs
 }
 
 // Bootstrap iterate retrievers and call Retrieve() for each of them.

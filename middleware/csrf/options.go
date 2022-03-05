@@ -191,7 +191,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 
 		// 3.3: return 403 to client if token is not matched
 		if !set.isValidToken(ctx.Input.Token, clientToken) {
-			ctx.Output.ErrResp = rkerror.NewForbidden("Invalid csrf token", err)
+			ctx.Output.ErrResp = rkerror.NewForbidden("Invalid csrf token")
 			return
 		}
 	}

@@ -58,7 +58,7 @@ func TestStaticFileHandlerEntry_GetFileHandler(t *testing.T) {
 	entry := RegisterStaticFileHandlerEntry(&BootStaticFileHandler{
 		Enabled: true,
 	})
-	entry.SetHttpFS(http.Dir(currDir))
+	entry.httpFS = http.Dir(currDir)
 	entry.Bootstrap(context.TODO())
 	handler := entry.GetFileHandler()
 

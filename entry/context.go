@@ -7,6 +7,7 @@ package rkentry
 
 import (
 	"context"
+	"embed"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,6 +24,7 @@ var (
 				appInfoEntryName: appInfoEntryDefault(),
 			},
 		},
+		embedFS:       map[string]map[string]*embed.FS{},
 		appInfoEntry:  appInfoEntryDefault(),
 		shutdownSig:   make(chan os.Signal),
 		shutdownHooks: make(map[string]ShutdownHook),
@@ -62,20 +64,18 @@ func init() {
 }
 
 // Application context which contains bellow fields.
+// It is not recommended override this value since StartTime would be assigned to current time
+// at beginning of go process in init() function.
 type appContext struct {
-	// It is not recommended override this value since StartTime would be assigned to current time
-	// at beginning of go process in init() function.
-	startTime    time.Time     `json:"startTime" yaml:"startTime"`
-	appInfoEntry *appInfoEntry `json:"appInfoEntry" yaml:"appInfoEntry"`
-
-	readinessCheck ReadinessCheck `json:"-" yaml:"-"`
-	livenessCheck  LivenessCheck  `json:"-" yaml:"-"`
-
-	entries map[string]map[string]Entry `json:"-" yaml:"-"`
-
-	userValues    map[string]interface{}  `json:"userValues" yaml:"userValues"`
-	shutdownSig   chan os.Signal          `json:"shutdownSig" yaml:"shutdownSig"`
-	shutdownHooks map[string]ShutdownHook `json:"shutdownHooks" yaml:"shutdownHooks"`
+	startTime      time.Time                       `json:"-" yaml:"-"`
+	appInfoEntry   *appInfoEntry                   `json:"-" yaml:"-"`
+	readinessCheck ReadinessCheck                  `json:"-" yaml:"-"`
+	livenessCheck  LivenessCheck                   `json:"-" yaml:"-"`
+	entries        map[string]map[string]Entry     `json:"-" yaml:"-"`
+	embedFS        map[string]map[string]*embed.FS `json:"-" yaml:"-"`
+	userValues     map[string]interface{}          `json:"-" yaml:"-"`
+	shutdownSig    chan os.Signal                  `json:"-" yaml:"-"`
+	shutdownHooks  map[string]ShutdownHook         `json:"-" yaml:"-"`
 }
 
 // RegisterEntryRegFunc register user defined registration function.
@@ -116,6 +116,28 @@ func BootstrapPreloadEntryYAML(raw []byte) {
 		for _, v := range entries {
 			v.Bootstrap(ctx)
 		}
+	}
+}
+
+// AddEmbedFS add embed.FS based on name and type of Entry
+func (ctx *appContext) AddEmbedFS(entryType, entryName string, fs *embed.FS) {
+	if len(entryType) < 1 || len(entryName) < 1 || fs == nil {
+		return
+	}
+
+	if _, ok := ctx.embedFS[entryType]; !ok {
+		ctx.embedFS[entryType] = make(map[string]*embed.FS)
+	}
+
+	ctx.embedFS[entryType][entryName] = fs
+}
+
+// GetEmbedFS get embed.FS based on name and type of Entry
+func (ctx *appContext) GetEmbedFS(entryType, entryName string) *embed.FS {
+	if v, ok := ctx.embedFS[entryType]; !ok {
+		return nil
+	} else {
+		return v[entryName]
 	}
 }
 

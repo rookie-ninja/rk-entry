@@ -58,6 +58,8 @@ type SWEntry struct {
 	embedFS          *embed.FS         `json:"-" yaml:"-"`
 }
 
+type SWEntryOption func(entry *SWEntry)
+
 func WithNameSWEntry(name string) SWEntryOption {
 	return func(entry *SWEntry) {
 		entry.entryName = name
@@ -79,7 +81,7 @@ func RegisterSWEntry(boot *BootSW, opts ...SWEntryOption) *SWEntry {
 
 		swEntry = &SWEntry{
 			entryName:        "SwEntry",
-			entryType:        "SwEntry",
+			entryType:        SWEntryType,
 			entryDescription: "Internal RK entry for swagger UI.",
 			Path:             boot.Path,
 			JsonPath:         boot.JsonPath,
@@ -89,6 +91,8 @@ func RegisterSWEntry(boot *BootSW, opts ...SWEntryOption) *SWEntry {
 		for i := range opts {
 			opts[i](swEntry)
 		}
+
+		swEntry.embedFS = GlobalAppCtx.GetEmbedFS(swEntry.GetType(), swEntry.GetName())
 
 		if len(swEntry.Path) < 1 {
 			swEntry.Path = "/sw"
@@ -107,8 +111,6 @@ func RegisterSWEntry(boot *BootSW, opts ...SWEntryOption) *SWEntry {
 
 	return swEntry
 }
-
-type SWEntryOption func(entry *SWEntry)
 
 func (entry *SWEntry) Bootstrap(ctx context.Context) {
 	// init swagger configs
@@ -151,10 +153,6 @@ func (entry *SWEntry) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON Unmarshal entry
 func (entry *SWEntry) UnmarshalJSON([]byte) error {
 	return nil
-}
-
-func (entry *SWEntry) SetEmbedFS(fs *embed.FS) {
-	entry.embedFS = fs
 }
 
 // ConfigFileHandler handler for swagger config files.
