@@ -5,7 +5,7 @@
     ],
     "swagger": "2.0",
     "info": {
-        "description": "\u003c!-- START doctoc generated TOC please keep comment here to allow auto update --\u003e\n\u003c!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE --\u003e\n**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*\n\n- [Description](#description)\n- [APIs](#apis)\n\n\u003c!-- END doctoc generated TOC please keep comment here to allow auto update --\u003e\n\n## Description\nBuiltin APIs supported via [rk-entry](https://github.com/rookie-ninja/rk-entry).\n\n## APIs\n\n| Name   | Description                               |\n|--------|-------------------------------------------|\n| /alive | Designed for liveness prob of Kubernetes  |\n| /ready | Designed for readiness prob of Kubernetes |\n| /gc    | Trigger GC                                |\n| /info  | Returns application, process, OS info     |\n\n",
+        "description": "## Description\nBuiltin APIs supported via [rk-entry](https://github.com/rookie-ninja/rk-entry).\n\n## APIs\n\n| Name   | Description                               |\n|--------|-------------------------------------------|\n| /alive | Designed for liveness prob of Kubernetes  |\n| /ready | Designed for readiness prob of Kubernetes |\n| /gc    | Trigger GC                                |\n| /info  | Returns application, process, OS info     |\n\n",
         "title": "RK Common Service",
         "contact": {
             "name": "rk-dev",
