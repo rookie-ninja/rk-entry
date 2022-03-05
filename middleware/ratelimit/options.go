@@ -32,6 +32,8 @@ type OptionSetInterface interface {
 	Before(*BeforeCtx)
 
 	BeforeCtx(*http.Request) *BeforeCtx
+
+	ShouldIgnore(string) bool
 }
 
 // ***************** OptionSet Implementation *****************
@@ -43,7 +45,7 @@ type optionSet struct {
 	reqPerSec       int
 	reqPerSecByPath map[string]int
 	algorithm       string
-	ignorePrefix    []string
+	pathToIgnore    []string
 	limiter         map[string]Limiter
 	mock            OptionSetInterface
 }
@@ -57,7 +59,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 		reqPerSecByPath: make(map[string]int),
 		algorithm:       LeakyBucket,
 		limiter:         make(map[string]Limiter),
-		ignorePrefix:    []string{},
+		pathToIgnore:    []string{},
 	}
 
 	for i := range opts {
@@ -127,7 +129,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 	}
 
 	// case 0: ignore path
-	if set.ignore(ctx.Input.UrlPath) {
+	if set.ShouldIgnore(ctx.Input.UrlPath) {
 		return
 	}
 
@@ -157,15 +159,15 @@ func (set *optionSet) setLimiter(method string, l Limiter) {
 	set.limiter[method] = l
 }
 
-// Ignore determine whether auth should be ignored based on path
-func (set *optionSet) ignore(path string) bool {
-	for i := range set.ignorePrefix {
-		if strings.HasPrefix(path, set.ignorePrefix[i]) {
+// ShouldIgnore determine whether auth should be ignored based on path
+func (set *optionSet) ShouldIgnore(path string) bool {
+	for i := range set.pathToIgnore {
+		if strings.HasPrefix(path, set.pathToIgnore[i]) {
 			return true
 		}
 	}
 
-	return rkmid.IgnorePrefixGlobal(path)
+	return rkmid.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -201,6 +203,11 @@ func (mock *optionSetMock) Before(ctx *BeforeCtx) {
 	return
 }
 
+// ShouldIgnore should run before user handler
+func (mock *optionSetMock) ShouldIgnore(string) bool {
+	return false
+}
+
 // ***************** Context *****************
 
 // NewBeforeCtx create new BeforeCtx with fields initialized
@@ -223,11 +230,11 @@ type BeforeCtx struct {
 
 // BootConfig for YAML
 type BootConfig struct {
-	Enabled      bool     `yaml:"enabled" json:"enabled"`
-	IgnorePrefix []string `yaml:"ignorePrefix" json:"ignorePrefix"`
-	Algorithm    string   `yaml:"algorithm" json:"algorithm"`
-	ReqPerSec    int      `yaml:"reqPerSec" json:"reqPerSec"`
-	Paths        []struct {
+	Enabled   bool     `yaml:"enabled" json:"enabled"`
+	Ignore    []string `yaml:"ignore" json:"ignore"`
+	Algorithm string   `yaml:"algorithm" json:"algorithm"`
+	ReqPerSec int      `yaml:"reqPerSec" json:"reqPerSec"`
+	Paths     []struct {
 		Path      string `yaml:"path" json:"path"`
 		ReqPerSec int    `yaml:"reqPerSec" json:"reqPerSec"`
 	} `yaml:"paths" json:"paths"`
@@ -251,7 +258,7 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 			opts = append(opts, WithReqPerSecByPath(e.Path, e.ReqPerSec))
 		}
 
-		opts = append(opts, WithIgnorePrefix(config.IgnorePrefix...))
+		opts = append(opts, WithPathToIgnore(config.Ignore...))
 	}
 
 	return opts
@@ -322,11 +329,11 @@ func WithLimiterByPath(path string, l Limiter) Option {
 	}
 }
 
-// WithIgnorePrefix provide paths prefix that will ignore.
+// WithPathToIgnore provide paths prefix that will ignore.
 // Mainly used for swagger main page and RK TV entry.
-func WithIgnorePrefix(paths ...string) Option {
+func WithPathToIgnore(paths ...string) Option {
 	return func(set *optionSet) {
-		set.ignorePrefix = append(set.ignorePrefix, paths...)
+		set.pathToIgnore = append(set.pathToIgnore, paths...)
 	}
 }
 

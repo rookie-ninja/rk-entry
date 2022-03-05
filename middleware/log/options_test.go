@@ -38,16 +38,16 @@ func TestOptionSet_AfterCtx(t *testing.T) {
 }
 
 func TestOptionSet_ignore(t *testing.T) {
-	set := NewOptionSet(WithIgnorePrefix("/ut-path")).(*optionSet)
-	assert.True(t, set.ignore("/ut-path"))
-	assert.False(t, set.ignore("/"))
+	set := NewOptionSet(WithPathToIgnore("/ut-path")).(*optionSet)
+	assert.True(t, set.ShouldIgnore("/ut-path"))
+	assert.False(t, set.ShouldIgnore("/"))
 }
 
 func TestOptionSet_createEvent(t *testing.T) {
 	defer assertNotPanic(t)
 
 	// with ignore url
-	set := NewOptionSet(WithIgnorePrefix("/ut-ignore")).(*optionSet)
+	set := NewOptionSet(WithPathToIgnore("/ut-ignore")).(*optionSet)
 	assert.NotNil(t, set.createEvent("/ut-ignore", true))
 
 	// with thread safe
@@ -112,7 +112,7 @@ func TestNewOptionSet(t *testing.T) {
 	assert.NotNil(t, set.zapLogger)
 	assert.NotNil(t, set.zapLoggerOutputPath)
 	assert.NotNil(t, set.eventLoggerOutputPath)
-	assert.Empty(t, set.ignorePrefix)
+	assert.Empty(t, set.pathToIgnore)
 }
 
 func TestWithEntryNameAndType(t *testing.T) {

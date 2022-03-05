@@ -25,6 +25,8 @@ type OptionSetInterface interface {
 	Before(*BeforeCtx)
 
 	BeforeCtx(*http.Request) *BeforeCtx
+
+	ShouldIgnore(string) bool
 }
 
 // ***************** OptionSet Implementation *****************
@@ -33,7 +35,7 @@ type OptionSetInterface interface {
 type optionSet struct {
 	entryName    string
 	entryType    string
-	ignorePrefix []string
+	pathToIgnore []string
 	mock         OptionSetInterface
 	// AllowOrigins defines a list of origins that may access the resource.
 	// Optional. Default value []string{"*"}.
@@ -70,7 +72,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName:        "fake-entry",
 		entryType:        "",
-		ignorePrefix:     []string{},
+		pathToIgnore:     []string{},
 		allowOrigins:     []string{},
 		allowMethods:     []string{},
 		allowHeaders:     []string{},
@@ -133,7 +135,7 @@ func (set *optionSet) BeforeCtx(req *http.Request) *BeforeCtx {
 
 // Before should run before user handler
 func (set *optionSet) Before(ctx *BeforeCtx) {
-	if ctx == nil || set.ignore(ctx.Input.UrlPath) {
+	if ctx == nil || set.ShouldIgnore(ctx.Input.UrlPath) {
 		return
 	}
 
@@ -242,15 +244,15 @@ func (set *optionSet) isOriginAllowed(originHeader string) bool {
 	return res
 }
 
-// Ignore determine whether auth should be ignored based on path
-func (set *optionSet) ignore(path string) bool {
-	for i := range set.ignorePrefix {
-		if strings.HasPrefix(path, set.ignorePrefix[i]) {
+// ShouldIgnore determine whether auth should be ignored based on path
+func (set *optionSet) ShouldIgnore(path string) bool {
+	for i := range set.pathToIgnore {
+		if strings.HasPrefix(path, set.pathToIgnore[i]) {
 			return true
 		}
 	}
 
-	return rkmid.IgnorePrefixGlobal(path)
+	return rkmid.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -284,6 +286,11 @@ func (mock *optionSetMock) BeforeCtx(request *http.Request) *BeforeCtx {
 // Before should run before user handler
 func (mock *optionSetMock) Before(ctx *BeforeCtx) {
 	return
+}
+
+// ShouldIgnore should run before user handler
+func (mock *optionSetMock) ShouldIgnore(string) bool {
+	return false
 }
 
 // ***************** Context *****************
@@ -322,7 +329,7 @@ type BootConfig struct {
 	AllowMethods     []string `yaml:"allowMethods" json:"allowMethods"`
 	ExposeHeaders    []string `yaml:"exposeHeaders" json:"exposeHeaders"`
 	MaxAge           int      `yaml:"maxAge" json:"maxAge"`
-	IgnorePrefix     []string `yaml:"ignorePrefix" json:"ignorePrefix"`
+	Ignore           []string `yaml:"ignore" json:"ignore"`
 }
 
 // ToOptions convert BootConfig into Option list
@@ -338,7 +345,7 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 			WithMaxAge(config.MaxAge),
 			WithAllowHeaders(config.AllowHeaders...),
 			WithAllowMethods(config.AllowMethods...),
-			WithIgnorePrefix(config.IgnorePrefix...))
+			WithPathToIgnore(config.Ignore...))
 	}
 
 	return opts
@@ -399,11 +406,11 @@ func WithMaxAge(age int) Option {
 	}
 }
 
-// WithIgnorePrefix provide paths prefix that will ignore.
+// WithPathToIgnore provide paths prefix that will ignore.
 // Mainly used for swagger main page and RK TV entry.
-func WithIgnorePrefix(paths ...string) Option {
+func WithPathToIgnore(paths ...string) Option {
 	return func(set *optionSet) {
-		set.ignorePrefix = append(set.ignorePrefix, paths...)
+		set.pathToIgnore = append(set.pathToIgnore, paths...)
 	}
 }
 

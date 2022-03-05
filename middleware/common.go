@@ -65,13 +65,11 @@ var (
 	// LocalHostname read hostname from localhost
 	LocalHostname = zap.String("localHostname", getLocalHostname())
 
-	ignorePrefix = []string{}
-
-	IgnorePrefixGlobal = ignorePathPrefix
+	pathToIgnore = make([]string, 0)
 )
 
-func AddIgnorePrefixGlobal(prefix ...string) {
-	ignorePrefix = append(ignorePrefix, prefix...)
+func AddPathToIgnoreGlobal(prefix ...string) {
+	pathToIgnore = append(pathToIgnore, prefix...)
 }
 
 type entryNameKey struct{}
@@ -167,9 +165,9 @@ func GetRemoteAddressSet(req *http.Request) (remoteIp, remotePort string) {
 	return remoteIp, remotePort
 }
 
-func ignorePathPrefix(urlPath string) bool {
-	for i := range ignorePrefix {
-		if strings.HasPrefix(urlPath, ignorePrefix[i]) {
+func ShouldIgnoreGlobal(urlPath string) bool {
+	for i := range pathToIgnore {
+		if strings.HasPrefix(urlPath, pathToIgnore[i]) {
 			return true
 		}
 	}

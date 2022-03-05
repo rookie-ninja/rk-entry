@@ -74,6 +74,8 @@ type OptionSetInterface interface {
 	AfterCtx(string) *AfterCtx
 
 	After(before *BeforeCtx, after *AfterCtx)
+
+	ShouldIgnore(string) bool
 }
 
 // ***************** OptionSet Implementation *****************
@@ -84,7 +86,7 @@ type optionSet struct {
 	entryType    string
 	registerer   prometheus.Registerer
 	labelerType  string
-	ignorePrefix []string
+	pathToIgnore []string
 	metricsSet   *MetricsSet
 	mock         OptionSetInterface
 }
@@ -95,7 +97,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 		entryName:    "fake-entry",
 		entryType:    "",
 		registerer:   prometheus.DefaultRegisterer,
-		ignorePrefix: []string{},
+		pathToIgnore: []string{},
 		labelerType:  LabelerTypeHttp,
 	}
 
@@ -174,7 +176,7 @@ func (set *optionSet) After(before *BeforeCtx, after *AfterCtx) {
 		return
 	}
 
-	if set.ignore(before.Input.RestPath) {
+	if set.ShouldIgnore(before.Input.RestPath) {
 		return
 	}
 
@@ -252,15 +254,15 @@ func (set *optionSet) getServerResCodeMetrics(l labeler) prometheus.Counter {
 	return set.metricsSet.GetCounterWithValues(MetricsNameResCode, l.Values()...)
 }
 
-// Ignore determine whether auth should be ignored based on path
-func (set *optionSet) ignore(path string) bool {
-	for i := range set.ignorePrefix {
-		if strings.HasPrefix(path, set.ignorePrefix[i]) {
+// ShouldIgnore determine whether auth should be ignored based on path
+func (set *optionSet) ShouldIgnore(path string) bool {
+	for i := range set.pathToIgnore {
+		if strings.HasPrefix(path, set.pathToIgnore[i]) {
 			return true
 		}
 	}
 
-	return rkmid.IgnorePrefixGlobal(path)
+	return rkmid.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -308,6 +310,11 @@ func (mock *optionSetMock) After(before *BeforeCtx, after *AfterCtx) {
 	return
 }
 
+// ShouldIgnore should run before user handler
+func (mock *optionSetMock) ShouldIgnore(string) bool {
+	return false
+}
+
 // ***************** Context *****************
 
 // NewBeforeCtx create new BeforeCtx with fields initialized
@@ -348,8 +355,8 @@ type AfterCtx struct {
 
 // BootConfig for YAML
 type BootConfig struct {
-	Enabled      bool     `yaml:"enabled" json:"enabled"`
-	IgnorePrefix []string `yaml:"ignorePrefix" json:"ignorePrefix"`
+	Enabled bool     `yaml:"enabled" json:"enabled"`
+	Ignore  []string `yaml:"ignore" json:"ignore"`
 }
 
 // ToOptions convert BootConfig into Option list
@@ -363,7 +370,7 @@ func ToOptions(config *BootConfig,
 			WithEntryNameAndType(entryName, entryType),
 			WithRegisterer(reg),
 			WithLabelerType(labelerType),
-			WithIgnorePrefix(config.IgnorePrefix...))
+			WithPathToIgnore(config.Ignore...))
 	}
 
 	return opts
@@ -396,11 +403,11 @@ func WithRegisterer(registerer prometheus.Registerer) Option {
 	}
 }
 
-// WithIgnorePrefix provide paths prefix that will ignore.
+// WithPathToIgnore provide paths prefix that will ignore.
 // Mainly used for swagger main page and RK TV entry.
-func WithIgnorePrefix(paths ...string) Option {
+func WithPathToIgnore(paths ...string) Option {
 	return func(set *optionSet) {
-		set.ignorePrefix = append(set.ignorePrefix, paths...)
+		set.pathToIgnore = append(set.pathToIgnore, paths...)
 	}
 }
 

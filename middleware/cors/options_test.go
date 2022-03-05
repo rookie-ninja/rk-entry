@@ -25,7 +25,7 @@ func TestNewOptionSet(t *testing.T) {
 	// without options
 	set := NewOptionSet().(*optionSet)
 	assert.NotEmpty(t, set.GetEntryName())
-	assert.Empty(t, set.ignorePrefix)
+	assert.Empty(t, set.pathToIgnore)
 	assert.Contains(t, set.allowOrigins, "*")
 	assert.NotEmpty(t, set.allowMethods)
 	assert.Empty(t, set.allowHeaders)
@@ -42,11 +42,11 @@ func TestNewOptionSet(t *testing.T) {
 		WithAllowCredentials(true),
 		WithExposeHeaders("ut-header"),
 		WithMaxAge(1),
-		WithIgnorePrefix("/ut-path")).(*optionSet)
+		WithPathToIgnore("/ut-path")).(*optionSet)
 
 	assert.Equal(t, "name", set.GetEntryName())
 	assert.Equal(t, "type", set.GetEntryType())
-	assert.Contains(t, set.ignorePrefix, "/ut-path")
+	assert.Contains(t, set.pathToIgnore, "/ut-path")
 	assert.Contains(t, set.allowOrigins, "localhost:*")
 	assert.Contains(t, set.allowMethods, http.MethodGet)
 	assert.Contains(t, set.allowHeaders, "ut-header")

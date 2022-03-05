@@ -1,0 +1,143 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8"> <!-- Important: rapi-doc uses utf8 characters -->
+    <link rel="shortcut icon" type="image/png" href="https://cdn.jsdelivr.net/npm/rapidoc@4.2.1/logo.png">
+    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/rapidoc@9.2.0/dist/rapidoc-min.js"></script>
+</head>
+<body>
+<rapi-doc id="repi"
+        show-info = "true"
+        show-header = "false"
+        allow-spec-url-load = "false"
+        allow-spec-file-load = "false"
+        allow-spec-file-download = "false"
+        theme = "light"
+        render-style = "view"
+        allow-try = "true"
+        default-schema-tab = "example"
+        font-size = "largest"
+        use-path-in-nav-bar = "true"
+        nav-item-spacing = "relaxed"
+        layout = "row"
+        bg-color = "#FAFAFA"
+>
+    <div slot="nav-logo" style="display: flex; align-items: center; justify-content: flex-start; padding: 16px 16px 8px">
+        <div style="height:36px; width:36px; margin-left:5px; margin-right: 20px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="1 0 511 512">
+                <path d="M351 411a202 202 0 01-350 0 203 203 0 01333-24 203 203 0 0117 24zm0 0" fill="#adc165"></path>
+                <path d="M334 387a202 202 0 01-216-69 202 202 0 01216 69zm78 32H85a8 8 0 01-8-8 8 8 0 018-8h327a8 8 0 017 8 8 8 0 01-7 8zm0 0" fill="#99aa52"></path>
+                <path d="M374 338l-5 30a202 202 0 01-248-248 203 203 0 01253 218zm0 0" fill="#ffc73b"></path>
+                <path d="M374 338a202 202 0 01-100-197 203 203 0 01100 197zm38 81l-6-2-231-231a8 8 0 0111-11l231 230a8 8 0 01-5 14zm0 0" fill="#efb025"></path>
+                <path d="M311 175c0 75 40 140 101 175a202 202 0 000-350 202 202 0 00-101 175zm0 0" fill="#ff903e"></path>
+                <path d="M412 419a8 8 0 01-8-8V85a8 8 0 0115 0v326a8 8 0 01-7 8zm0 0" fill="#e87425"></path>
+            </svg>
+        </div>
+        <span style="color:#fff; font-size: x-large"> <b>API Docs</b></span>
+    </div>
+
+    <header>
+        <div class="root">
+            <div class="header">Select a spec</div>
+            <select id="specs" class="list"></select>
+        </div>
+
+    </header>
+
+</rapi-doc>
+
+<script>
+    let specConfig
+    // Get list of specs
+    document.addEventListener('DOMContentLoaded', () => {
+        let docEl = document.getElementById("repi");
+
+        // Get list of specs
+        fetch("specs")
+        .then(response => {
+            if (response.ok) {
+                return response
+            }
+            throw new Error('Failed to list specs');
+        })
+        .then(data => {
+            data.text()
+            .then(e => {
+                specConfig = JSON.parse(e)
+                for (let i = 0; i < specConfig["specs"].length; i++) {
+                    let api = document.getElementById("specs");
+                    let op = document.createElement("option");
+                    let linkText = document.createTextNode(specConfig["specs"][i].name);
+                    op.appendChild(linkText);
+                    api.appendChild(op);
+                }
+
+                if (specConfig["specs"].length > 0) {
+                    docEl.loadSpec(specConfig["specs"][0].url);
+                }
+            })
+            .catch(e => {
+                console.log(e)
+            })
+        })
+        .catch(err => {
+            console.log(err)
+        })
+
+        docEl.addEventListener('before-render', (e) => {
+            e.target.__Theme = specConfig.style.theme
+            e.target.__renderStyle = specConfig.style.renderStyle
+            e.target.__allowTry = specConfig.style.allowTry
+
+            if (specConfig.style.bgColor.length > 0) {
+                e.target.__bgColor = specConfig.style.bgColor
+            }
+        });
+    })
+
+    // Selector
+    document.getElementById('specs').onchange = function (e) {
+        for (let i = 0; i < specConfig.specs.length; i++) {
+            if (specConfig["specs"][i].name == e.target.value) {
+                const docE = document.getElementById('repi');
+                docE.loadSpec(window.location.origin+specConfig["specs"][i].url);
+                return
+            }
+        }
+    }
+</script>
+
+<style>
+    .root {
+        padding: 8px 8px 8px 8px;
+        color: var(--header-fg);
+        background-color: var(--header-bg);
+        display: flex;
+        align-items:center;
+        flex-direction: row;
+    }
+
+    .header {
+        font-size: 16px;
+        text-align: right;
+        padding: 0px 10px;
+    }
+
+    .list {
+        background: #fff;
+        color: #000;
+        padding:4px;
+        width: 100%;
+        box-shadow: none;
+        flex: 2 1 0%;
+        border-width: 2px;
+        border-style: solid;
+        border-color: rgb(98, 160, 63);
+        border-image: initial;
+        outline: none;
+    }
+</style>
+
+</body>
+</html>

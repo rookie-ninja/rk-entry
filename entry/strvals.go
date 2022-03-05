@@ -82,7 +82,11 @@ func (t *parser) key(data map[interface{}]interface{}) error {
 			// Find or create target list
 			list := []interface{}{}
 			if _, ok := data[kk]; ok {
-				list = data[kk].([]interface{})
+				if v, ok := data[kk].([]interface{}); ok {
+					list = v
+				} else {
+					return fmt.Errorf("invalid format")
+				}
 			}
 
 			// Now we need to get the value after the ].
@@ -120,7 +124,11 @@ func (t *parser) key(data map[interface{}]interface{}) error {
 			// First, create or find the target map.
 			inner := map[interface{}]interface{}{}
 			if _, ok := data[string(k)]; ok {
-				inner = data[string(k)].(map[interface{}]interface{})
+				if v, ok := data[string(k)].(map[interface{}]interface{}); ok {
+					inner = v
+				} else {
+					return fmt.Errorf("invalid format")
+				}
 			}
 
 			// Recurse
@@ -199,7 +207,11 @@ func (t *parser) listItem(list []interface{}, i int) ([]interface{}, error) {
 			// If nested list already exists, take the value of list to next cycle.
 			existed := list[i]
 			if existed != nil {
-				crtList = list[i].([]interface{})
+				if v, ok := list[i].([]interface{}); ok {
+					crtList = v
+				} else {
+					return list, fmt.Errorf("invalid source")
+				}
 			}
 		}
 		// Now we need to get the value after the ].

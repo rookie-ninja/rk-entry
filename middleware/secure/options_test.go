@@ -22,7 +22,7 @@ func TestNewOptionSet(t *testing.T) {
 	assert.Equal(t, "nosniff", set.contentTypeNosniff)
 	assert.Equal(t, "SAMEORIGIN", set.xFrameOptions)
 	assert.False(t, set.hstsPreloadEnabled)
-	assert.Empty(t, set.ignorePrefix)
+	assert.Empty(t, set.pathToIgnore)
 
 	// with option
 	set = NewOptionSet(
@@ -36,7 +36,7 @@ func TestNewOptionSet(t *testing.T) {
 		WithContentSecurityPolicy("ut-policy"),
 		WithCSPReportOnly(true),
 		WithReferrerPolicy("ut-ref"),
-		WithIgnorePrefix("ut-prefix"),
+		WithPathToIgnore("ut-prefix"),
 	).(*optionSet)
 
 	assert.Equal(t, "ut-entry", set.GetEntryName())
@@ -50,7 +50,7 @@ func TestNewOptionSet(t *testing.T) {
 	assert.Equal(t, "ut-policy", set.contentSecurityPolicy)
 	assert.True(t, set.cspReportOnly)
 	assert.Equal(t, "ut-ref", set.referrerPolicy)
-	assert.NotEmpty(t, set.ignorePrefix)
+	assert.NotEmpty(t, set.pathToIgnore)
 }
 
 func TestOptionSet_BeforeCtx(t *testing.T) {
@@ -91,7 +91,7 @@ func TestOptionSet_Before(t *testing.T) {
 		WithContentSecurityPolicy("ut-policy"),
 		WithCSPReportOnly(true),
 		WithReferrerPolicy("ut-ref"),
-		WithIgnorePrefix("ut-prefix"))
+		WithPathToIgnore("ut-prefix"))
 
 	req = httptest.NewRequest(http.MethodGet, "/ut", nil)
 	req.TLS = &tls.ConnectionState{}

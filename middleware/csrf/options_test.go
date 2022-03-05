@@ -24,7 +24,7 @@ func TestNewOptionSet(t *testing.T) {
 	assert.Equal(t, "_csrf", set.cookieName)
 	assert.Equal(t, 86400, set.cookieMaxAge)
 	assert.Equal(t, http.SameSiteDefaultMode, set.cookieSameSite)
-	assert.Empty(t, set.ignorePrefix)
+	assert.Empty(t, set.pathToIgnore)
 	assert.NotNil(t, set.extractor)
 
 	// with option
@@ -54,7 +54,7 @@ func TestNewOptionSet(t *testing.T) {
 	assert.True(t, set.cookieHTTPOnly)
 	assert.Equal(t, 10, set.cookieMaxAge)
 	assert.Equal(t, http.SameSiteDefaultMode, set.cookieSameSite)
-	assert.Empty(t, set.ignorePrefix)
+	assert.Empty(t, set.pathToIgnore)
 	assert.NotNil(t, set.extractor)
 }
 

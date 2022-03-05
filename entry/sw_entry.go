@@ -41,10 +41,10 @@ type swUrl struct {
 // 3: JsonPath: The path of where swagger JSON file was located.
 // 4: Headers: The headers that would added into each API response.
 type BootSW struct {
-	Enabled  bool     `yaml:"enabled" yaml:"enabled"`
-	Path     string   `yaml:"path" yaml:"path"`
-	JsonPath string   `yaml:"jsonPath" yaml:"jsonPath"`
-	Headers  []string `yaml:"headers" yaml:"headers"`
+	Enabled  bool     `yaml:"enabled" json:"enabled"`
+	Path     string   `yaml:"path" json:"path"`
+	JsonPath string   `yaml:"jsonPath" json:"jsonPath"`
+	Headers  []string `yaml:"headers" json:"headers"`
 }
 
 // SWEntry implements rke.Entry interface.
@@ -267,7 +267,7 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 	}
 
 	// re-path it with working directory if not absolute path
-	if !path.IsAbs(entry.JsonPath) {
+	if !path.IsAbs(jsonPath) {
 		wd, _ := os.Getwd()
 		jsonPath = path.Join(wd, jsonPath)
 	}

@@ -40,7 +40,7 @@ func TestNewOptionSet(t *testing.T) {
 	assert.NotNil(t, set.claims)
 	assert.Equal(t, "header:"+rkmid.HeaderAuthorization, set.tokenLookup)
 	assert.Equal(t, "Bearer", set.authScheme)
-	assert.Empty(t, set.ignorePrefix)
+	assert.Empty(t, set.pathToIgnore)
 	assert.Len(t, set.extractors, 1)
 
 	// with option
@@ -55,7 +55,7 @@ func TestNewOptionSet(t *testing.T) {
 
 	set = NewOptionSet(
 		WithEntryNameAndType("entry", "type"),
-		WithIgnorePrefix("/ut-ignore"),
+		WithPathToIgnore("/ut-ignore"),
 		WithSigningKey("key"),
 		WithSigningKeys("key", "value"),
 		WithSigningAlgorithm("ut-algo"),
@@ -66,7 +66,7 @@ func TestNewOptionSet(t *testing.T) {
 		WithParseTokenFunc(parseTokenFunc)).(*optionSet)
 	assert.NotEmpty(t, set.GetEntryName())
 	assert.NotEmpty(t, set.GetEntryType())
-	assert.NotEmpty(t, set.ignorePrefix)
+	assert.NotEmpty(t, set.pathToIgnore)
 	assert.Equal(t, "key", set.signingKey)
 	assert.Equal(t, "value", set.signingKeys["key"])
 	assert.Equal(t, "ut-algo", set.signingAlgorithm)
@@ -91,11 +91,11 @@ func TestOptionSet_BeforeCtx(t *testing.T) {
 	assert.Equal(t, "/ut", ctx.Input.UrlPath)
 }
 
-func TestOptionSet_ignore(t *testing.T) {
+func TestOptionSet_ShouldIgnore(t *testing.T) {
 	// with nil req
-	set := NewOptionSet(WithIgnorePrefix("/ut")).(*optionSet)
-	assert.True(t, set.ignore("/ut"))
-	assert.False(t, set.ignore("/at"))
+	set := NewOptionSet(WithPathToIgnore("/ut")).(*optionSet)
+	assert.True(t, set.ShouldIgnore("/ut"))
+	assert.False(t, set.ShouldIgnore("/at"))
 }
 
 func TestOptionSet_Before(t *testing.T) {

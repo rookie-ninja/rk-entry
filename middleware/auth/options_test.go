@@ -36,10 +36,10 @@ func TestOptionSet_BeforeCtx(t *testing.T) {
 
 func TestToOptions(t *testing.T) {
 	config := &BootConfig{
-		Enabled:      false,
-		IgnorePrefix: []string{},
-		Basic:        []string{},
-		ApiKey:       []string{},
+		Enabled: false,
+		Ignore:  []string{},
+		Basic:   []string{},
+		ApiKey:  []string{},
 	}
 
 	// with disabled
@@ -57,21 +57,21 @@ func TestNewOptionSet(t *testing.T) {
 	assert.NotEmpty(t, set.GetEntryName())
 	assert.NotNil(t, set.basicAccounts)
 	assert.NotNil(t, set.apiKey)
-	assert.Empty(t, set.ignorePrefix)
+	assert.Empty(t, set.pathToIgnore)
 
 	// with options
 	set = NewOptionSet(
 		WithEntryNameAndType("ut-name", "ut-type"),
 		WithBasicAuth("ut-realm", "user:pass"),
 		WithApiKeyAuth("ut-key"),
-		WithIgnorePrefix("ut-ignore")).(*optionSet)
+		WithPathToIgnore("ut-ignore")).(*optionSet)
 
 	assert.NotEmpty(t, set.GetEntryName())
 	assert.NotEmpty(t, set.GetEntryType())
 	assert.NotEmpty(t, set.basicRealm)
 	assert.NotEmpty(t, set.basicAccounts)
 	assert.NotEmpty(t, set.apiKey)
-	assert.NotEmpty(t, set.ignorePrefix)
+	assert.NotEmpty(t, set.pathToIgnore)
 }
 
 func TestOptionSet_isBasicAuthorized(t *testing.T) {
@@ -145,7 +145,7 @@ func TestOptionSet_Before(t *testing.T) {
 	// case 0: ignore path
 	req := httptest.NewRequest(http.MethodGet, "/ut-path", nil)
 
-	set := NewOptionSet(WithIgnorePrefix("/ut-path"))
+	set := NewOptionSet(WithPathToIgnore("/ut-path"))
 	ctx := set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.Nil(t, ctx.Output.ErrResp)
