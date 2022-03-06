@@ -117,7 +117,7 @@ type ConfigEntry struct {
 }
 
 // Bootstrap entry.
-func (entry *ConfigEntry) Bootstrap(context.Context) {}
+func (entry *ConfigEntry) Bootstrap(context.Context, ...PreloadFunc) {}
 
 // Interrupt entry.
 func (entry *ConfigEntry) Interrupt(context.Context) {}

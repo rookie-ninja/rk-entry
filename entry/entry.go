@@ -63,10 +63,12 @@ const (
 // 4: Interrupt will be called from Bootstrapper.Interrupt() function
 type RegFunc func(raw []byte) map[string]Entry
 
+type PreloadFunc func()
+
 // Entry interface which must be implemented for bootstrapper to bootstrap
 type Entry interface {
 	// Bootstrap entry
-	Bootstrap(context.Context)
+	Bootstrap(context.Context, ...PreloadFunc)
 
 	// Interrupt entry
 	// Wait for shutdown signal and wait for draining incomplete procedure

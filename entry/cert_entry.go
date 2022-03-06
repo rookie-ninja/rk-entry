@@ -89,7 +89,7 @@ type CertEntry struct {
 }
 
 // Bootstrap iterate retrievers and call Retrieve() for each of them.
-func (entry *CertEntry) Bootstrap(ctx context.Context) {
+func (entry *CertEntry) Bootstrap(ctx context.Context, f ...PreloadFunc) {
 	// server cert path
 	if len(entry.keyPemPath) > 0 && len(entry.certPemPath) > 0 {
 		cert, err := tls.X509KeyPair(

@@ -126,7 +126,7 @@ type MyEntry struct {
 }
 
 // Bootstrap init required fields in MyEntry
-func (entry *MyEntry) Bootstrap(context.Context) {}
+func (entry *MyEntry) Bootstrap(context.Context, ...rkentry.PreloadFunc) {}
 
 // Interrupt noop
 func (entry *MyEntry) Interrupt(context.Context) {}

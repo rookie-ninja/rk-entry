@@ -89,7 +89,7 @@ func registerAppInfoEntryYAML(raw []byte) map[string]Entry {
 }
 
 // Bootstrap is noop function.
-func (entry *appInfoEntry) Bootstrap(context.Context) {}
+func (entry *appInfoEntry) Bootstrap(context.Context, ...PreloadFunc) {}
 
 // Interrupt is noop function.
 func (entry *appInfoEntry) Interrupt(context.Context) {}

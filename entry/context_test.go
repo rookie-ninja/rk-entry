@@ -434,7 +434,7 @@ type EntryMock struct {
 	Name string
 }
 
-func (entry *EntryMock) Bootstrap(context.Context) {}
+func (entry *EntryMock) Bootstrap(context.Context, ...PreloadFunc) {}
 
 func (entry *EntryMock) Interrupt(context.Context) {}
 

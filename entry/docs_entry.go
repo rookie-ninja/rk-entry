@@ -131,7 +131,7 @@ func RegisterDocsEntry(boot *BootDocs, opts ...DocsEntryOption) *DocsEntry {
 type DocsEntryOption func(entry *DocsEntry)
 
 // Bootstrap Entry
-func (entry *DocsEntry) Bootstrap(ctx context.Context) {
+func (entry *DocsEntry) Bootstrap(ctx context.Context, f ...PreloadFunc) {
 	// init swagger configs
 	entry.initDocsConfig()
 }
