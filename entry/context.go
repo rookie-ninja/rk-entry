@@ -257,6 +257,10 @@ func (ctx *appContext) GetEntry(entryType, entryName string) Entry {
 }
 
 func (ctx *appContext) RemoveEntry(entry Entry) {
+	if entry == nil {
+		return
+	}
+
 	if v, ok := ctx.entries[entry.GetType()]; ok {
 		delete(v, entry.GetName())
 	}
