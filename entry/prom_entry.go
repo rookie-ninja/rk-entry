@@ -98,7 +98,7 @@ type PromEntry struct {
 type PromEntryOption func(entry *PromEntry)
 
 // Bootstrap Start prometheus client
-func (entry *PromEntry) Bootstrap(ctx context.Context, f ...PreloadFunc) {
+func (entry *PromEntry) Bootstrap(ctx context.Context) {
 	// start pusher
 	if entry.Pusher != nil {
 		entry.Pusher.Bootstrap(ctx)

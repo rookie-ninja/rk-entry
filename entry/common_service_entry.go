@@ -144,7 +144,7 @@ func RegisterCommonServiceEntry(boot *BootCommonService, opts ...CommonServiceEn
 }
 
 // Bootstrap common service entry.
-func (entry *CommonServiceEntry) Bootstrap(context.Context, ...PreloadFunc) {}
+func (entry *CommonServiceEntry) Bootstrap(context.Context) {}
 
 // Interrupt common service entry.
 func (entry *CommonServiceEntry) Interrupt(context.Context) {}
