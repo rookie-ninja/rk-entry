@@ -169,7 +169,7 @@ type LoggerEntry struct {
 }
 
 // Bootstrap entry.
-func (entry *LoggerEntry) Bootstrap(ctx context.Context) {
+func (entry *LoggerEntry) Bootstrap(ctx context.Context, f ...PreloadFunc) {
 	if entry.lokiSyncer != nil {
 		entry.lokiSyncer.Bootstrap(ctx)
 	}

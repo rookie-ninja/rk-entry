@@ -112,7 +112,7 @@ func RegisterSWEntry(boot *BootSW, opts ...SWEntryOption) *SWEntry {
 	return swEntry
 }
 
-func (entry *SWEntry) Bootstrap(ctx context.Context) {
+func (entry *SWEntry) Bootstrap(ctx context.Context, f ...PreloadFunc) {
 	// init swagger configs
 	entry.initSwaggerConfig()
 }
