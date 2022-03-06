@@ -207,7 +207,7 @@ type EventEntry struct {
 }
 
 // Bootstrap entry.
-func (entry *EventEntry) Bootstrap(ctx context.Context, f ...PreloadFunc) {
+func (entry *EventEntry) Bootstrap(ctx context.Context) {
 	if entry.lokiSyncer != nil {
 		entry.lokiSyncer.Bootstrap(ctx)
 	}

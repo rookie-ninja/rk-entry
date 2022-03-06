@@ -142,7 +142,7 @@ func RegisterStaticFileHandlerEntry(boot *BootStaticFileHandler, opts ...StaticF
 }
 
 // Bootstrap entry.
-func (entry *StaticFileHandlerEntry) Bootstrap(context.Context, ...PreloadFunc) {
+func (entry *StaticFileHandlerEntry) Bootstrap(context.Context) {
 	// parse template
 	if _, err := entry.Template.Parse(string(readFile("assets/static/index.tmpl", &rkembed.AssetsFS, true))); err != nil {
 		ShutdownWithError(err)
