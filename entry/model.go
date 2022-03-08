@@ -36,17 +36,17 @@ type ProcessInfo struct {
 	Description string          `json:"description" yaml:"description"`
 	Keywords    []string        `json:"keywords" yaml:"keywords"`
 	HomeUrl     string          `json:"homeUrl" yaml:"homeUrl"`
-	DocsUrl     []string        `json:"docsUrl" json:"docsUrl"`
-	Maintainers []string        `json:"maintainers" json:"maintainers"`
-	UID         string          `json:"uid" json:"uid"`
-	GID         string          `json:"gid" json:"gid"`
-	Username    string          `json:"username" json:"username"`
-	StartTime   string          `json:"startTime" json:"startTime"`
-	UpTimeSec   int64           `json:"upTimeSec" json:"upTimeSec"`
-	Region      string          `json:"region" json:"region"`
-	AZ          string          `json:"az" json:"az"`
-	Realm       string          `json:"realm" json:"realm"`
-	Domain      string          `json:"domain" json:"domain"`
+	DocsUrl     []string        `json:"docsUrl" yaml:"docsUrl"`
+	Maintainers []string        `json:"maintainers" yaml:"maintainers"`
+	UID         string          `json:"uid" yaml:"uid"`
+	GID         string          `json:"gid" yaml:"gid"`
+	Username    string          `json:"username" yaml:"username"`
+	StartTime   string          `json:"startTime" yaml:"startTime"`
+	UpTimeSec   int64           `json:"upTimeSec" yaml:"upTimeSec"`
+	Region      string          `json:"region" yaml:"region"`
+	AZ          string          `json:"az" yaml:"az"`
+	Realm       string          `json:"realm" yaml:"realm"`
+	Domain      string          `json:"domain" yaml:"domain"`
 	CpuInfo     *rkos.CpuInfo   `json:"cpuInfo" yaml:"cpuInfo"`
 	MemInfo     *rkos.MemInfo   `json:"memInfo" yaml:"memInfo"`
 	NetInfo     *rkos.NetInfo   `json:"netInfo" yaml:"netInfo"`
