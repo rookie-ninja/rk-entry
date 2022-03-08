@@ -24,7 +24,7 @@ import (
 
 var (
 	errJwtMissing = rkerror.NewBadRequest("Missing or malformed jwt")
-	errJwtInvalid = rkerror.NewBadRequest("Invalid or expired jwt")
+	errJwtInvalid = rkerror.NewUnauthorized("Invalid or expired jwt")
 )
 
 const (
