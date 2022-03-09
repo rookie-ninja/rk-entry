@@ -171,33 +171,30 @@ func IsLocaleValid(locale string) bool {
 		return false
 	}
 
-	realmFromEnv := getDefaultIfEmptyString(os.Getenv("REALM"), "*")
-	regionFromEnv := getDefaultIfEmptyString(os.Getenv("REGION"), "*")
-	azFromEnv := getDefaultIfEmptyString(os.Getenv("AZ"), "*")
-	domainFromEnv := getDefaultIfEmptyString(os.Getenv("DOMAIN"), "*")
+	realmFromEnv := getDefaultIfEmptyString(os.Getenv("REALM"), "")
+	regionFromEnv := getDefaultIfEmptyString(os.Getenv("REGION"), "")
+	azFromEnv := getDefaultIfEmptyString(os.Getenv("AZ"), "")
+	domainFromEnv := getDefaultIfEmptyString(os.Getenv("DOMAIN"), "")
 
-	if tokens[0] != "*" && realmFromEnv != "*" {
-		if tokens[0] != realmFromEnv {
-			return false
-		}
+	realmFromConfig := tokens[0]
+	regionFromConfig := tokens[1]
+	azFromConfig := tokens[2]
+	domainFromConfig := tokens[3]
+
+	if realmFromConfig != "*" && realmFromConfig != realmFromEnv {
+		return false
 	}
 
-	if tokens[1] != "*" && regionFromEnv != "*" {
-		if tokens[1] != regionFromEnv {
-			return false
-		}
+	if regionFromConfig != "*" && regionFromConfig != regionFromEnv {
+		return false
 	}
 
-	if tokens[2] != "*" && azFromEnv != "*" {
-		if tokens[2] != azFromEnv {
-			return false
-		}
+	if azFromConfig != "*" && azFromConfig != azFromEnv {
+		return false
 	}
 
-	if tokens[3] != "*" && domainFromEnv != "*" {
-		if tokens[3] != domainFromEnv {
-			return false
-		}
+	if domainFromConfig != "*" && domainFromConfig != domainFromEnv {
+		return false
 	}
 
 	return true
