@@ -492,7 +492,7 @@ func TestIsLocaleValid_WithInvalidLocale(t *testing.T) {
 
 func TestIsLocaleValid_WithEmptyRealmEnv(t *testing.T) {
 	// with realm exist in locale
-	assert.True(t, IsLocaleValid("fake-realm::*::*::*"))
+	assert.False(t, IsLocaleValid("fake-realm::*::*::*"))
 
 	// with wildcard in realm
 	assert.True(t, IsLocaleValid("*::*::*::*"))
