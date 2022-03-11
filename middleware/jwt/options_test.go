@@ -9,15 +9,18 @@ import (
 	"context"
 	"errors"
 	"github.com/golang-jwt/jwt/v4"
+	rkentry "github.com/rookie-ninja/rk-entry/v2/entry"
 	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
+	"net/url"
 	"testing"
 )
 
-func TestToOptions(t *testing.T) {
+func TestToOptions_One(t *testing.T) {
+	defer rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
+
 	// with disabled
 	config := &BootConfig{
 		Enabled: false,
@@ -26,55 +29,116 @@ func TestToOptions(t *testing.T) {
 
 	// with enabled
 	config.Enabled = true
-	config.SigningKeys = []string{"key"}
-	config.SigningKey = "key"
+	config.Symmetric = &SymmetricConfig{
+		Algorithm: jwt.SigningMethodHS256.Name,
+		Token:     "ut-key",
+	}
 	assert.NotEmpty(t, ToOptions(config, "", ""))
+
+	// with signer entry
+	signer := rkentry.RegisterSymmetricJwtSigner("ut-entry", jwt.SigningMethodHS256.Name, []byte("my-secret"))
+	rkentry.GlobalAppCtx.AddEntry(signer)
+	config = &BootConfig{
+		Enabled:     true,
+		SignerEntry: signer.GetName(),
+	}
+	assert.NotEmpty(t, ToOptions(config, "", ""))
+	rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
+}
+
+func TestToOptions_Two(t *testing.T) {
+	defer rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
+	// with symmetric
+	// 1: with raw key
+	config := &BootConfig{
+		Enabled: true,
+		Symmetric: &SymmetricConfig{
+			Algorithm: jwt.SigningMethodHS256.Name,
+			Token:     "raw key",
+		},
+	}
+	assert.NotEmpty(t, ToOptions(config, "", ""))
+	rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
+}
+
+func TestToOptions_Three(t *testing.T) {
+	defer rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
+	// with symmetric
+	defer assertPanic(t)
+	// 2: with path
+	config := &BootConfig{
+		Enabled: true,
+		Symmetric: &SymmetricConfig{
+			Algorithm: jwt.SigningMethodHS256.Name,
+			TokenPath: "raw/path",
+		},
+	}
+	assert.NotEmpty(t, ToOptions(config, "", ""))
+	rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
+}
+
+func TestToOptions_Four(t *testing.T) {
+	defer rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
+	// with symmetric
+	defer assertPanic(t)
+	// 2: with path
+	config := &BootConfig{
+		Enabled: true,
+		Asymmetric: &AsymmetricConfig{
+			Algorithm:      jwt.SigningMethodRS256.Name,
+			PublicKeyPath:  "raw/path",
+			PrivateKeyPath: "raw/path",
+		},
+	}
+	assert.NotEmpty(t, ToOptions(config, "", ""))
+	rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
+}
+
+func TestToOptions_Five(t *testing.T) {
+	defer rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
+	// with symmetric
+	defer assertPanic(t)
+	// 2: with path
+	config := &BootConfig{
+		Enabled: true,
+		Asymmetric: &AsymmetricConfig{
+			Algorithm:  jwt.SigningMethodRS256.Name,
+			PublicKey:  "raw/path",
+			PrivateKey: "raw/path",
+		},
+	}
+	assert.NotEmpty(t, ToOptions(config, "", ""))
+	rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
 }
 
 func TestNewOptionSet(t *testing.T) {
 	// without option
 	set := NewOptionSet().(*optionSet)
 	assert.NotEmpty(t, set.GetEntryName())
-	assert.NotNil(t, set.signingKeys)
-	assert.Equal(t, AlgorithmHS256, set.signingAlgorithm)
-	assert.NotNil(t, set.claims)
+	assert.NotNil(t, set.signer)
 	assert.Equal(t, "header:"+rkmid.HeaderAuthorization, set.tokenLookup)
 	assert.Equal(t, "Bearer", set.authScheme)
 	assert.Empty(t, set.pathToIgnore)
 	assert.Len(t, set.extractors, 1)
+	rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
 
 	// with option
-	claim := new(jwt.MapClaims)
-	keyFunc := func(t *jwt.Token) (interface{}, error) {
-		return nil, nil
-	}
-	parseTokenFunc := func(auth string) (*jwt.Token, error) {
-		return nil, nil
-	}
 	tokenLookupStr := "query:ut,cookie:ut,form:ut,header:ut"
+	signer := rkentry.RegisterSymmetricJwtSigner("ut-entry", jwt.SigningMethodHS256.Name, []byte("ut-key"))
 
 	set = NewOptionSet(
 		WithEntryNameAndType("entry", "type"),
 		WithPathToIgnore("/ut-ignore"),
-		WithSigningKey("key"),
-		WithSigningKeys("key", "value"),
-		WithSigningAlgorithm("ut-algo"),
-		WithClaims(claim),
+		WithSigner(signer),
 		WithTokenLookup(tokenLookupStr),
-		WithAuthScheme("ut-scheme"),
-		WithKeyFunc(keyFunc),
-		WithParseTokenFunc(parseTokenFunc)).(*optionSet)
+		WithAuthScheme("ut-scheme")).(*optionSet)
 	assert.NotEmpty(t, set.GetEntryName())
 	assert.NotEmpty(t, set.GetEntryType())
 	assert.NotEmpty(t, set.pathToIgnore)
-	assert.Equal(t, "key", set.signingKey)
-	assert.Equal(t, "value", set.signingKeys["key"])
-	assert.Equal(t, "ut-algo", set.signingAlgorithm)
-	assert.Equal(t, claim, set.claims)
+	assert.Equal(t, signer, set.signer)
 	assert.Equal(t, "ut-scheme", set.authScheme)
-	assert.Equal(t, reflect.ValueOf(keyFunc).Pointer(), reflect.ValueOf(set.keyFunc).Pointer())
-	assert.Equal(t, reflect.ValueOf(parseTokenFunc).Pointer(), reflect.ValueOf(set.parseTokenFunc).Pointer())
-	assert.Len(t, set.extractors, 4)
+	assert.Len(t, set.extractors, 2)
+	rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
 }
 
 func TestOptionSet_BeforeCtx(t *testing.T) {
@@ -99,6 +163,8 @@ func TestOptionSet_ShouldIgnore(t *testing.T) {
 }
 
 func TestOptionSet_Before(t *testing.T) {
+	defer rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
+
 	// with custom extractor and parser
 	// expect extract error
 	ex := func(ctx context.Context) (string, error) {
@@ -110,47 +176,10 @@ func TestOptionSet_Before(t *testing.T) {
 	assert.Nil(t, ctx.Output.JwtToken)
 	assert.NotNil(t, ctx.Output.ErrResp)
 
-	// expect parse error
-	ex = func(ctx context.Context) (string, error) {
-		return "", nil
-	}
-	par := func(auth string) (*jwt.Token, error) {
-		return nil, errors.New("ut-error")
-	}
-	set = NewOptionSet(
-		WithExtractor(ex),
-		WithParseTokenFunc(par))
-	ctx = set.BeforeCtx(nil, nil)
-	set.Before(ctx)
-	assert.Nil(t, ctx.Output.JwtToken)
-	assert.NotNil(t, ctx.Output.ErrResp)
-
 	// happy case
-	ex = func(ctx context.Context) (string, error) {
-		return "", nil
-	}
-	par = func(auth string) (*jwt.Token, error) {
-		return &jwt.Token{}, nil
-	}
 	set = NewOptionSet(
-		WithExtractor(ex),
-		WithParseTokenFunc(par))
-	ctx = set.BeforeCtx(nil, nil)
-	set.Before(ctx)
-	assert.NotNil(t, ctx.Output.JwtToken)
-	assert.Nil(t, ctx.Output.ErrResp)
-
-	// Use default one but with invalid jwt
-	set = NewOptionSet()
+		WithSigner(rkentry.RegisterSymmetricJwtSigner("ut-entry", jwt.SigningMethodHS256.Name, []byte("my-secret"))))
 	req := httptest.NewRequest(http.MethodGet, "/ut", nil)
-	ctx = set.BeforeCtx(req, nil)
-	set.Before(ctx)
-	assert.Nil(t, ctx.Output.JwtToken)
-	assert.NotNil(t, ctx.Output.ErrResp)
-
-	// happy case
-	set = NewOptionSet(WithSigningKey([]byte("my-secret")))
-	req = httptest.NewRequest(http.MethodGet, "/ut", nil)
 	req.Header.Set(rkmid.HeaderAuthorization,
 		"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.EpM5XBzTJZ4J8AfoJEcJrjth8pfH28LWdjLo90sYb9g")
 	ctx = set.BeforeCtx(req, nil)
@@ -165,4 +194,31 @@ func TestNewOptionSetMock(t *testing.T) {
 	assert.NotEmpty(t, mock.GetEntryType())
 	assert.NotNil(t, mock.BeforeCtx(nil, nil))
 	mock.Before(nil)
+}
+
+func TestJwtHttpExtractor(t *testing.T) {
+	// query
+	f := jwtFromQuery("ut-query")
+	res, err := f(nil)
+	assert.NotNil(t, err)
+	assert.Empty(t, res)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.URL = &url.URL{
+		RawQuery: "ut-query=my-jwt",
+	}
+	res, err = f(req)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "my-jwt", res)
+}
+
+func assertPanic(t *testing.T) {
+	if r := recover(); r != nil {
+		// expect panic to be called with non nil error
+		assert.True(t, true)
+	} else {
+		// this should never be called in case of a bug
+		assert.True(t, false)
+	}
 }

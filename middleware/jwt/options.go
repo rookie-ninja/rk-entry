@@ -8,28 +8,21 @@ package rkmidjwt
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/pkg/errors"
+	"github.com/rookie-ninja/rk-entry/v2/entry"
 	"github.com/rookie-ninja/rk-entry/v2/error"
 	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"io/ioutil"
 	"net/http"
-	"net/url"
-	"reflect"
+	"os"
+	"path"
 	"strings"
 )
-
-// Mainly copied from bellow.
-// https://github.com/labstack/echo/blob/master/middleware/jwt.go
 
 var (
 	errJwtMissing = rkerror.NewBadRequest("Missing or malformed jwt")
 	errJwtInvalid = rkerror.NewUnauthorized("Invalid or expired jwt")
-)
-
-const (
-	// AlgorithmHS256 is default algorithm for jwt
-	AlgorithmHS256 = "HS256"
 )
 
 // ***************** OptionSet Interface *****************
@@ -51,12 +44,13 @@ type OptionSetInterface interface {
 
 // optionSet which is used for middleware implementation
 type optionSet struct {
-	// EntryName name of entry
+	// name of entry
 	entryName string
 
-	// EntryType type of entry
+	// type of entry
 	entryType string
 
+	// path to ignore
 	pathToIgnore []string
 
 	// extractors of JWT token from http.Request
@@ -65,26 +59,8 @@ type optionSet struct {
 	// user provided extractor
 	extractor JwtExtractor
 
-	// SigningKey Signing key to validate token.
-	// This is one of the three options to provide a token validation key.
-	// The order of precedence is a user-defined KeyFunc, SigningKeys and SigningKey.
-	// Required if neither user-defined KeyFunc nor SigningKeys is provided.
-	signingKey interface{}
-
-	// SigningKeys Map of signing keys to validate token with kid field usage.
-	// This is one of the three options to provide a token validation key.
-	// The order of precedence is a user-defined KeyFunc, SigningKeys and SigningKey.
-	// Required if neither user-defined KeyFunc nor SigningKey is provided.
-	signingKeys map[string]interface{}
-
-	// SigningAlgorithm Signing algorithm used to check the token's signing algorithm.
-	// Optional. Default value HS256.
-	signingAlgorithm string
-
-	// Claims are extendable claims data defining token content. Used by default ParseTokenFunc implementation.
-	// Not used if custom ParseTokenFunc is set.
-	// Optional. Default value jwt.MapClaims
-	claims jwt.Claims
+	// implementation of rkentry.SignerJwt
+	signer rkentry.SignerJwt
 
 	// TokenLookup is a string in the form of "<source>:<name>" or "<source>:<name>,<source>:<name>" that is used
 	// to extract token from the request.
@@ -92,9 +68,6 @@ type optionSet struct {
 	// Possible values:
 	// - "header:<name>"
 	// - "query:<name>"
-	// - "param:<name>"
-	// - "cookie:<name>"
-	// - "form:<name>"
 	// Multiply sources example:
 	// - "header: Authorization,cookie: myowncookie"
 	tokenLookup string
@@ -103,45 +76,25 @@ type optionSet struct {
 	// Optional. Default value "Bearer".
 	authScheme string
 
-	// KeyFunc defines a user-defined function that supplies the public key for a token validation.
-	// The function shall take care of verifying the signing algorithm and selecting the proper key.
-	// A user-defined KeyFunc can be useful if tokens are issued by an external party.
-	// Used by default ParseTokenFunc implementation.
-	//
-	// When a user-defined KeyFunc is provided, SigningKey, SigningKeys, and SigningMethod are ignored.
-	// This is one of the three options to provide a token validation key.
-	// The order of precedence is a user-defined KeyFunc, SigningKeys and SigningKey.
-	// Required if neither SigningKeys nor SigningKey is provided.
-	// Not used if custom ParseTokenFunc is set.
-	// Default to an internal implementation verifying the signing algorithm and selecting the proper key.
-	keyFunc jwt.Keyfunc
-
-	// ParseTokenFunc defines a user-defined function that parses token from given auth. Returns an error when token
-	// parsing fails or parsed token is invalid.
-	// Defaults to implementation using `github.com/golang-jwt/jwt` as JWT implementation library
-	parseTokenFunc func(auth string) (*jwt.Token, error)
-
 	mock OptionSetInterface
 }
 
 // NewOptionSet Create new optionSet with options.
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
-		entryName:        "fake-entry",
-		entryType:        "",
-		signingKeys:      make(map[string]interface{}),
-		signingAlgorithm: AlgorithmHS256,
-		claims:           jwt.MapClaims{},
-		tokenLookup:      "header:" + rkmid.HeaderAuthorization,
-		authScheme:       "Bearer",
-		pathToIgnore:     []string{},
+		entryName:    "fake-entry",
+		entryType:    "",
+		tokenLookup:  "header:" + rkmid.HeaderAuthorization,
+		authScheme:   "Bearer",
+		pathToIgnore: []string{},
 	}
-
-	set.keyFunc = set.defaultKeyFunc
-	set.parseTokenFunc = set.defaultParseToken
 
 	for i := range opts {
 		opts[i](set)
+	}
+
+	if set.signer == nil {
+		set.signer = rkentry.RegisterSymmetricJwtSigner(set.entryName, jwt.SigningMethodHS256.Name, []byte("rk jwt key"))
 	}
 
 	if set.mock != nil {
@@ -155,10 +108,6 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 		switch parts[0] {
 		case "query":
 			set.extractors = append(set.extractors, jwtFromQuery(parts[1]))
-		case "cookie":
-			set.extractors = append(set.extractors, jwtFromCookie(parts[1]))
-		case "form":
-			set.extractors = append(set.extractors, jwtFromForm(parts[1]))
 		case "header":
 			set.extractors = append(set.extractors, jwtFromHeader(parts[1], set.authScheme))
 		}
@@ -207,7 +156,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		}
 
 		// case 1.2: parse
-		token, err := set.parseTokenFunc(authRaw)
+		token, err := set.signer.VerifyJwt(authRaw)
 		if err != nil {
 			ctx.Output.ErrResp = errJwtInvalid
 			return
@@ -236,7 +185,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		return
 	}
 
-	token, err = set.parseTokenFunc(authRaw)
+	token, err = set.signer.VerifyJwt(authRaw)
 	if err != nil {
 		ctx.Output.ErrResp = errJwtInvalid
 		return
@@ -254,56 +203,6 @@ func (set *optionSet) ShouldIgnore(path string) bool {
 	}
 
 	return rkmid.ShouldIgnoreGlobal(path)
-}
-
-// Default key parsing func
-func (set *optionSet) defaultKeyFunc(t *jwt.Token) (interface{}, error) {
-	// check the signing method
-	if t.Method.Alg() != set.signingAlgorithm {
-		return nil, fmt.Errorf("unexpected jwt signing algorithm=%v", t.Header["alg"])
-	}
-
-	// check kid in token first
-	// https://www.rfc-editor.org/rfc/rfc7515#section-4.1.4
-	if len(set.signingKeys) > 0 {
-		if kid, ok := t.Header["kid"].(string); ok {
-			if key, ok := set.signingKeys[kid]; ok {
-				return key, nil
-			}
-		}
-		return nil, fmt.Errorf("unexpected jwt key id=%v", t.Header["kid"])
-	}
-
-	// return signing key
-	return set.signingKey, nil
-}
-
-// Default token parsing func
-func (set *optionSet) defaultParseToken(auth string) (*jwt.Token, error) {
-	token := new(jwt.Token)
-	var err error
-
-	// implementation of jwt.MapClaims
-	if _, ok := set.claims.(jwt.MapClaims); ok {
-		token, err = jwt.Parse(auth, set.keyFunc)
-	} else {
-		// custom implementation of jwt.Claims
-		t := reflect.ValueOf(set.claims).Type().Elem()
-		claims := reflect.New(t).Interface().(jwt.Claims)
-		token, err = jwt.ParseWithClaims(auth, claims, set.keyFunc)
-	}
-
-	// return error
-	if err != nil {
-		return nil, err
-	}
-
-	// invalid token
-	if !token.Valid {
-		return nil, errors.New("invalid token")
-	}
-
-	return token, nil
 }
 
 // ***************** OptionSet Mock *****************
@@ -369,13 +268,27 @@ type BeforeCtx struct {
 
 // BootConfig for YAML
 type BootConfig struct {
-	Enabled     bool     `yaml:"enabled" json:"enabled"`
-	Ignore      []string `yaml:"ignore" json:"ignore"`
-	SigningKey  string   `yaml:"signingKey" json:"signingKey"`
-	SigningKeys []string `yaml:"signingKeys" json:"signingKeys"`
-	SigningAlgo string   `yaml:"signingAlgo" json:"signingAlgo"`
-	TokenLookup string   `yaml:"tokenLookup" json:"tokenLookup"`
-	AuthScheme  string   `yaml:"authScheme" json:"authScheme"`
+	Enabled     bool              `yaml:"enabled" json:"enabled"`
+	Ignore      []string          `yaml:"ignore" json:"ignore"`
+	SignerEntry string            `yaml:"signerEntry" json:"signerEntry"`
+	Symmetric   *SymmetricConfig  `yaml:"symmetric" json:"symmetric"`
+	Asymmetric  *AsymmetricConfig `yaml:"asymmetric" json:"asymmetric"`
+	TokenLookup string            `yaml:"tokenLookup" json:"tokenLookup"`
+	AuthScheme  string            `yaml:"authScheme" json:"authScheme"`
+}
+
+type SymmetricConfig struct {
+	Algorithm string `yaml:"algorithm" json:"algorithm"`
+	Token     string `yaml:"token" json:"token"`
+	TokenPath string `yaml:"tokenPath" json:"tokenPath"`
+}
+
+type AsymmetricConfig struct {
+	Algorithm      string `yaml:"algorithm" json:"algorithm"`
+	PrivateKey     string `yaml:"privateKey" json:"privateKey"`
+	PrivateKeyPath string `yaml:"privateKeyPath" json:"privateKeyPath"`
+	PublicKey      string `yaml:"publicKey" json:"publicKey"`
+	PublicKeyPath  string `yaml:"publicKeyPath" json:"publicKeyPath"`
 }
 
 // ToOptions convert BootConfig into Option list
@@ -383,29 +296,77 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 	opts := make([]Option, 0)
 
 	if config.Enabled {
-		var signingKey []byte
-		if len(config.SigningKey) > 0 {
-			signingKey = []byte(config.SigningKey)
+		var signerJwt rkentry.SignerJwt
+
+		// check signer entry first
+		if v := rkentry.GlobalAppCtx.GetEntry(rkentry.SignerJwtEntryType, config.SignerEntry); v != nil {
+			signer, ok := v.(rkentry.SignerJwt)
+			if !ok {
+				rkentry.ShutdownWithError(errors.New("Invalid signer jwt entry"))
+			}
+
+			signerJwt = signer
+			if signerJwt == nil {
+				rkentry.ShutdownWithError(errors.New("Invalid asymmetric configuration"))
+			}
+		} else if config.Asymmetric != nil {
+			var pubKey, privKey []byte
+
+			if len(config.Asymmetric.PublicKey) > 0 {
+				pubKey = []byte(config.Asymmetric.PublicKey)
+			} else {
+				pubKey = mustRead(config.Asymmetric.PublicKeyPath)
+			}
+
+			if len(config.Asymmetric.PrivateKey) > 0 {
+				privKey = []byte(config.Asymmetric.PrivateKey)
+			} else {
+				privKey = mustRead(config.Asymmetric.PrivateKeyPath)
+			}
+
+			signerJwt = rkentry.RegisterAsymmetricJwtSigner(entryName, config.Asymmetric.Algorithm, privKey, pubKey)
+			if signerJwt == nil {
+				rkentry.ShutdownWithError(errors.New("Invalid asymmetric configuration"))
+			}
+		} else if config.Symmetric != nil {
+			var token []byte
+			if len(config.Symmetric.Token) > 0 {
+				token = []byte(config.Symmetric.Token)
+			} else {
+				token = mustRead(config.Symmetric.TokenPath)
+			}
+
+			signerJwt = rkentry.RegisterSymmetricJwtSigner(entryName, config.Symmetric.Algorithm, token)
+			if signerJwt == nil {
+				rkentry.ShutdownWithError(errors.New("Invalid symmetric configuration"))
+			}
 		}
 
 		opts = []Option{
 			WithEntryNameAndType(entryName, entryType),
-			WithSigningKey(signingKey),
-			WithSigningAlgorithm(config.SigningAlgo),
 			WithTokenLookup(config.TokenLookup),
+			WithSigner(signerJwt),
 			WithAuthScheme(config.AuthScheme),
 			WithPathToIgnore(config.Ignore...),
 		}
 
-		for _, v := range config.SigningKeys {
-			tokens := strings.SplitN(v, ":", 2)
-			if len(tokens) == 2 {
-				opts = append(opts, WithSigningKeys(tokens[0], tokens[1]))
-			}
-		}
 	}
 
 	return opts
+}
+
+func mustRead(p string) []byte {
+	if !path.IsAbs(p) {
+		wd, _ := os.Getwd()
+		p = path.Join(wd, p)
+	}
+
+	res, err := ioutil.ReadFile(p)
+	if err != nil {
+		rkentry.ShutdownWithError(err)
+	}
+
+	return res
 }
 
 // ***************** Option *****************
@@ -421,38 +382,10 @@ func WithEntryNameAndType(entryName, entryType string) Option {
 	}
 }
 
-// WithSigningKey provide SigningKey.
-func WithSigningKey(key interface{}) Option {
+// WithSigner provide rkentry.SignerJwt.
+func WithSigner(signer rkentry.SignerJwt) Option {
 	return func(opt *optionSet) {
-		if key != nil {
-			opt.signingKey = key
-		}
-	}
-}
-
-// WithSigningKeys provide SigningKey with key and value.
-func WithSigningKeys(key string, value interface{}) Option {
-	return func(opt *optionSet) {
-		if len(key) > 0 {
-			opt.signingKeys[key] = value
-		}
-	}
-}
-
-// WithSigningAlgorithm provide signing algorithm.
-// Default is HS256.
-func WithSigningAlgorithm(algo string) Option {
-	return func(opt *optionSet) {
-		if len(algo) > 0 {
-			opt.signingAlgorithm = algo
-		}
-	}
-}
-
-// WithClaims provide jwt.Claims.
-func WithClaims(claims jwt.Claims) Option {
-	return func(opt *optionSet) {
-		opt.claims = claims
+		opt.signer = signer
 	}
 }
 
@@ -470,9 +403,6 @@ func WithExtractor(ex JwtExtractor) Option {
 // Possible values:
 // - "header:<name>"
 // - "query:<name>"
-// - "param:<name>"
-// - "cookie:<name>"
-// - "form:<name>"
 // Multiply sources example:
 // - "header: Authorization,cookie: myowncookie"
 func WithTokenLookup(lookup string) Option {
@@ -498,20 +428,6 @@ func WithAuthScheme(scheme string) Option {
 func WithPathToIgnore(paths ...string) Option {
 	return func(set *optionSet) {
 		set.pathToIgnore = append(set.pathToIgnore, paths...)
-	}
-}
-
-// WithKeyFunc provide user defined key func.
-func WithKeyFunc(f jwt.Keyfunc) Option {
-	return func(opt *optionSet) {
-		opt.keyFunc = f
-	}
-}
-
-// WithParseTokenFunc provide user defined token parse func.
-func WithParseTokenFunc(f ParseTokenFunc) Option {
-	return func(opt *optionSet) {
-		opt.parseTokenFunc = f
 	}
 }
 
@@ -560,36 +476,5 @@ func jwtFromQuery(name string) jwtHttpExtractor {
 			return "", errJwtMissing.Err
 		}
 		return token, nil
-	}
-}
-
-// jwtFromCookie returns a `jwtExtractor` that extracts token from the named cookie.
-func jwtFromCookie(name string) jwtHttpExtractor {
-	return func(req *http.Request) (string, error) {
-		if req == nil {
-			return "", errJwtMissing.Err
-		}
-
-		cookie, err := req.Cookie(name)
-		if err != nil {
-			return "", errJwtMissing.Err
-		}
-
-		return url.QueryUnescape(cookie.Value)
-	}
-}
-
-// jwtFromForm returns a `jwtExtractor` that extracts token from the form field.
-func jwtFromForm(name string) jwtHttpExtractor {
-	return func(req *http.Request) (string, error) {
-		if req == nil {
-			return "", errJwtMissing.Err
-		}
-
-		field := req.Form.Get(name)
-		if field == "" {
-			return "", errJwtMissing.Err
-		}
-		return field, nil
 	}
 }

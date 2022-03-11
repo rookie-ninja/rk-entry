@@ -282,6 +282,16 @@ func (ctx *appContext) ListEntries() map[string]map[string]Entry {
 	return ctx.entries
 }
 
+func (ctx *appContext) GetSignerJwtEntry(entryName string) SignerJwt {
+	if v := ctx.GetEntry(SignerJwtEntryType, entryName); v != nil {
+		if res, ok := v.(SignerJwt); ok {
+			return res
+		}
+	}
+
+	return nil
+}
+
 // ***********************************
 // ****** Shutdown hook related ******
 // ***********************************
