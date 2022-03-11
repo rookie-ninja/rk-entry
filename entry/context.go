@@ -292,6 +292,16 @@ func (ctx *appContext) GetSignerJwtEntry(entryName string) SignerJwt {
 	return nil
 }
 
+func (ctx *appContext) GetCryptoEntry(entryName string) Crypto {
+	if v := ctx.GetEntry(CryptoEntryType, entryName); v != nil {
+		if res, ok := v.(Crypto); ok {
+			return res
+		}
+	}
+
+	return nil
+}
+
 // ***********************************
 // ****** Shutdown hook related ******
 // ***********************************

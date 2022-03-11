@@ -104,3 +104,13 @@ type SignerJwt interface {
 	// Algorithms supported algorithms
 	Algorithms() []string
 }
+
+const CryptoEntryType = "CryptoEntry"
+
+type Crypto interface {
+	Entry
+
+	Encrypt(plaintext []byte) ([]byte, error)
+
+	Decrypt(plaintext []byte) ([]byte, error)
+}
