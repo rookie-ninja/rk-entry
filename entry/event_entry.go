@@ -40,9 +40,12 @@ func NewEventEntryStdout() *EventEntry {
 		entryName:        "EventNoop",
 		entryType:        EventEntryType,
 		entryDescription: "Internal RK entry which is used to log event such as RPC request or periodic jobs.",
-		EventFactory:     rkquery.NewEventFactory(rkquery.WithZapLogger(rklogger.EventLogger)),
-		LoggerConfig:     rklogger.EventLoggerConfig,
-		baseLogger:       rklogger.EventLogger,
+		EventFactory: rkquery.NewEventFactory(
+			rkquery.WithZapLogger(rklogger.EventLogger),
+			rkquery.WithAppName(GlobalAppCtx.GetAppInfoEntry().AppName),
+			rkquery.WithAppVersion(GlobalAppCtx.GetAppInfoEntry().Version)),
+		LoggerConfig: rklogger.EventLoggerConfig,
+		baseLogger:   rklogger.EventLogger,
 	}
 
 	entry.EventHelper = rkquery.NewEventHelper(entry.EventFactory)
