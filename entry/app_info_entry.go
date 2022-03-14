@@ -44,8 +44,8 @@ func appInfoEntryDefault() *appInfoEntry {
 		entryName:        appInfoEntryName,
 		entryType:        appInfoEntryType,
 		entryDescription: "Internal RK entry which describes application with fields of appName, version and etc.",
-		AppName:          "rk-app",
-		Version:          "v0.0.0",
+		AppName:          "rk",
+		Version:          "dev",
 		Lang:             "golang",
 		Keywords:         []string{},
 		HomeUrl:          "",
@@ -83,6 +83,9 @@ func registerAppInfoEntryYAML(raw []byte) map[string]Entry {
 	}
 
 	GlobalAppCtx.appInfoEntry = entry
+
+	EventEntryStdout = NewEventEntryStdout()
+	LoggerEntryStdout = NewLoggerEntryStdout()
 
 	res[entry.GetName()] = entry
 	return res
