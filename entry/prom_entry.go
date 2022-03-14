@@ -32,6 +32,7 @@ func RegisterPromEntry(boot *BootProm, opts ...PromEntryOption) *PromEntry {
 		entryName:        "PromEntry",
 		entryType:        PromEntryType,
 		entryDescription: "Internal RK entry which implements prometheus client.",
+		Path:             boot.Path,
 		Registerer:       prometheus.DefaultRegisterer,
 		Gatherer:         prometheus.DefaultGatherer,
 	}
