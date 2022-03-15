@@ -247,18 +247,11 @@ func funcName() string {
 	fName := runtime.FuncForPC(pc).Name()
 	// 1: try to check whether it is nested, trim prefix of file path
 	fName = fName[strings.LastIndex(fName, "/")+1:]
-	fName = strings.ReplaceAll(fName, ".", "_")
 	fName = strings.ReplaceAll(fName, "(", "")
 	fName = strings.ReplaceAll(fName, ")", "")
 	fName = strings.ReplaceAll(fName, "*", "")
 
-	// 2: trim prefix of file path if exists
-	tokens := strings.Split(fName, "_")
-	//if len(tokens) > 2 {
-	//	tokens = tokens[1:]
-	//}
-
-	return strings.Join(tokens, "_")
+	return fName
 }
 
 func stacks() []uintptr {
