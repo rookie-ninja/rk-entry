@@ -66,8 +66,8 @@ func init() {
 	logger = rkentry.NewLoggerEntryStdout().Logger
 }
 
-func StartMonitor() *cursor {
-	return &cursor{
+func StartMonitor() *pointer {
+	return &pointer{
 		start:     time.Now(),
 		operation: funcName(),
 	}
@@ -75,17 +75,50 @@ func StartMonitor() *cursor {
 
 // ************* Instance *************
 
-func NewCustomCursor(logger *zap.Logger, event rkquery.Event, entryName, entryType string) *CustomCursor {
-	return &CustomCursor{
-		Logger:    logger,
-		Event:     event,
-		entryName: entryName,
-		entryType: entryType,
-		Now:       time.Now(),
+type Option func(c *Cursor)
+
+func WithEntry(e rkentry.Entry) Option {
+	return func(c *Cursor) {
+		if e != nil {
+			c.entryName = e.GetName()
+			c.entryType = e.GetType()
+		}
 	}
 }
 
-type CustomCursor struct {
+func WithLogger(l *zap.Logger) Option {
+	return func(c *Cursor) {
+		if l != nil {
+			c.Logger = l
+		}
+	}
+}
+
+func WithEvent(e rkquery.Event) Option {
+	return func(c *Cursor) {
+		if e != nil {
+			c.Event = e
+		}
+	}
+}
+
+func NewCursor(opts ...Option) *Cursor {
+	c := &Cursor{
+		Logger:    rkentry.LoggerEntryStdout.Logger,
+		Event:     rkentry.EventEntryNoop.CreateEventNoop(),
+		entryName: "",
+		entryType: "",
+		Now:       time.Now(),
+	}
+
+	for i := range opts {
+		opts[i](c)
+	}
+
+	return c
+}
+
+type Cursor struct {
 	Logger    *zap.Logger
 	Event     rkquery.Event
 	Now       time.Time
@@ -93,8 +126,8 @@ type CustomCursor struct {
 	entryType string
 }
 
-func (c *CustomCursor) StartMonitor() *cursor {
-	return &cursor{
+func (c *Cursor) Click() *pointer {
+	return &pointer{
 		entryName: c.entryName,
 		entryType: c.entryType,
 		start:     time.Now(),
@@ -150,7 +183,7 @@ func (l *promLabel) getValues(op string, entryName, entryType string, err error)
 
 // ************* Cursor *************
 
-type cursor struct {
+type pointer struct {
 	start     time.Time
 	operation string
 	err       error
@@ -160,7 +193,7 @@ type cursor struct {
 	entryType string
 }
 
-func (c *cursor) ObserveError(err error) error {
+func (c *pointer) ObserveError(err error) error {
 	if err == nil {
 		return nil
 	}
@@ -192,7 +225,7 @@ func (c *cursor) ObserveError(err error) error {
 	return err
 }
 
-func (c *cursor) Finish() {
+func (c *pointer) Release() {
 	elapsedNano := time.Now().Sub(c.start).Nanoseconds()
 
 	observer, _ := summaryVec.GetMetricWithLabelValues(label.getValues(c.operation, c.entryName, c.entryType, c.err)...)
