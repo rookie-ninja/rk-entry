@@ -6,7 +6,6 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/json"
-	"fmt"
 	"github.com/pkg/errors"
 	"io"
 )
@@ -85,7 +84,7 @@ func (s *CryptoAESEntry) Encrypt(plaintext []byte) ([]byte, error) {
 func (s *CryptoAESEntry) Decrypt(ciphertext []byte) ([]byte, error) {
 	gcm, err := cipher.NewGCM(s.block)
 	if err != nil {
-		fmt.Println(err)
+		return nil, err
 	}
 
 	nonceSize := gcm.NonceSize()
