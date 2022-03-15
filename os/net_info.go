@@ -56,16 +56,10 @@ type NetInfo struct {
 
 // netInterface describes network interface
 type netInterface struct {
-	// e.g., "en0", "lo0", "eth0.100"
-	Name string `json:"name" yaml:"name"`
-	// maximum transmission unit
-	Mtu int `json:"mtu" yaml:"mtu"`
-	// IEEE MAC-48, EUI-48 and EUI-64 form
-	HardwareAddr string `json:"hardwareAddr" yaml:"hardwareAddr"`
-	// e.g., FlagUp, FlagLoopback, FlagMulticast
-	Flags []string `json:"flags" yaml:"flags"`
-	// A list of unicast interface addresses for a specific interface.
-	Addrs []string `json:"addrs" yaml:"addrs"`
-	// A list of multicast, joined group addresses for a specific interface
-	MulticastAddrs []string `json:"multicastAddrs" yaml:"multicastAddrs"`
+	Name           string   `json:"name" yaml:"name" example:"lo0"`
+	Mtu            int      `json:"mtu" yaml:"mtu" example:"16384"`
+	HardwareAddr   string   `json:"hardwareAddr" yaml:"hardwareAddr" example:""`
+	Flags          []string `json:"flags" yaml:"flags" example:"up"`
+	Addrs          []string `json:"addrs" yaml:"addrs" example:"127.0.0.1/8"`
+	MulticastAddrs []string `json:"multicastAddrs" yaml:"multicastAddrs" example:"ff02::fb"`
 }

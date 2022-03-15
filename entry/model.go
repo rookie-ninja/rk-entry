@@ -14,12 +14,12 @@ import (
 
 // aliveResp response of /alive
 type aliveResp struct {
-	Alive bool `json:"alive" yaml:"alive"`
+	Alive bool `json:"alive" yaml:"alive" example:"true"`
 }
 
 // readyResp response of /ready
 type readyResp struct {
-	Ready bool `json:"ready" yaml:"ready"`
+	Ready bool `json:"ready" yaml:"ready" example:"true"`
 }
 
 // gcResp response of /gc
@@ -31,22 +31,22 @@ type gcResp struct {
 
 // ProcessInfo process information for a running application.
 type ProcessInfo struct {
-	AppName     string          `json:"appName" yaml:"appName"`
-	Version     string          `json:"version" yaml:"version"`
-	Description string          `json:"description" yaml:"description"`
-	Keywords    []string        `json:"keywords" yaml:"keywords"`
-	HomeUrl     string          `json:"homeUrl" yaml:"homeUrl"`
-	DocsUrl     []string        `json:"docsUrl" yaml:"docsUrl"`
-	Maintainers []string        `json:"maintainers" yaml:"maintainers"`
-	UID         string          `json:"uid" yaml:"uid"`
-	GID         string          `json:"gid" yaml:"gid"`
-	Username    string          `json:"username" yaml:"username"`
-	StartTime   string          `json:"startTime" yaml:"startTime"`
-	UpTimeSec   int64           `json:"upTimeSec" yaml:"upTimeSec"`
-	Region      string          `json:"region" yaml:"region"`
-	AZ          string          `json:"az" yaml:"az"`
-	Realm       string          `json:"realm" yaml:"realm"`
-	Domain      string          `json:"domain" yaml:"domain"`
+	AppName     string          `json:"appName" yaml:"appName" example:"rk-app"`
+	Version     string          `json:"version" yaml:"version" example:"dev"`
+	Description string          `json:"description" yaml:"description" example:"RK application"`
+	Keywords    []string        `json:"keywords" yaml:"keywords" example:""`
+	HomeUrl     string          `json:"homeUrl" yaml:"homeUrl" example:"https://example.com"`
+	DocsUrl     []string        `json:"docsUrl" yaml:"docsUrl" example:""`
+	Maintainers []string        `json:"maintainers" yaml:"maintainers" example:"rk-dev"`
+	UID         string          `json:"uid" yaml:"uid" example:"501"`
+	GID         string          `json:"gid" yaml:"gid" example:"20"`
+	Username    string          `json:"username" yaml:"username" example:"lark"`
+	StartTime   string          `json:"startTime" yaml:"startTime" example:"2022-03-15T20:43:05+08:00"`
+	UpTimeSec   int64           `json:"upTimeSec" yaml:"upTimeSec" example:"13"`
+	Region      string          `json:"region" yaml:"region" example:"us-east-1"`
+	AZ          string          `json:"az" yaml:"az" example:"us-east-1c"`
+	Realm       string          `json:"realm" yaml:"realm" example:"rookie-ninja"`
+	Domain      string          `json:"domain" yaml:"domain" example:"dev"`
 	CpuInfo     *rkos.CpuInfo   `json:"cpuInfo" yaml:"cpuInfo"`
 	MemInfo     *rkos.MemInfo   `json:"memInfo" yaml:"memInfo"`
 	NetInfo     *rkos.NetInfo   `json:"netInfo" yaml:"netInfo"`

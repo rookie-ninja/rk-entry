@@ -199,6 +199,7 @@ func (entry *CommonServiceEntry) UnmarshalJSON([]byte) error {
 // @Security JWT
 // @produce application/json
 // @Success 200 {object} readyResp
+// @Failure 500 {object} rkerror.ErrorResp
 // @Router /rk/v1/ready [get]
 func (entry *CommonServiceEntry) Ready(writer http.ResponseWriter, request *http.Request) {
 	if GlobalAppCtx.readinessCheck != nil && !GlobalAppCtx.readinessCheck(request, writer) {
@@ -221,6 +222,7 @@ func (entry *CommonServiceEntry) Ready(writer http.ResponseWriter, request *http
 // @Security JWT
 // @produce application/json
 // @Success 200 {object} aliveResp
+// @Failure 500 {object} rkerror.ErrorResp
 // @Router /rk/v1/alive [get]
 func (entry *CommonServiceEntry) Alive(writer http.ResponseWriter, request *http.Request) {
 	if GlobalAppCtx.livenessCheck != nil && !GlobalAppCtx.livenessCheck(request, writer) {
@@ -243,6 +245,7 @@ func (entry *CommonServiceEntry) Alive(writer http.ResponseWriter, request *http
 // @Security JWT
 // @produce application/json
 // @Success 200 {object} gcResp
+// @Failure 500 {object} rkerror.ErrorResp
 // @Router /rk/v1/gc [get]
 func (entry *CommonServiceEntry) Gc(writer http.ResponseWriter, request *http.Request) {
 	before := rkos.NewMemInfo()
@@ -266,6 +269,7 @@ func (entry *CommonServiceEntry) Gc(writer http.ResponseWriter, request *http.Re
 // @Security JWT
 // @produce application/json
 // @Success 200 {object} ProcessInfo
+// @Failure 500 {object} rkerror.ErrorResp
 // @Router /rk/v1/info [get]
 func (entry *CommonServiceEntry) Info(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)

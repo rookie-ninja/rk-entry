@@ -19,5 +19,5 @@ func NewCpuInfo() *CpuInfo {
 
 // CpuInfo defines CPU information read from system
 type CpuInfo struct {
-	Count int `json:"count" yaml:"count"`
+	Count int `json:"count" yaml:"count" example:"8"`
 }

@@ -22,7 +22,7 @@ func NewOsInfo() *OsInfo {
 
 // OsInfo defines OS information
 type OsInfo struct {
-	Os       string `json:"os" yaml:"os"`
-	Arch     string `json:"arch" yaml:"arch"`
-	Hostname string `json:"hostname" yaml:"hostname"`
+	Os       string `json:"os" yaml:"os" example:"darwin"`
+	Arch     string `json:"arch" yaml:"arch" example:"amd64"`
+	Hostname string `json:"hostname" yaml:"hostname" example:"lark.local"`
 }
