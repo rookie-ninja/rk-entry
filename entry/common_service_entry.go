@@ -192,7 +192,7 @@ func (entry *CommonServiceEntry) UnmarshalJSON([]byte) error {
 
 // Ready handler
 // @Summary Get application readiness status
-// @Id 1
+// @Id 8001
 // @version 1.0
 // @Security ApiKeyAuth
 // @Security BasicAuth
@@ -214,7 +214,7 @@ func (entry *CommonServiceEntry) Ready(writer http.ResponseWriter, request *http
 
 // Alive handler
 // @Summary Get application liveness status
-// @Id 2
+// @Id 8002
 // @version 1.0
 // @Security ApiKeyAuth
 // @Security BasicAuth
@@ -236,7 +236,7 @@ func (entry *CommonServiceEntry) Alive(writer http.ResponseWriter, request *http
 
 // Gc handler
 // @Summary Trigger Gc
-// @Id 3
+// @Id 8003
 // @version 1.0
 // @Security ApiKeyAuth
 // @Security BasicAuth
@@ -259,7 +259,7 @@ func (entry *CommonServiceEntry) Gc(writer http.ResponseWriter, request *http.Re
 
 // Info handler
 // @Summary Get application and process info
-// @Id 4
+// @Id 8004
 // @version 1.0
 // @Security ApiKeyAuth
 // @Security BasicAuth

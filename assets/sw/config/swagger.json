@@ -36,7 +36,7 @@
                     "application/json"
                 ],
                 "summary": "Get application liveness status",
-                "operationId": "2",
+                "operationId": "8002",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -64,7 +64,7 @@
                     "application/json"
                 ],
                 "summary": "Trigger Gc",
-                "operationId": "3",
+                "operationId": "8003",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -92,7 +92,7 @@
                     "application/json"
                 ],
                 "summary": "Get application and process info",
-                "operationId": "4",
+                "operationId": "8004",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -120,7 +120,7 @@
                     "application/json"
                 ],
                 "summary": "Get application readiness status",
-                "operationId": "1",
+                "operationId": "8001",
                 "responses": {
                     "200": {
                         "description": "OK",

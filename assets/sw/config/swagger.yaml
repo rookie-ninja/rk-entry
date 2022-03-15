@@ -169,7 +169,7 @@ info:
 paths:
   /rk/v1/alive:
     get:
-      operationId: "2"
+      operationId: "8002"
       produces:
       - application/json
       responses:
@@ -184,7 +184,7 @@ paths:
       summary: Get application liveness status
   /rk/v1/gc:
     get:
-      operationId: "3"
+      operationId: "8003"
       produces:
       - application/json
       responses:
@@ -199,7 +199,7 @@ paths:
       summary: Trigger Gc
   /rk/v1/info:
     get:
-      operationId: "4"
+      operationId: "8004"
       produces:
       - application/json
       responses:
@@ -214,7 +214,7 @@ paths:
       summary: Get application and process info
   /rk/v1/ready:
     get:
-      operationId: "1"
+      operationId: "8001"
       produces:
       - application/json
       responses:
