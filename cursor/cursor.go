@@ -257,7 +257,7 @@ func (c *pointer) ObserveError(err error) error {
 	}
 
 	if c.event != nil {
-		c.event.IncCounter(strings.Join([]string{c.operation, "ERROR"}, "_"), 1)
+		c.event.IncCounter(strings.Join([]string{c.operation, "ERROR"}, "."), 1)
 	}
 
 	return err
