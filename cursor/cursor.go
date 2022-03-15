@@ -97,12 +97,10 @@ func LogError(err error) {
 
 type Option func(c *Cursor)
 
-func WithEntry(e rkentry.Entry) Option {
+func WithEntryNameAndType(entryName, entryType string) Option {
 	return func(c *Cursor) {
-		if e != nil {
-			c.entryName = e.GetName()
-			c.entryType = e.GetType()
-		}
+		c.entryName = entryName
+		c.entryType = entryType
 	}
 }
 
