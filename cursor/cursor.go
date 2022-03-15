@@ -66,7 +66,27 @@ func init() {
 	logger = rkentry.NewLoggerEntryStdout().Logger
 }
 
-func StartMonitor() *pointer {
+// ************* Global *************
+
+func OverrideEntryNameAndType(entryName, entryType string) {
+	label.mutex.Lock()
+	defer label.mutex.Unlock()
+
+	label.values[0] = entryName
+	label.values[1] = entryType
+}
+
+func OverrideLogger(l *zap.Logger) {
+	if l != nil {
+		logger = l
+	}
+}
+
+func SummaryVec() *prometheus.SummaryVec {
+	return summaryVec
+}
+
+func Click() *pointer {
 	return &pointer{
 		start:     time.Now(),
 		operation: funcName(),
@@ -91,6 +111,10 @@ func LogError(err error) {
 	}
 
 	logger.WithOptions(zap.AddCallerSkip(1)).Error(builder.String())
+}
+
+func AddField(key, val string) {
+	logger = logger.With(zap.String(key, val))
 }
 
 // ************* Instance *************
@@ -175,24 +199,9 @@ func (c *Cursor) LogError(err error) {
 	c.Logger.WithOptions(zap.AddCallerSkip(1)).Error(builder.String())
 }
 
-// ************* Global *************
-
-func OverrideEntryNameAndType(entryName, entryType string) {
-	label.mutex.Lock()
-	defer label.mutex.Unlock()
-
-	label.values[0] = entryName
-	label.values[1] = entryType
-}
-
-func OverrideLogger(l *zap.Logger) {
-	if l != nil {
-		logger = l
-	}
-}
-
-func SummaryVec() *prometheus.SummaryVec {
-	return summaryVec
+func (c *Cursor) AddField(key, val string) {
+	c.Logger = c.Logger.With(zap.String(key, val))
+	c.Event.AddPair(key, val)
 }
 
 // ************* Prometheus labels *************
