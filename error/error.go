@@ -80,10 +80,10 @@ func FromError(err error) *ErrorResp {
 
 // Error defines standard error types of rk style
 type Error struct {
-	Code    int           `json:"code" yaml:"code"`       // Code represent codes in response
-	Status  string        `json:"status" yaml:"status"`   // Status represent string value of code
-	Message string        `json:"message" yaml:"message"` // Message represent detail message
-	Details []interface{} `json:"details" yaml:"details"` // Details is a list of details in any types in string
+	Code    int           `json:"code" yaml:"code" example:"500"`
+	Status  string        `json:"status" yaml:"status" example:"Internal Server Error"`
+	Message string        `json:"message" yaml:"message" example:"Internal error occurs"`
+	Details []interface{} `json:"details" yaml:"details"`
 }
 
 // Error returns string of error

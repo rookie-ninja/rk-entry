@@ -2,30 +2,42 @@ definitions:
   rkentry.ProcessInfo:
     properties:
       appName:
+        example: rk-app
         type: string
       az:
+        example: us-east-1c
         type: string
       cpuInfo:
         $ref: '#/definitions/rkos.CpuInfo'
       description:
+        example: RK application
         type: string
       docsUrl:
+        example:
+        - ""
         items:
           type: string
         type: array
       domain:
+        example: dev
         type: string
       gid:
+        example: "20"
         type: string
       goEnvInfo:
         $ref: '#/definitions/rkos.GoEnvInfo'
       homeUrl:
+        example: https://example.com
         type: string
       keywords:
+        example:
+        - ""
         items:
           type: string
         type: array
       maintainers:
+        example:
+        - rk-dev
         items:
           type: string
         type: array
@@ -36,23 +48,31 @@ definitions:
       osInfo:
         $ref: '#/definitions/rkos.OsInfo'
       realm:
+        example: rookie-ninja
         type: string
       region:
+        example: us-east-1
         type: string
       startTime:
+        example: "2022-03-15T20:43:05+08:00"
         type: string
       uid:
+        example: "501"
         type: string
       upTimeSec:
+        example: 13
         type: integer
       username:
+        example: lark
         type: string
       version:
+        example: dev
         type: string
     type: object
   rkentry.aliveResp:
     properties:
       alive:
+        example: true
         type: boolean
     type: object
   rkentry.gcResp:
@@ -65,39 +85,73 @@ definitions:
   rkentry.readyResp:
     properties:
       ready:
+        example: true
         type: boolean
+    type: object
+  rkerror.Error:
+    properties:
+      code:
+        example: 500
+        type: integer
+      details:
+        items: {}
+        type: array
+      message:
+        example: Internal error occurs
+        type: string
+      status:
+        example: Internal Server Error
+        type: string
+    type: object
+  rkerror.ErrorResp:
+    properties:
+      error:
+        $ref: '#/definitions/rkerror.Error'
+        description: Err is RK style error type
     type: object
   rkos.CpuInfo:
     properties:
       count:
+        example: 8
         type: integer
     type: object
   rkos.GoEnvInfo:
     properties:
       goArch:
+        example: amd64
         type: string
       goos:
+        example: darwin
         type: string
       routinesCount:
+        example: 9
         type: integer
       version:
+        example: go1.17.6
         type: string
     type: object
   rkos.MemInfo:
     properties:
       forceGcCount:
+        example: 0
         type: integer
       gcCountTotal:
+        example: 1
         type: integer
       lastGcTimestamp:
+        example: "2022-03-15T20:43:06+08:00"
         type: string
       memAllocByte:
+        example: 4182336
         type: integer
       memUsedMb:
+        example: 3
         type: integer
       memUsedPercentage:
+        example: 0.21
         type: number
       sysAllocByte:
+        example: 19876624
         type: integer
     type: object
   rkos.NetInfo:
@@ -110,37 +164,43 @@ definitions:
   rkos.OsInfo:
     properties:
       arch:
+        example: amd64
         type: string
       hostname:
+        example: lark.local
         type: string
       os:
+        example: darwin
         type: string
     type: object
   rkos.netInterface:
     properties:
       addrs:
-        description: A list of unicast interface addresses for a specific interface.
+        example:
+        - 127.0.0.1/8
         items:
           type: string
         type: array
       flags:
-        description: e.g., FlagUp, FlagLoopback, FlagMulticast
+        example:
+        - up
         items:
           type: string
         type: array
       hardwareAddr:
-        description: IEEE MAC-48, EUI-48 and EUI-64 form
+        example: ""
         type: string
       mtu:
-        description: maximum transmission unit
+        example: 16384
         type: integer
       multicastAddrs:
-        description: A list of multicast, joined group addresses for a specific interface
+        example:
+        - ff02::fb
         items:
           type: string
         type: array
       name:
-        description: e.g., "en0", "lo0", "eth0.100"
+        example: lo0
         type: string
     type: object
 info:
@@ -169,7 +229,7 @@ info:
 paths:
   /rk/v1/alive:
     get:
-      operationId: "2"
+      operationId: "8002"
       produces:
       - application/json
       responses:
@@ -177,6 +237,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/rkentry.aliveResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rkerror.ErrorResp'
       security:
       - ApiKeyAuth: []
       - BasicAuth: []
@@ -184,7 +248,7 @@ paths:
       summary: Get application liveness status
   /rk/v1/gc:
     get:
-      operationId: "3"
+      operationId: "8003"
       produces:
       - application/json
       responses:
@@ -192,6 +256,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/rkentry.gcResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rkerror.ErrorResp'
       security:
       - ApiKeyAuth: []
       - BasicAuth: []
@@ -199,7 +267,7 @@ paths:
       summary: Trigger Gc
   /rk/v1/info:
     get:
-      operationId: "4"
+      operationId: "8004"
       produces:
       - application/json
       responses:
@@ -207,6 +275,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/rkentry.ProcessInfo'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rkerror.ErrorResp'
       security:
       - ApiKeyAuth: []
       - BasicAuth: []
@@ -214,7 +286,7 @@ paths:
       summary: Get application and process info
   /rk/v1/ready:
     get:
-      operationId: "1"
+      operationId: "8001"
       produces:
       - application/json
       responses:
@@ -222,6 +294,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/rkentry.readyResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rkerror.ErrorResp'
       security:
       - ApiKeyAuth: []
       - BasicAuth: []

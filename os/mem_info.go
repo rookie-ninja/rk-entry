@@ -13,13 +13,13 @@ import (
 
 // MemInfo memory stats of current running process
 type MemInfo struct {
-	MemUsedPercentage float64 `json:"memUsedPercentage" yaml:"memUsedPercentage"`
-	MemUsedMb         uint64  `json:"memUsedMb" yaml:"memUsedMb"`
-	MemAllocByte      uint64  `json:"memAllocByte" yaml:"memAllocByte"`
-	SysAllocByte      uint64  `json:"sysAllocByte" yaml:"sysAllocByte"`
-	LastGcTimestamp   string  `json:"lastGcTimestamp" yaml:"lastGcTimestamp"`
-	GcCount           uint32  `json:"gcCountTotal" yaml:"gcCountTotal"`
-	ForceGcCount      uint32  `json:"forceGcCount" yaml:"forceGcCount"`
+	MemUsedPercentage float64 `json:"memUsedPercentage" yaml:"memUsedPercentage" example:"0.21"`
+	MemUsedMb         uint64  `json:"memUsedMb" yaml:"memUsedMb" example:"3"`
+	MemAllocByte      uint64  `json:"memAllocByte" yaml:"memAllocByte" example:"4182336"`
+	SysAllocByte      uint64  `json:"sysAllocByte" yaml:"sysAllocByte" example:"19876624"`
+	LastGcTimestamp   string  `json:"lastGcTimestamp" yaml:"lastGcTimestamp" example:"2022-03-15T20:43:06+08:00"`
+	GcCount           uint32  `json:"gcCountTotal" yaml:"gcCountTotal" example:"1"`
+	ForceGcCount      uint32  `json:"forceGcCount" yaml:"forceGcCount" example:"0"`
 }
 
 // NewMemInfo creates a new MemInfo

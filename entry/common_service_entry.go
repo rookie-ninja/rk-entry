@@ -192,13 +192,14 @@ func (entry *CommonServiceEntry) UnmarshalJSON([]byte) error {
 
 // Ready handler
 // @Summary Get application readiness status
-// @Id 1
+// @Id 8001
 // @version 1.0
 // @Security ApiKeyAuth
 // @Security BasicAuth
 // @Security JWT
 // @produce application/json
 // @Success 200 {object} readyResp
+// @Failure 500 {object} rkerror.ErrorResp
 // @Router /rk/v1/ready [get]
 func (entry *CommonServiceEntry) Ready(writer http.ResponseWriter, request *http.Request) {
 	if GlobalAppCtx.readinessCheck != nil && !GlobalAppCtx.readinessCheck(request, writer) {
@@ -214,13 +215,14 @@ func (entry *CommonServiceEntry) Ready(writer http.ResponseWriter, request *http
 
 // Alive handler
 // @Summary Get application liveness status
-// @Id 2
+// @Id 8002
 // @version 1.0
 // @Security ApiKeyAuth
 // @Security BasicAuth
 // @Security JWT
 // @produce application/json
 // @Success 200 {object} aliveResp
+// @Failure 500 {object} rkerror.ErrorResp
 // @Router /rk/v1/alive [get]
 func (entry *CommonServiceEntry) Alive(writer http.ResponseWriter, request *http.Request) {
 	if GlobalAppCtx.livenessCheck != nil && !GlobalAppCtx.livenessCheck(request, writer) {
@@ -236,13 +238,14 @@ func (entry *CommonServiceEntry) Alive(writer http.ResponseWriter, request *http
 
 // Gc handler
 // @Summary Trigger Gc
-// @Id 3
+// @Id 8003
 // @version 1.0
 // @Security ApiKeyAuth
 // @Security BasicAuth
 // @Security JWT
 // @produce application/json
 // @Success 200 {object} gcResp
+// @Failure 500 {object} rkerror.ErrorResp
 // @Router /rk/v1/gc [get]
 func (entry *CommonServiceEntry) Gc(writer http.ResponseWriter, request *http.Request) {
 	before := rkos.NewMemInfo()
@@ -259,13 +262,14 @@ func (entry *CommonServiceEntry) Gc(writer http.ResponseWriter, request *http.Re
 
 // Info handler
 // @Summary Get application and process info
-// @Id 4
+// @Id 8004
 // @version 1.0
 // @Security ApiKeyAuth
 // @Security BasicAuth
 // @Security JWT
 // @produce application/json
 // @Success 200 {object} ProcessInfo
+// @Failure 500 {object} rkerror.ErrorResp
 // @Router /rk/v1/info [get]
 func (entry *CommonServiceEntry) Info(writer http.ResponseWriter, request *http.Request) {
 	writer.WriteHeader(http.StatusOK)
