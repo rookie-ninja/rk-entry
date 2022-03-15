@@ -73,6 +73,26 @@ func StartMonitor() *pointer {
 	}
 }
 
+func LogError(err error) {
+	if err == nil {
+		return
+	}
+
+	stack := stacks()
+
+	var builder bytes.Buffer
+
+	// print error message
+	builder.WriteString(fmt.Sprintf("%s\n", err.Error()))
+	// print stack function
+	for i := range stack {
+		pc := stack[i] - 1
+		builder.WriteString(fmt.Sprintf("%d)\t%s\n", i, fileline(pc)))
+	}
+
+	logger.WithOptions(zap.AddCallerSkip(1)).Error(builder.String())
+}
+
 // ************* Instance *************
 
 type Option func(c *Cursor)
@@ -135,6 +155,26 @@ func (c *Cursor) Click() *pointer {
 		logger:    c.Logger,
 		event:     c.Event,
 	}
+}
+
+func (c *Cursor) LogError(err error) {
+	if err == nil {
+		return
+	}
+
+	stack := stacks()
+
+	var builder bytes.Buffer
+
+	// print error message
+	builder.WriteString(fmt.Sprintf("%s\n", err.Error()))
+	// print stack function
+	for i := range stack {
+		pc := stack[i] - 1
+		builder.WriteString(fmt.Sprintf("%d)\t%s\n", i, fileline(pc)))
+	}
+
+	c.Logger.WithOptions(zap.AddCallerSkip(1)).Error(builder.String())
 }
 
 // ************* Global *************
