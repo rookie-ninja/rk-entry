@@ -35,6 +35,7 @@ func init() {
 			"instance",
 			"appVersion",
 			"appName",
+			"parent",
 			"operation",
 			"status",
 		},
@@ -89,11 +90,12 @@ func SummaryVec() *prometheus.SummaryVec {
 func Click() *pointer {
 	return &pointer{
 		start:     time.Now(),
-		operation: funcName(),
+		parent:    parentName(),
+		operation: operationName(),
 	}
 }
 
-func LogError(err error) {
+func Error(err error) {
 	if err == nil {
 		return
 	}
@@ -169,17 +171,24 @@ type Cursor struct {
 }
 
 func (c *Cursor) Click() *pointer {
+	operation := operationName()
+
+	if c.Event != nil {
+		c.Event.StartTimer(operation)
+	}
+
 	return &pointer{
 		entryName: c.entryName,
 		entryType: c.entryType,
 		start:     time.Now(),
-		operation: funcName(),
+		operation: operation,
+		parent:    parentName(),
 		logger:    c.Logger,
 		event:     c.Event,
 	}
 }
 
-func (c *Cursor) LogError(err error) {
+func (c *Cursor) Error(err error) {
 	if err == nil {
 		return
 	}
@@ -212,7 +221,7 @@ type promLabel struct {
 	values []string
 }
 
-func (l *promLabel) getValues(op string, entryName, entryType string, err error) []string {
+func (l *promLabel) getValues(parent, op, entryName, entryType string, err error) []string {
 	label.mutex.Lock()
 	defer label.mutex.Unlock()
 
@@ -221,7 +230,7 @@ func (l *promLabel) getValues(op string, entryName, entryType string, err error)
 		status = "ERROR"
 	}
 
-	res := append(l.values, op, status)
+	res := append(l.values, parent, op, status)
 	res[0] = entryName
 	res[1] = entryType
 
@@ -232,6 +241,7 @@ func (l *promLabel) getValues(op string, entryName, entryType string, err error)
 
 type pointer struct {
 	start     time.Time
+	parent    string
 	operation string
 	err       error
 	event     rkquery.Event
@@ -275,9 +285,14 @@ func (c *pointer) ObserveError(err error) error {
 func (c *pointer) Release() {
 	elapsedNano := time.Now().Sub(c.start).Nanoseconds()
 
-	observer, _ := summaryVec.GetMetricWithLabelValues(label.getValues(c.operation, c.entryName, c.entryType, c.err)...)
+	observer, _ := summaryVec.GetMetricWithLabelValues(
+		label.getValues(c.parent, c.operation, c.entryName, c.entryType, c.err)...)
 	if observer == nil {
 		return
+	}
+
+	if c.event != nil {
+		c.event.EndTimer(c.operation)
 	}
 
 	observer.Observe(float64(elapsedNano))
@@ -285,13 +300,33 @@ func (c *pointer) Release() {
 
 // ************* helper functions *************
 
-func funcName() string {
+func operationName() string {
 	pc, _, _, ok := runtime.Caller(2)
 	if !ok {
 		return "unknown"
 	}
 
 	fName := runtime.FuncForPC(pc).Name()
+	// 1: try to check whether it is nested, trim prefix of file path
+	fName = fName[strings.LastIndex(fName, "/")+1:]
+	fName = strings.ReplaceAll(fName, "(", "")
+	fName = strings.ReplaceAll(fName, ")", "")
+	fName = strings.ReplaceAll(fName, "*", "")
+
+	return fName
+}
+
+func parentName() string {
+	pc, file, _, ok := runtime.Caller(3)
+	if !ok {
+		return "-"
+	}
+
+	fName := runtime.FuncForPC(pc).Name()
+	if strings.Contains(file, "@") {
+		return "-"
+	}
+
 	// 1: try to check whether it is nested, trim prefix of file path
 	fName = fName[strings.LastIndex(fName, "/")+1:]
 	fName = strings.ReplaceAll(fName, "(", "")
