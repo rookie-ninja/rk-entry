@@ -99,7 +99,6 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 
 			if ctx.Input.Logger != nil {
 				ctx.Input.Logger.Error(fmt.Sprintf("panic occurs:\n%s", string(debug.Stack())), zap.Error(res.Err))
-
 			}
 
 			if ctx.Input.PanicHandler != nil {

@@ -57,15 +57,34 @@ func NewEventEntryStdout() *EventEntry {
 func RegisterEventEntry(boot *BootEvent) []*EventEntry {
 	res := make([]*EventEntry, 0)
 
-	for _, event := range boot.Event {
-		if len(event.Locale) < 1 {
-			event.Locale = "*::*::*::*"
-		}
-
-		if len(event.Name) < 1 || !IsLocaleValid(event.Locale) {
+	// filter out based domain
+	configMap := make(map[string]*BootEventE)
+	for _, config := range boot.Event {
+		if len(config.Name) < 1 {
 			continue
 		}
 
+		if !IsValidDomain(config.Domain) {
+			continue
+		}
+
+		// * or matching domain
+		// 1: add it to map if missing
+		if _, ok := configMap[config.Name]; !ok {
+			configMap[config.Name] = config
+			continue
+		}
+
+		// 2: already has an entry, then compare domain,
+		//    only one case would occur, previous one is already the correct one, continue
+		if config.Domain == "" || config.Domain == "*" {
+			continue
+		}
+
+		configMap[config.Name] = config
+	}
+
+	for _, event := range configMap {
 		entry := &EventEntry{
 			entryName:        event.Name,
 			entryType:        EventEntryType,
@@ -101,9 +120,6 @@ func RegisterEventEntry(boot *BootEvent) []*EventEntry {
 
 			// default labels
 			opts = append(opts,
-				rklogger.WithLokiLabel(rkmid.Realm.Key, rkmid.Realm.String),
-				rklogger.WithLokiLabel(rkmid.Region.Key, rkmid.Region.String),
-				rklogger.WithLokiLabel(rkmid.AZ.Key, rkmid.AZ.String),
 				rklogger.WithLokiLabel(rkmid.Domain.Key, rkmid.Domain.String),
 				rklogger.WithLokiLabel("app_name", GlobalAppCtx.GetAppInfoEntry().AppName),
 				rklogger.WithLokiLabel("app_version", GlobalAppCtx.GetAppInfoEntry().Version),
@@ -189,7 +205,7 @@ type BootLoki struct {
 type BootEventE struct {
 	Name        string             `yaml:"name" json:"name"`
 	Description string             `yaml:"description" json:"description"`
-	Locale      string             `yaml:"locale" json:"locale"`
+	Domain      string             `yaml:"domain" json:"domain"`
 	Encoding    string             `yaml:"encoding" json:"encoding"`
 	OutputPaths []string           `yaml:"outputPaths" json:"outputPaths"`
 	Lumberjack  *lumberjack.Logger `yaml:"lumberjack" json:"lumberjack"`

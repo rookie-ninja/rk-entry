@@ -6,7 +6,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/json"
-	"github.com/pkg/errors"
+	"errors"
 	"io"
 )
 

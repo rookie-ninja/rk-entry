@@ -127,9 +127,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-App-Version", set.prefix)] = rkentry.GlobalAppCtx.GetAppInfoEntry().Version
 	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-App-Unix-Time", set.prefix)] = now
 	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-Received-Time", set.prefix)] = now
-	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-App-Locale", set.prefix)] = strings.Join([]string{
-		rkmid.Realm.String, rkmid.Region.String, rkmid.AZ.String, rkmid.Domain.String,
-	}, "::")
+	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-App-Domain", set.prefix)] = rkmid.Domain.String
 }
 
 // ShouldIgnore determine whether auth should be ignored based on path

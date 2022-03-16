@@ -148,9 +148,6 @@ func (set *optionSet) BeforeCtx(req *http.Request, isClient bool, attrs ...attri
 	ctx := NewBeforeCtx()
 	ctx.Input.IsClient = isClient
 	ctx.Input.Attributes = append(ctx.Input.Attributes,
-		attribute.String(rkmid.Realm.Key, rkmid.Realm.String),
-		attribute.String(rkmid.Region.Key, rkmid.Region.String),
-		attribute.String(rkmid.AZ.Key, rkmid.AZ.String),
 		attribute.String(rkmid.Domain.Key, rkmid.Domain.String))
 
 	ctx.Input.Attributes = append(ctx.Input.Attributes, attrs...)

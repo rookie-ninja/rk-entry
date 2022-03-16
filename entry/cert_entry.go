@@ -18,15 +18,34 @@ import (
 func RegisterCertEntry(boot *BootCert) []*CertEntry {
 	res := make([]*CertEntry, 0)
 
-	for _, cert := range boot.Cert {
-		if len(cert.Locale) < 1 {
-			cert.Locale = "*::*::*::*"
-		}
-
-		if len(cert.Name) < 1 || !IsLocaleValid(cert.Locale) {
+	// filter out based domain
+	configMap := make(map[string]*BootCertE)
+	for _, config := range boot.Cert {
+		if len(config.Name) < 1 {
 			continue
 		}
 
+		if !IsValidDomain(config.Domain) {
+			continue
+		}
+
+		// * or matching domain
+		// 1: add it to map if missing
+		if _, ok := configMap[config.Name]; !ok {
+			configMap[config.Name] = config
+			continue
+		}
+
+		// 2: already has an entry, then compare domain,
+		//    only one case would occur, previous one is already the correct one, continue
+		if config.Domain == "" || config.Domain == "*" {
+			continue
+		}
+
+		configMap[config.Name] = config
+	}
+
+	for _, cert := range configMap {
 		entry := &CertEntry{
 			entryName:        cert.Name,
 			entryType:        CertEntryType,
@@ -69,7 +88,7 @@ type BootCert struct {
 type BootCertE struct {
 	Name        string `yaml:"name" json:"name"`
 	Description string `yaml:"description" json:"description"`
-	Locale      string `yaml:"locale" json:"locale"`
+	Domain      string `yaml:"domain" json:"domain"`
 	CAPath      string `yaml:"caPath" json:"caPath"`
 	CertPemPath string `yaml:"certPemPath" json:"certPemPath"`
 	KeyPemPath  string `yaml:"keyPemPath" json:"keyPemPath"`

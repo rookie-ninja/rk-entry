@@ -1,7 +1,7 @@
 package rkentry
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -482,82 +482,19 @@ func TestOverrideMap_WithGenericType(t *testing.T) {
 	assert.Equal(t, override["ut-generic-map"], src["ut-generic-map"])
 }
 
-func TestIsLocaleValid_WithEmptyLocale(t *testing.T) {
-	assert.False(t, IsLocaleValid(""))
-}
-
-func TestIsLocaleValid_WithInvalidLocale(t *testing.T) {
-	assert.False(t, IsLocaleValid("realm::region::az"))
-}
-
-func TestIsLocaleValid_WithEmptyRealmEnv(t *testing.T) {
-	// with realm exist in locale
-	assert.False(t, IsLocaleValid("fake-realm::*::*::*"))
-
-	// with wildcard in realm
-	assert.True(t, IsLocaleValid("*::*::*::*"))
-}
-
-func TestIsLocaleValid_WithRealmEnv(t *testing.T) {
-	// set environment variable
-	assert.Nil(t, os.Setenv("REALM", "ut"))
-
-	// with realm exist in locale
-	assert.True(t, IsLocaleValid("ut::*::*::*"))
-
-	// with wildcard in realm
-	assert.True(t, IsLocaleValid("*::*::*::*"))
-
-	// with wrong realm
-	assert.False(t, IsLocaleValid("rk::*::*::*"))
-
-	assert.Nil(t, os.Setenv("REALM", ""))
-}
-
-func TestIsLocaleValid_WithRegionEnv(t *testing.T) {
-	// set environment variable
-	assert.Nil(t, os.Setenv("REGION", "ut"))
-
-	// with region exist in locale
-	assert.True(t, IsLocaleValid("*::ut::*::*"))
-
-	// with wildcard in region
-	assert.True(t, IsLocaleValid("*::*::*::*"))
-
-	// with wrong region
-	assert.False(t, IsLocaleValid("*::rk::*::*"))
-
-	assert.Nil(t, os.Setenv("REGION", ""))
-}
-
-func TestIsLocaleValid_WithAZEnv(t *testing.T) {
-	// set environment variable
-	assert.Nil(t, os.Setenv("AZ", "ut"))
-
-	// with az exist in locale
-	assert.True(t, IsLocaleValid("*::*::ut::*"))
-
-	// with wildcard in az
-	assert.True(t, IsLocaleValid("*::*::*::*"))
-
-	// with wrong az
-	assert.False(t, IsLocaleValid("*::*::rk::*"))
-
-	assert.Nil(t, os.Setenv("AZ", ""))
-}
-
-func TestIsLocaleValid_WithDomainEnv(t *testing.T) {
+func TestIsValidDomain(t *testing.T) {
 	// set environment variable
 	assert.Nil(t, os.Setenv("DOMAIN", "ut"))
 
 	// with domain exist in locale
-	assert.True(t, IsLocaleValid("*::*::*::ut"))
+	assert.True(t, IsValidDomain("ut"))
 
 	// with wildcard in domain
-	assert.True(t, IsLocaleValid("*::*::*::*"))
+	assert.True(t, IsValidDomain("*"))
+	assert.True(t, IsValidDomain(""))
 
 	// with wrong domain
-	assert.False(t, IsLocaleValid("*::*::*::rk"))
+	assert.False(t, IsValidDomain("rk"))
 
 	assert.Nil(t, os.Setenv("DOMAIN", ""))
 }

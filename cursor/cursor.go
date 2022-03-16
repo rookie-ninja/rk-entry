@@ -28,13 +28,8 @@ func init() {
 		keys: []string{
 			"entryName",
 			"entryType",
-			"realm",
-			"region",
-			"az",
 			"domain",
 			"instance",
-			"appVersion",
-			"appName",
 			"parent",
 			"operation",
 			"status",
@@ -42,13 +37,8 @@ func init() {
 		values: []string{
 			"",
 			"",
-			rkmid.Realm.String,
-			rkmid.Region.String,
-			rkmid.AZ.String,
 			rkmid.Domain.String,
 			rkmid.LocalIp.String,
-			rkentry.GlobalAppCtx.GetAppInfoEntry().Version,
-			rkentry.GlobalAppCtx.GetAppInfoEntry().AppName,
 		},
 	}
 
@@ -370,5 +360,5 @@ func fileline(pc uintptr) string {
 	}
 
 	file, line := fn.FileLine(pc)
-	return fmt.Sprintf("%s:%d", file, line)
+	return fmt.Sprintf("%s\t%s:%d", fn.Name(), file, line)
 }

@@ -45,15 +45,34 @@ func NewLoggerEntryStdout() *LoggerEntry {
 func RegisterLoggerEntry(boot *BootLogger) []*LoggerEntry {
 	res := make([]*LoggerEntry, 0)
 
-	for _, logger := range boot.Logger {
-		if len(logger.Locale) < 1 {
-			logger.Locale = "*::*::*::*"
-		}
-
-		if len(logger.Name) < 1 || !IsLocaleValid(logger.Locale) {
+	// filter out based domain
+	configMap := make(map[string]*BootLoggerE)
+	for _, config := range boot.Logger {
+		if len(config.Name) < 1 {
 			continue
 		}
 
+		if !IsValidDomain(config.Domain) {
+			continue
+		}
+
+		// * or matching domain
+		// 1: add it to map if missing
+		if _, ok := configMap[config.Name]; !ok {
+			configMap[config.Name] = config
+			continue
+		}
+
+		// 2: already has an entry, then compare domain,
+		//    only one case would occur, previous one is already the correct one, continue
+		if config.Domain == "" || config.Domain == "*" {
+			continue
+		}
+
+		configMap[config.Name] = config
+	}
+
+	for _, logger := range configMap {
 		entry := &LoggerEntry{
 			entryName:        logger.Name,
 			entryType:        LoggerEntryType,
@@ -88,9 +107,6 @@ func RegisterLoggerEntry(boot *BootLogger) []*LoggerEntry {
 
 			// default labels
 			opts = append(opts,
-				rklogger.WithLokiLabel(rkmid.Realm.Key, rkmid.Realm.String),
-				rklogger.WithLokiLabel(rkmid.Region.Key, rkmid.Region.String),
-				rklogger.WithLokiLabel(rkmid.AZ.Key, rkmid.AZ.String),
 				rklogger.WithLokiLabel(rkmid.Domain.Key, rkmid.Domain.String),
 				rklogger.WithLokiLabel("app_name", GlobalAppCtx.GetAppInfoEntry().AppName),
 				rklogger.WithLokiLabel("app_version", GlobalAppCtx.GetAppInfoEntry().Version),
@@ -151,7 +167,7 @@ type BootLogger struct {
 type BootLoggerE struct {
 	Name        string                  `yaml:"name" json:"name"`
 	Description string                  `yaml:"description" json:"description"`
-	Locale      string                  `yaml:"locale" json:"locale"`
+	Domain      string                  `yaml:"domain" json:"domain"`
 	Zap         *rklogger.ZapConfigWrap `yaml:"zap" json:"zap"`
 	Lumberjack  *lumberjack.Logger      `yaml:"lumberjack" json:"lumberjack"`
 	Loki        BootLoki                `yaml:"loki" json:"loki"`

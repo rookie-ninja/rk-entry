@@ -3,9 +3,9 @@ package rkentry
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/pkg/errors"
 	"strings"
 )
 
@@ -86,7 +86,7 @@ func (s *symmetricJwtSigner) String() string {
 // SignJwt sign jwt with key
 func (s *symmetricJwtSigner) SignJwt(claim jwt.Claims) (string, error) {
 	if claim == nil {
-		return "", errors.New("Nil jwt claim")
+		return "", errors.New("nil jwt claim")
 	}
 
 	token := jwt.NewWithClaims(s.SigningMethod, claim)

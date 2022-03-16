@@ -9,15 +9,15 @@ package rkentry
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"io"
 	"strconv"
 	"strings"
 )
 
 // errNotList indicates that a non-list was treated as a list.
-var errNotList = errors.New("Not a list")
+var errNotList = errors.New("not a list")
 
 // parser is a simple parser that takes a strvals line and parses it into a
 // map representation.

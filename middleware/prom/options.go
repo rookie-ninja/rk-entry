@@ -8,7 +8,6 @@ package rkmidprom
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rookie-ninja/rk-entry/v2/entry"
 	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"net/http"
 	"strings"
@@ -20,13 +19,8 @@ var (
 	labelKeysHttp = []string{
 		"entryName",
 		"entryType",
-		"realm",
-		"region",
-		"az",
 		"domain",
 		"instance",
-		"appVersion",
-		"appName",
 		"restMethod",
 		"restPath",
 		"resCode",
@@ -36,13 +30,8 @@ var (
 	labelKeysGrpc = []string{
 		"entryName",
 		"entryType",
-		"realm",
-		"region",
-		"az",
 		"domain",
 		"instance",
-		"appVersion",
-		"appName",
 		"grpcService",
 		"grpcMethod",
 		"grpcType",
@@ -109,11 +98,9 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 		return set.mock
 	}
 
-	namespace := strings.ReplaceAll(rkentry.GlobalAppCtx.GetAppInfoEntry().AppName, "-", "_")
-	subSystem := strings.ReplaceAll(set.entryName, "-", "_")
 	set.metricsSet = NewMetricsSet(
-		namespace,
-		subSystem,
+		"rk",
+		"prom",
 		set.registerer)
 
 	if _, ok := optionsMap[set.entryName]; !ok {
@@ -187,13 +174,8 @@ func (set *optionSet) After(before *BeforeCtx, after *AfterCtx) {
 		l = &labelerGrpc{
 			entryName:   set.entryName,
 			entryType:   set.entryType,
-			realm:       rkmid.Realm.String,
-			region:      rkmid.Region.String,
-			az:          rkmid.AZ.String,
 			domain:      rkmid.Domain.String,
 			instance:    rkmid.LocalHostname.String,
-			appVersion:  rkentry.GlobalAppCtx.GetAppInfoEntry().Version,
-			appName:     rkentry.GlobalAppCtx.GetAppInfoEntry().AppName,
 			restPath:    before.Input.RestPath,
 			restMethod:  before.Input.RestMethod,
 			grpcType:    before.Input.GrpcType,
@@ -203,33 +185,23 @@ func (set *optionSet) After(before *BeforeCtx, after *AfterCtx) {
 		}
 	case LabelerTypeHttp:
 		l = &labelerHttp{
-			entryName:  set.entryName,
-			entryType:  set.entryType,
-			realm:      rkmid.Realm.String,
-			region:     rkmid.Region.String,
-			az:         rkmid.AZ.String,
-			domain:     rkmid.Domain.String,
-			instance:   rkmid.LocalHostname.String,
-			appVersion: rkentry.GlobalAppCtx.GetAppInfoEntry().Version,
-			appName:    rkentry.GlobalAppCtx.GetAppInfoEntry().AppName,
-			method:     before.Input.RestMethod,
-			path:       before.Input.RestPath,
-			resCode:    after.Input.ResCode,
+			entryName: set.entryName,
+			entryType: set.entryType,
+			domain:    rkmid.Domain.String,
+			instance:  rkmid.LocalHostname.String,
+			method:    before.Input.RestMethod,
+			path:      before.Input.RestPath,
+			resCode:   after.Input.ResCode,
 		}
 	default:
 		l = &labelerHttp{
-			entryName:  set.entryName,
-			entryType:  set.entryType,
-			realm:      rkmid.Realm.String,
-			region:     rkmid.Region.String,
-			az:         rkmid.AZ.String,
-			domain:     rkmid.Domain.String,
-			instance:   rkmid.LocalHostname.String,
-			appVersion: rkentry.GlobalAppCtx.GetAppInfoEntry().Version,
-			appName:    rkentry.GlobalAppCtx.GetAppInfoEntry().AppName,
-			method:     before.Input.RestMethod,
-			path:       before.Input.RestPath,
-			resCode:    after.Input.ResCode,
+			entryName: set.entryName,
+			entryType: set.entryType,
+			domain:    rkmid.Domain.String,
+			instance:  rkmid.LocalHostname.String,
+			method:    before.Input.RestMethod,
+			path:      before.Input.RestPath,
+			resCode:   after.Input.ResCode,
 		}
 	}
 
@@ -436,18 +408,13 @@ type labeler interface {
 
 // Implementation of labeler for http request
 type labelerHttp struct {
-	entryName  string
-	entryType  string
-	realm      string
-	region     string
-	az         string
-	domain     string
-	instance   string
-	appVersion string
-	appName    string
-	method     string
-	path       string
-	resCode    string
+	entryName string
+	entryType string
+	domain    string
+	instance  string
+	method    string
+	path      string
+	resCode   string
 }
 
 // Keys returns key set
@@ -460,13 +427,8 @@ func (l *labelerHttp) Values() []string {
 	return []string{
 		l.entryName,
 		l.entryType,
-		l.realm,
-		l.region,
-		l.az,
 		l.domain,
 		l.instance,
-		l.appVersion,
-		l.appName,
 		l.method,
 		l.path,
 		l.resCode,
@@ -477,13 +439,8 @@ func (l *labelerHttp) Values() []string {
 type labelerGrpc struct {
 	entryName   string
 	entryType   string
-	realm       string
-	region      string
-	az          string
 	domain      string
 	instance    string
-	appVersion  string
-	appName     string
 	restMethod  string
 	restPath    string
 	grpcService string
@@ -502,13 +459,8 @@ func (l *labelerGrpc) Values() []string {
 	return []string{
 		l.entryName,
 		l.entryType,
-		l.realm,
-		l.region,
-		l.az,
 		l.domain,
 		l.instance,
-		l.appVersion,
-		l.appName,
 		l.grpcService,
 		l.grpcMethod,
 		l.grpcType,
