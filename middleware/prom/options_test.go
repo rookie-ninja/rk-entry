@@ -21,18 +21,13 @@ func TestLabelerHttp_Keys(t *testing.T) {
 
 func TestLabelerHttp_Values(t *testing.T) {
 	l := &labelerHttp{
-		entryName:  "entryName",
-		entryType:  "entryType",
-		realm:      "realm",
-		region:     "region",
-		az:         "az",
-		domain:     "domain",
-		instance:   "instance",
-		appVersion: "version",
-		appName:    "name",
-		method:     "GET",
-		path:       "/",
-		resCode:    "200",
+		entryName: "entryName",
+		entryType: "entryType",
+		domain:    "domain",
+		instance:  "instance",
+		method:    "GET",
+		path:      "/",
+		resCode:   "200",
 	}
 
 	// key -> value should match
@@ -45,35 +40,20 @@ func TestLabelerHttp_Values(t *testing.T) {
 	assert.Equal(t, "entryType", keys[1])
 	assert.Equal(t, "entryType", values[1])
 
-	assert.Equal(t, "realm", keys[2])
-	assert.Equal(t, "realm", values[2])
+	assert.Equal(t, "domain", keys[2])
+	assert.Equal(t, "domain", values[2])
 
-	assert.Equal(t, "region", keys[3])
-	assert.Equal(t, "region", values[3])
+	assert.Equal(t, "instance", keys[3])
+	assert.Equal(t, "instance", values[3])
 
-	assert.Equal(t, "az", keys[4])
-	assert.Equal(t, "az", values[4])
+	assert.Equal(t, "restMethod", keys[4])
+	assert.Equal(t, "GET", values[4])
 
-	assert.Equal(t, "domain", keys[5])
-	assert.Equal(t, "domain", values[5])
+	assert.Equal(t, "restPath", keys[5])
+	assert.Equal(t, "/", values[5])
 
-	assert.Equal(t, "instance", keys[6])
-	assert.Equal(t, "instance", values[6])
-
-	assert.Equal(t, "appVersion", keys[7])
-	assert.Equal(t, "version", values[7])
-
-	assert.Equal(t, "appName", keys[8])
-	assert.Equal(t, "name", values[8])
-
-	assert.Equal(t, "restMethod", keys[9])
-	assert.Equal(t, "GET", values[9])
-
-	assert.Equal(t, "restPath", keys[10])
-	assert.Equal(t, "/", values[10])
-
-	assert.Equal(t, "resCode", keys[11])
-	assert.Equal(t, "200", values[11])
+	assert.Equal(t, "resCode", keys[6])
+	assert.Equal(t, "200", values[6])
 }
 
 func TestLabelerGrpc_Keys(t *testing.T) {
@@ -87,13 +67,8 @@ func TestLabelerGrpc_Values(t *testing.T) {
 	l := &labelerGrpc{
 		entryName:   "entryName",
 		entryType:   "entryType",
-		realm:       "realm",
-		region:      "region",
-		az:          "az",
 		domain:      "domain",
 		instance:    "instance",
-		appVersion:  "version",
-		appName:     "name",
 		restMethod:  "GET",
 		restPath:    "/",
 		grpcMethod:  "Hello",
@@ -112,44 +87,29 @@ func TestLabelerGrpc_Values(t *testing.T) {
 	assert.Equal(t, "entryType", keys[1])
 	assert.Equal(t, "entryType", values[1])
 
-	assert.Equal(t, "realm", keys[2])
-	assert.Equal(t, "realm", values[2])
+	assert.Equal(t, "domain", keys[2])
+	assert.Equal(t, "domain", values[2])
 
-	assert.Equal(t, "region", keys[3])
-	assert.Equal(t, "region", values[3])
+	assert.Equal(t, "instance", keys[3])
+	assert.Equal(t, "instance", values[3])
 
-	assert.Equal(t, "az", keys[4])
-	assert.Equal(t, "az", values[4])
+	assert.Equal(t, "grpcService", keys[4])
+	assert.Equal(t, "Common", values[4])
 
-	assert.Equal(t, "domain", keys[5])
-	assert.Equal(t, "domain", values[5])
+	assert.Equal(t, "grpcMethod", keys[5])
+	assert.Equal(t, "Hello", values[5])
 
-	assert.Equal(t, "instance", keys[6])
-	assert.Equal(t, "instance", values[6])
+	assert.Equal(t, "grpcType", keys[6])
+	assert.Equal(t, "Unary", values[6])
 
-	assert.Equal(t, "appVersion", keys[7])
-	assert.Equal(t, "version", values[7])
+	assert.Equal(t, "restMethod", keys[7])
+	assert.Equal(t, "GET", values[7])
 
-	assert.Equal(t, "appName", keys[8])
-	assert.Equal(t, "name", values[8])
+	assert.Equal(t, "restPath", keys[8])
+	assert.Equal(t, "/", values[8])
 
-	assert.Equal(t, "grpcService", keys[9])
-	assert.Equal(t, "Common", values[9])
-
-	assert.Equal(t, "grpcMethod", keys[10])
-	assert.Equal(t, "Hello", values[10])
-
-	assert.Equal(t, "grpcType", keys[11])
-	assert.Equal(t, "Unary", values[11])
-
-	assert.Equal(t, "restMethod", keys[12])
-	assert.Equal(t, "GET", values[12])
-
-	assert.Equal(t, "restPath", keys[13])
-	assert.Equal(t, "/", values[13])
-
-	assert.Equal(t, "resCode", keys[14])
-	assert.Equal(t, "200", values[14])
+	assert.Equal(t, "resCode", keys[9])
+	assert.Equal(t, "200", values[9])
 }
 
 func TestToOptions(t *testing.T) {

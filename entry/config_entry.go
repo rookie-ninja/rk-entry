@@ -18,15 +18,34 @@ import (
 func RegisterConfigEntry(boot *BootConfig) []*ConfigEntry {
 	res := make([]*ConfigEntry, 0)
 
+	// filter out based domain
+	configMap := make(map[string]*BootConfigE)
 	for _, config := range boot.Config {
-		if len(config.Locale) < 1 {
-			config.Locale = "*::*::*::*"
-		}
-
-		if len(config.Name) < 1 || !IsLocaleValid(config.Locale) {
+		if len(config.Name) < 1 {
 			continue
 		}
 
+		if !IsValidDomain(config.Domain) {
+			continue
+		}
+
+		// * or matching domain
+		// 1: add it to map if missing
+		if _, ok := configMap[config.Name]; !ok {
+			configMap[config.Name] = config
+			continue
+		}
+
+		// 2: already has an entry, then compare domain,
+		//    only one case would occur, previous one is already the correct one, continue
+		if config.Domain == "" || config.Domain == "*" {
+			continue
+		}
+
+		configMap[config.Name] = config
+	}
+
+	for _, config := range configMap {
 		entry := &ConfigEntry{
 			entryName:        config.Name,
 			entryType:        ConfigEntryType,
@@ -97,7 +116,7 @@ type BootConfig struct {
 type BootConfigE struct {
 	Name        string                 `yaml:"name" json:"name"`
 	Description string                 `yaml:"description" json:"description"`
-	Locale      string                 `yaml:"locale" json:"locale"`
+	Domain      string                 `yaml:"domain" json:"domain"`
 	Path        string                 `yaml:"path" json:"name"`
 	EnvPrefix   string                 `yaml:"envPrefix" json:"envPrefix"`
 	Content     map[string]interface{} `yaml:"content" json:"content"`

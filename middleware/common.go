@@ -52,12 +52,7 @@ var (
 	PropagatorKey     = &propagatorKey{}
 	JwtTokenKey       = &jwtTokenKey{}
 	CsrfTokenKey      = &csrfTokenKey{}
-	// Realm environment variable
-	Realm = zap.String("realm", getEnvValueOrDefault("REALM", "*"))
-	// Region environment variable
-	Region = zap.String("region", getEnvValueOrDefault("REGION", "*"))
-	// AZ environment variable
-	AZ = zap.String("az", getEnvValueOrDefault("AZ", "*"))
+
 	// Domain environment variable
 	Domain = zap.String("domain", getEnvValueOrDefault("DOMAIN", "*"))
 	// LocalIp read local IP from localhost

@@ -22,7 +22,6 @@ func TestRegisterConfigEntry(t *testing.T) {
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::*",
 			},
 		},
 	})
@@ -39,7 +38,6 @@ func TestRegisterConfigEntry(t *testing.T) {
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::*",
 				Content: map[string]interface{}{
 					"content-key": "content-value",
 				},
@@ -66,7 +64,6 @@ key: value
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::*",
 				Path:        tempDir,
 				Content: map[string]interface{}{
 					"content-key": "content-value",
@@ -90,7 +87,6 @@ func TestRegisterConfigEntry_WithNonExistPath(t *testing.T) {
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::*",
 				Path:        "/non-exist-ut-file",
 			},
 		},
@@ -120,7 +116,6 @@ key: value
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::*",
 				Path:        tempDir,
 			},
 		},
@@ -154,7 +149,7 @@ key: value
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::prod",
+				Domain:      "prod",
 				Path:        tempDir,
 			},
 		},
@@ -198,13 +193,13 @@ key: prod
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::beta",
+				Domain:      "beta",
 				Path:        tempDirBeta,
 			},
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::prod",
+				Domain:      "prod",
 				Path:        tempDirProd,
 			},
 		},
@@ -245,7 +240,6 @@ key: prod
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::*",
 				Path:        tempDir,
 			},
 		},
@@ -266,7 +260,6 @@ func TestConfigEntry_UnmarshalJSON(t *testing.T) {
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::*",
 			},
 		},
 	})
@@ -281,7 +274,6 @@ func TestConfigEntry_Bootstrap(t *testing.T) {
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::*",
 			},
 		},
 	})
@@ -296,7 +288,6 @@ func TestConfigEntry_Interrupt(t *testing.T) {
 			{
 				Name:        "ut-config",
 				Description: "desc",
-				Locale:      "*::*::*::*",
 			},
 		},
 	})

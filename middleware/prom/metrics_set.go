@@ -7,8 +7,8 @@
 package rkmidprom
 
 import (
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 	"strings"

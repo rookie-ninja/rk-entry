@@ -8,7 +8,7 @@ package rkentry
 import (
 	"context"
 	"encoding/json"
-	"github.com/pkg/errors"
+	"errors"
 	"github.com/rookie-ninja/rk-entry/v2"
 	"github.com/rookie-ninja/rk-entry/v2/os"
 	"net/http"

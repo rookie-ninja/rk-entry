@@ -3,9 +3,9 @@ package rkentry
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"fmt"
 	"github.com/mitchellh/mapstructure"
-	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -110,90 +110,20 @@ func UnmarshalBootYAML(raw []byte, config interface{}) {
 // ShutdownWithError shuts down and panic.
 func ShutdownWithError(err error) {
 	if err == nil {
-		err = errors.New("Internal error")
+		err = errors.New("internal error")
 	}
 	panic(err)
 }
 
-// IsLocaleValid mainly used in entry config.
-// RK use <realm>::<region>::<az>::<domain> to distinguish different environment.
-// Variable of <locale> could be composed as form of <realm>::<region>::<az>::<domain>
-// - realm: It could be a company, department and so on, like RK-Corp.
-//          Environment variable: REALM
-//          Eg: RK-Corp
-//          Wildcard: supported
-//
-// - region: Please see AWS web site:
-//   https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
-//           Environment variable: REGION
-//           Eg: us-east
-//           Wildcard: supported
-//
-// - az: Availability zone, please see AWS web site for details:
-//  https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
-//       Environment variable: AZ
-//       Eg: us-east-1
-//       Wildcard: supported
-//
-// - domain: Stands for different environment, like dev, test, prod and so on, users can define it by themselves.
-//           Environment variable: DOMAIN
-//           Eg: prod
-//           Wildcard: supported
-//
-// How it works?
-// First, we will split locale with "::" and extract realm, region, az and domain.
-// Second, get environment variable named as REALM, REGION, AZ and DOMAIN.
-// Finally, compare every element in locale variable and environment variable.
-// If variables in locale represented as wildcard(*), we will ignore comparison step.
-//
-// Example:
-// # let's assuming we are going to define DB address which is different based on environment.
-// # Then, user can distinguish DB address based on locale.
-// # We recommend to include locale with wildcard.
-// ---
-// DB:
-//   - name: redis-default
-//     locale: "*::*::*::*"
-//     addr: "192.0.0.1:6379"
-//   - name: redis-in-test
-//     locale: "*::*::*::test"
-//     addr: "192.0.0.1:6379"
-//   - name: redis-in-prod
-//     locale: "*::*::*::prod"
-//     addr: "176.0.0.1:6379"
-func IsLocaleValid(locale string) bool {
-	if len(locale) < 1 {
-		return false
+// IsValidDomain mainly used in entry config.
+func IsValidDomain(domain string) bool {
+	if len(domain) < 1 {
+		domain = "*"
 	}
 
-	tokens := strings.Split(locale, "::")
-	if len(tokens) != 4 {
-		return false
-	}
-
-	realmFromEnv := getDefaultIfEmptyString(os.Getenv("REALM"), "")
-	regionFromEnv := getDefaultIfEmptyString(os.Getenv("REGION"), "")
-	azFromEnv := getDefaultIfEmptyString(os.Getenv("AZ"), "")
 	domainFromEnv := getDefaultIfEmptyString(os.Getenv("DOMAIN"), "")
 
-	realmFromConfig := tokens[0]
-	regionFromConfig := tokens[1]
-	azFromConfig := tokens[2]
-	domainFromConfig := tokens[3]
-
-	if realmFromConfig != "*" && realmFromConfig != realmFromEnv {
-		return false
-	}
-
-	if regionFromConfig != "*" && regionFromConfig != regionFromEnv {
-		return false
-	}
-
-	if azFromConfig != "*" && azFromConfig != azFromEnv {
-		return false
-	}
-
-	if domainFromConfig != "*" && domainFromConfig != domainFromEnv {
+	if domain != "*" && domain != domainFromEnv {
 		return false
 	}
 

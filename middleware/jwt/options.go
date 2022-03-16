@@ -8,8 +8,8 @@ package rkmidjwt
 
 import (
 	"context"
+	"errors"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/pkg/errors"
 	"github.com/rookie-ninja/rk-entry/v2/entry"
 	"github.com/rookie-ninja/rk-entry/v2/error"
 	"github.com/rookie-ninja/rk-entry/v2/middleware"
@@ -302,12 +302,12 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 		if v := rkentry.GlobalAppCtx.GetEntry(rkentry.SignerJwtEntryType, config.SignerEntry); v != nil {
 			signer, ok := v.(rkentry.SignerJwt)
 			if !ok {
-				rkentry.ShutdownWithError(errors.New("Invalid signer jwt entry"))
+				rkentry.ShutdownWithError(errors.New("invalid signer jwt entry"))
 			}
 
 			signerJwt = signer
 			if signerJwt == nil {
-				rkentry.ShutdownWithError(errors.New("Invalid asymmetric configuration"))
+				rkentry.ShutdownWithError(errors.New("invalid asymmetric configuration"))
 			}
 		} else if config.Asymmetric != nil {
 			var pubKey, privKey []byte
@@ -326,7 +326,7 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 
 			signerJwt = rkentry.RegisterAsymmetricJwtSigner(entryName, config.Asymmetric.Algorithm, privKey, pubKey)
 			if signerJwt == nil {
-				rkentry.ShutdownWithError(errors.New("Invalid asymmetric configuration"))
+				rkentry.ShutdownWithError(errors.New("invalid asymmetric configuration"))
 			}
 		} else if config.Symmetric != nil {
 			var token []byte
@@ -338,7 +338,7 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 
 			signerJwt = rkentry.RegisterSymmetricJwtSigner(entryName, config.Symmetric.Algorithm, token)
 			if signerJwt == nil {
-				rkentry.ShutdownWithError(errors.New("Invalid symmetric configuration"))
+				rkentry.ShutdownWithError(errors.New("invalid symmetric configuration"))
 			}
 		}
 
