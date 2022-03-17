@@ -82,6 +82,10 @@ func RegisterPProfEntry(boot *BootPProf, opts ...PProfEntryOption) *PProfEntry {
 		opts[i](entry)
 	}
 
+	if len(entry.Path) < 1 {
+		entry.Path = "/pprof"
+	}
+
 	entry.Path = path.Join("/", entry.Path)
 	if !strings.HasSuffix(entry.Path, "/") {
 		entry.Path = entry.Path + "/"
