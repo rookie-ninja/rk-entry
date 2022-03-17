@@ -31,7 +31,10 @@ const (
 	// PromEntryType public access
 	PromEntryType = "PromEntry"
 	// DocsEntryType public access
-	DocsEntryType = "DocsEntry"
+	DocsEntryType      = "DocsEntry"
+	SignerJwtEntryType = "SignerJwtEntry"
+	CryptoEntryType    = "CryptoEntry"
+	PProfEntryType     = "PProfEntry"
 )
 
 // RegFunc can be used to create an entry could be any kinds of services or pieces of codes which
@@ -86,8 +89,6 @@ type Entry interface {
 	String() string
 }
 
-const SignerJwtEntryType = "SignerJwtEntry"
-
 // SignerJwt interface which must be implemented for JWT signer
 type SignerJwt interface {
 	Entry
@@ -104,8 +105,6 @@ type SignerJwt interface {
 	// Algorithms supported algorithms
 	Algorithms() []string
 }
-
-const CryptoEntryType = "CryptoEntry"
 
 type Crypto interface {
 	Entry
