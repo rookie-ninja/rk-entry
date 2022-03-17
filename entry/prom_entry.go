@@ -86,8 +86,8 @@ type BootProm struct {
 // PromEntry Prometheus entry which implements rkentry.Entry.
 type PromEntry struct {
 	*prometheus.Registry
-	prometheus.Registerer
-	prometheus.Gatherer
+	Registerer prometheus.Registerer
+	Gatherer   prometheus.Gatherer
 
 	entryName        string             `json:"-" yaml:"-"`
 	entryType        string             `json:"-" yaml:"-"`
