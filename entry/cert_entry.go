@@ -12,6 +12,7 @@ import (
 	"embed"
 	"encoding/json"
 	"encoding/pem"
+	"sync"
 )
 
 // RegisterCertEntry create cert entry with options.
@@ -105,35 +106,38 @@ type CertEntry struct {
 	embedFS          *embed.FS         `json:"-" yaml:"-"`
 	RootCA           *x509.Certificate `json:"-" json:"-"`
 	Certificate      *tls.Certificate  `json:"-" yaml:"-"`
+	bootstrapOnce    sync.Once         `yaml:"-" json:"-"`
 }
 
 // Bootstrap iterate retrievers and call Retrieve() for each of them.
 func (entry *CertEntry) Bootstrap(ctx context.Context) {
-	// server cert path
-	if len(entry.keyPemPath) > 0 && len(entry.certPemPath) > 0 {
-		cert, err := tls.X509KeyPair(
-			readFile(entry.certPemPath, entry.embedFS, true),
-			readFile(entry.keyPemPath, entry.embedFS, true))
-		if err != nil {
-			ShutdownWithError(err)
+	entry.bootstrapOnce.Do(func() {
+		// server cert path
+		if len(entry.keyPemPath) > 0 && len(entry.certPemPath) > 0 {
+			cert, err := tls.X509KeyPair(
+				readFile(entry.certPemPath, entry.embedFS, true),
+				readFile(entry.keyPemPath, entry.embedFS, true))
+			if err != nil {
+				ShutdownWithError(err)
+			}
+
+			entry.Certificate = &cert
 		}
 
-		entry.Certificate = &cert
-	}
+		if len(entry.caPath) > 0 {
+			block, _ := pem.Decode(readFile(entry.caPath, entry.embedFS, true))
+			if block == nil || block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+				return
+			}
 
-	if len(entry.caPath) > 0 {
-		block, _ := pem.Decode(readFile(entry.caPath, entry.embedFS, true))
-		if block == nil || block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
-			return
+			cert, err := x509.ParseCertificate(block.Bytes)
+			if err != nil {
+				ShutdownWithError(err)
+			}
+
+			entry.RootCA = cert
 		}
-
-		cert, err := x509.ParseCertificate(block.Bytes)
-		if err != nil {
-			ShutdownWithError(err)
-		}
-
-		entry.RootCA = cert
-	}
+	})
 }
 
 // Interrupt entry.

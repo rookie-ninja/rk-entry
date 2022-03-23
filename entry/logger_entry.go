@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"sync"
 	"time"
 )
 
@@ -182,13 +183,16 @@ type LoggerEntry struct {
 	LoggerConfig     *zap.Config          `yaml:"zapConfig" json:"zapConfig"`
 	LumberjackConfig *lumberjack.Logger   `yaml:"lumberjackConfig" json:"lumberjackConfig"`
 	lokiSyncer       *rklogger.LokiSyncer `yaml:"lokiSyncer" json:"lokiSyncer"`
+	bootstrapOnce    sync.Once            `yaml:"-" json:"-"`
 }
 
 // Bootstrap entry.
 func (entry *LoggerEntry) Bootstrap(ctx context.Context) {
-	if entry.lokiSyncer != nil {
-		entry.lokiSyncer.Bootstrap(ctx)
-	}
+	entry.bootstrapOnce.Do(func() {
+		if entry.lokiSyncer != nil {
+			entry.lokiSyncer.Bootstrap(ctx)
+		}
+	})
 }
 
 // Interrupt entry.
