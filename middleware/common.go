@@ -64,7 +64,11 @@ var (
 )
 
 func AddPathToIgnoreGlobal(prefix ...string) {
-	pathToIgnore = append(pathToIgnore, prefix...)
+	for i := range prefix {
+		if len(prefix[i]) > 0 {
+			pathToIgnore = append(pathToIgnore, prefix[i])
+		}
+	}
 }
 
 type entryNameKey struct{}
