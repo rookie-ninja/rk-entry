@@ -330,10 +330,13 @@ func WithLimiterByPath(path string, l Limiter) Option {
 }
 
 // WithPathToIgnore provide paths prefix that will ignore.
-// Mainly used for swagger main page and RK TV entry.
 func WithPathToIgnore(paths ...string) Option {
 	return func(set *optionSet) {
-		set.pathToIgnore = append(set.pathToIgnore, paths...)
+		for i := range paths {
+			if len(paths[i]) > 0 {
+				set.pathToIgnore = append(set.pathToIgnore, paths[i])
+			}
+		}
 	}
 }
 
