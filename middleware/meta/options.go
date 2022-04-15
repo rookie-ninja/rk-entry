@@ -38,7 +38,6 @@ type optionSet struct {
 	entryName       string
 	entryType       string
 	prefix          string
-	localeKey       string
 	appNameKey      string
 	appVersionKey   string
 	appUnixTimeKey  string
@@ -72,7 +71,6 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	set.appVersionKey = fmt.Sprintf("X-%s-App-Version", set.prefix)
 	set.appUnixTimeKey = fmt.Sprintf("X-%s-App-Unix-Time", set.prefix)
 	set.receivedTimeKey = fmt.Sprintf("X-%s-Received-Time", set.prefix)
-	set.localeKey = fmt.Sprintf("X-%s-Locale", set.prefix)
 
 	return set
 }
@@ -245,10 +243,13 @@ func WithPrefix(prefix string) Option {
 }
 
 // WithPathToIgnore provide paths prefix that will ignore.
-// Mainly used for swagger main page and RK TV entry.
 func WithPathToIgnore(paths ...string) Option {
 	return func(set *optionSet) {
-		set.pathToIgnore = append(set.pathToIgnore, paths...)
+		for i := range paths {
+			if len(paths[i]) > 0 {
+				set.pathToIgnore = append(set.pathToIgnore, paths[i])
+			}
+		}
 	}
 }
 
