@@ -45,7 +45,7 @@ func appInfoEntryDefault() *appInfoEntry {
 		entryType:        appInfoEntryType,
 		entryDescription: "Internal RK entry which describes application with fields of appName, version and etc.",
 		AppName:          "rk",
-		Version:          "dev",
+		Version:          "local",
 		Lang:             "golang",
 		Keywords:         []string{},
 		HomeUrl:          "",
@@ -62,9 +62,18 @@ func registerAppInfoEntryYAML(raw []byte) map[string]Entry {
 	res := map[string]Entry{}
 
 	entry := appInfoEntryDefault()
-	entry.AppName = config.App.Name
-	entry.Version = config.App.Version
-	entry.entryDescription = config.App.Description
+	if len(config.App.Name) > 0 {
+		entry.AppName = config.App.Name
+	}
+
+	if len(config.App.Version) > 0 {
+		entry.Version = config.App.Version
+	}
+
+	if len(config.App.Description) > 0 {
+		entry.entryDescription = config.App.Description
+	}
+
 	entry.Keywords = config.App.Keywords
 	entry.HomeUrl = config.App.HomeUrl
 	entry.DocsUrl = config.App.DocsUrl
