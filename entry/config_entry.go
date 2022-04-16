@@ -53,6 +53,7 @@ func RegisterConfigEntry(boot *BootConfig) []*ConfigEntry {
 			content:          config.Content,
 			Viper:            viper.New(),
 			Path:             config.Path,
+			EnvPrefix:        config.EnvPrefix,
 		}
 
 		// if file path was provided
