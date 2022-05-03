@@ -76,6 +76,10 @@ type optionSet struct {
 	// Optional. Default value "Bearer".
 	authScheme string
 
+	// skip the step of validate token,just parse.
+	// Optional. Default value "false".
+	skipValidate bool
+
 	mock OptionSetInterface
 }
 
@@ -145,47 +149,39 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 	if ctx == nil || set.ShouldIgnore(ctx.Input.UrlPath) {
 		return
 	}
-
-	// case 1: if user extractor exists, use it!
-	if set.extractor != nil {
-		// case 1.1: extract
-		authRaw, err := set.extractor(ctx.Input.UserCtx)
-		if err != nil {
-			ctx.Output.ErrResp = errJwtInvalid
-			return
-		}
-
-		// case 1.2: parse
-		token, err := set.signer.VerifyJwt(authRaw)
-		if err != nil {
-			ctx.Output.ErrResp = errJwtInvalid
-			return
-		}
-
-		ctx.Output.JwtToken = token
-		return
-	}
-
-	// case 2: use default
 	var authRaw string
 	var err error
 	var token *jwt.Token
 
-	for _, extractor := range set.extractors {
-		// Extract token from extractor, if it's not fail break the loop and
-		// set auth
-		authRaw, err = extractor(ctx.Input.Request)
-		if err == nil {
-			break
+	if set.extractor != nil { // case 1: if user extractor exists, use it!
+		authRaw, err = set.extractor(ctx.Input.UserCtx)
+		if err != nil {
+			ctx.Output.ErrResp = errJwtInvalid
+			return
+		}
+
+	} else { // case 2: use default
+		for _, extractor := range set.extractors {
+			// Extract token from extractor, if it's not fail break the loop and
+			// set auth
+			authRaw, err = extractor(ctx.Input.Request)
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			ctx.Output.ErrResp = errJwtInvalid
+			return
 		}
 	}
-
-	if err != nil {
-		ctx.Output.ErrResp = errJwtInvalid
-		return
+	if set.skipValidate || set.signer == nil { // case 1: when skip validate or disable sign, just parse token
+		claims := jwt.MapClaims{}
+		parser := &jwt.Parser{}
+		token, _, err = parser.ParseUnverified(authRaw, claims)
+	} else { // case 2: parse and validate token
+		token, err = set.signer.VerifyJwt(authRaw)
 	}
 
-	token, err = set.signer.VerifyJwt(authRaw)
 	if err != nil {
 		ctx.Output.ErrResp = errJwtInvalid
 		return
@@ -268,13 +264,15 @@ type BeforeCtx struct {
 
 // BootConfig for YAML
 type BootConfig struct {
-	Enabled     bool              `yaml:"enabled" json:"enabled"`
-	Ignore      []string          `yaml:"ignore" json:"ignore"`
-	SignerEntry string            `yaml:"signerEntry" json:"signerEntry"`
-	Symmetric   *SymmetricConfig  `yaml:"symmetric" json:"symmetric"`
-	Asymmetric  *AsymmetricConfig `yaml:"asymmetric" json:"asymmetric"`
-	TokenLookup string            `yaml:"tokenLookup" json:"tokenLookup"`
-	AuthScheme  string            `yaml:"authScheme" json:"authScheme"`
+	Enabled      bool              `yaml:"enabled" json:"enabled"`
+	Ignore       []string          `yaml:"ignore" json:"ignore"`
+	SignerEntry  string            `yaml:"signerEntry" json:"signerEntry"`
+	Symmetric    *SymmetricConfig  `yaml:"symmetric" json:"symmetric"`
+	Asymmetric   *AsymmetricConfig `yaml:"asymmetric" json:"asymmetric"`
+	TokenLookup  string            `yaml:"tokenLookup" json:"tokenLookup"`
+	AuthScheme   string            `yaml:"authScheme" json:"authScheme"`
+	SkipValidate bool              `yaml:"skipValidate" json:"skipValidate"`
+	DisabledSign bool              `yaml:"disabledSign" json:"disabledSign"`
 }
 
 type SymmetricConfig struct {
@@ -298,47 +296,49 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 	if config.Enabled {
 		var signerJwt rkentry.SignerJwt
 
-		// check signer entry first
-		if v := rkentry.GlobalAppCtx.GetEntry(rkentry.SignerJwtEntryType, config.SignerEntry); v != nil {
-			signer, ok := v.(rkentry.SignerJwt)
-			if !ok {
-				rkentry.ShutdownWithError(errors.New("invalid signer jwt entry"))
-			}
+		if !config.DisabledSign {
+			// check signer entry first
+			if v := rkentry.GlobalAppCtx.GetEntry(rkentry.SignerJwtEntryType, config.SignerEntry); v != nil {
+				signer, ok := v.(rkentry.SignerJwt)
+				if !ok {
+					rkentry.ShutdownWithError(errors.New("invalid signer jwt entry"))
+				}
 
-			signerJwt = signer
-			if signerJwt == nil {
-				rkentry.ShutdownWithError(errors.New("invalid asymmetric configuration"))
-			}
-		} else if config.Asymmetric != nil {
-			var pubKey, privKey []byte
+				signerJwt = signer
+				if signerJwt == nil {
+					rkentry.ShutdownWithError(errors.New("invalid asymmetric configuration"))
+				}
+			} else if config.Asymmetric != nil {
+				var pubKey, privKey []byte
 
-			if len(config.Asymmetric.PublicKey) > 0 {
-				pubKey = []byte(config.Asymmetric.PublicKey)
-			} else {
-				pubKey = mustRead(config.Asymmetric.PublicKeyPath)
-			}
+				if len(config.Asymmetric.PublicKey) > 0 {
+					pubKey = []byte(config.Asymmetric.PublicKey)
+				} else {
+					pubKey = mustRead(config.Asymmetric.PublicKeyPath)
+				}
 
-			if len(config.Asymmetric.PrivateKey) > 0 {
-				privKey = []byte(config.Asymmetric.PrivateKey)
-			} else {
-				privKey = mustRead(config.Asymmetric.PrivateKeyPath)
-			}
+				if len(config.Asymmetric.PrivateKey) > 0 {
+					privKey = []byte(config.Asymmetric.PrivateKey)
+				} else {
+					privKey = mustRead(config.Asymmetric.PrivateKeyPath)
+				}
 
-			signerJwt = rkentry.RegisterAsymmetricJwtSigner(entryName, config.Asymmetric.Algorithm, privKey, pubKey)
-			if signerJwt == nil {
-				rkentry.ShutdownWithError(errors.New("invalid asymmetric configuration"))
-			}
-		} else if config.Symmetric != nil {
-			var token []byte
-			if len(config.Symmetric.Token) > 0 {
-				token = []byte(config.Symmetric.Token)
-			} else {
-				token = mustRead(config.Symmetric.TokenPath)
-			}
+				signerJwt = rkentry.RegisterAsymmetricJwtSigner(entryName, config.Asymmetric.Algorithm, privKey, pubKey)
+				if signerJwt == nil {
+					rkentry.ShutdownWithError(errors.New("invalid asymmetric configuration"))
+				}
+			} else if config.Symmetric != nil {
+				var token []byte
+				if len(config.Symmetric.Token) > 0 {
+					token = []byte(config.Symmetric.Token)
+				} else {
+					token = mustRead(config.Symmetric.TokenPath)
+				}
 
-			signerJwt = rkentry.RegisterSymmetricJwtSigner(entryName, config.Symmetric.Algorithm, token)
-			if signerJwt == nil {
-				rkentry.ShutdownWithError(errors.New("invalid symmetric configuration"))
+				signerJwt = rkentry.RegisterSymmetricJwtSigner(entryName, config.Symmetric.Algorithm, token)
+				if signerJwt == nil {
+					rkentry.ShutdownWithError(errors.New("invalid symmetric configuration"))
+				}
 			}
 		}
 
@@ -348,6 +348,7 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 			WithSigner(signerJwt),
 			WithAuthScheme(config.AuthScheme),
 			WithPathToIgnore(config.Ignore...),
+			WithSkipValidate(config.SkipValidate),
 		}
 
 	}
@@ -431,6 +432,14 @@ func WithPathToIgnore(paths ...string) Option {
 				set.pathToIgnore = append(set.pathToIgnore, paths[i])
 			}
 		}
+	}
+}
+
+// WithSkipValidate provide skipValidate
+// Default is false
+func WithSkipValidate(skipValidate bool) Option {
+	return func(opt *optionSet) {
+		opt.skipValidate = skipValidate
 	}
 }
 
