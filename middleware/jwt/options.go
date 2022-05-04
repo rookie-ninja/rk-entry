@@ -21,8 +21,8 @@ import (
 )
 
 var (
-	errJwtMissing = rkerror.NewBadRequest("Missing or malformed jwt")
-	errJwtInvalid = rkerror.NewUnauthorized("Invalid or expired jwt")
+	errJwtMissing = rkmid.GetErrorBuilder().New(http.StatusBadRequest, "Missing or malformed jwt")
+	errJwtInvalid = rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid or expired jwt")
 )
 
 // ***************** OptionSet Interface *****************
@@ -258,7 +258,7 @@ type BeforeCtx struct {
 	}
 	Output struct {
 		JwtToken *jwt.Token
-		ErrResp  *rkerror.ErrorResp
+		ErrResp  rkerror.ErrorInterface
 	}
 }
 
@@ -463,7 +463,7 @@ type jwtHttpExtractor func(r *http.Request) (string, error)
 func jwtFromHeader(header string, authScheme string) jwtHttpExtractor {
 	return func(req *http.Request) (string, error) {
 		if req == nil {
-			return "", errJwtMissing.Err
+			return "", errJwtMissing
 		}
 
 		auth := req.Header.Get(header)
@@ -471,7 +471,7 @@ func jwtFromHeader(header string, authScheme string) jwtHttpExtractor {
 		if len(auth) > l+1 && strings.EqualFold(auth[:l], authScheme) {
 			return auth[l+1:], nil
 		}
-		return "", errJwtMissing.Err
+		return "", errJwtMissing
 	}
 }
 
@@ -479,12 +479,12 @@ func jwtFromHeader(header string, authScheme string) jwtHttpExtractor {
 func jwtFromQuery(name string) jwtHttpExtractor {
 	return func(req *http.Request) (string, error) {
 		if req == nil || req.URL == nil {
-			return "", errJwtMissing.Err
+			return "", errJwtMissing
 		}
 
 		token := req.URL.Query().Get(name)
 		if token == "" {
-			return "", errJwtMissing.Err
+			return "", errJwtMissing
 		}
 		return token, nil
 	}

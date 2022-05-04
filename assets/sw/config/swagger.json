@@ -43,12 +43,6 @@
                         "schema": {
                             "$ref": "#/definitions/rkentry.aliveResp"
                         }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rkerror.ErrorResp"
-                        }
                     }
                 }
             }
@@ -77,12 +71,6 @@
                         "schema": {
                             "$ref": "#/definitions/rkentry.gcResp"
                         }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rkerror.ErrorResp"
-                        }
                     }
                 }
             }
@@ -110,12 +98,6 @@
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/rkentry.ProcessInfo"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rkerror.ErrorResp"
                         }
                     }
                 }
@@ -148,9 +130,7 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/rkerror.ErrorResp"
-                        }
+                        "schema": {}
                     }
                 }
             }
@@ -282,36 +262,6 @@
                 "ready": {
                     "type": "boolean",
                     "example": true
-                }
-            }
-        },
-        "rkerror.Error": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "integer",
-                    "example": 500
-                },
-                "details": {
-                    "type": "array",
-                    "items": {}
-                },
-                "message": {
-                    "type": "string",
-                    "example": "Internal error occurs"
-                },
-                "status": {
-                    "type": "string",
-                    "example": "Internal Server Error"
-                }
-            }
-        },
-        "rkerror.ErrorResp": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "description": "Err is RK style error type",
-                    "$ref": "#/definitions/rkerror.Error"
                 }
             }
         },

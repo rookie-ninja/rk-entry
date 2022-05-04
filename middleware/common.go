@@ -2,6 +2,7 @@ package rkmid
 
 import (
 	"github.com/google/uuid"
+	rkerror "github.com/rookie-ninja/rk-entry/v2/error"
 	"go.uber.org/zap"
 	"net"
 	"net/http"
@@ -61,6 +62,8 @@ var (
 	LocalHostname = zap.String("localHostname", getLocalHostname())
 
 	pathToIgnore = make([]string, 0)
+
+	errBuilder = rkerror.NewErrorBuilderGoogle()
 )
 
 func AddPathToIgnoreGlobal(prefix ...string) {
@@ -69,6 +72,16 @@ func AddPathToIgnoreGlobal(prefix ...string) {
 			pathToIgnore = append(pathToIgnore, prefix[i])
 		}
 	}
+}
+
+func SetErrorBuilder(builder rkerror.ErrorBuilder) {
+	if builder != nil {
+		errBuilder = builder
+	}
+}
+
+func GetErrorBuilder() rkerror.ErrorBuilder {
+	return errBuilder
 }
 
 type entryNameKey struct{}

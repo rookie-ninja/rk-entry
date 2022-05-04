@@ -82,7 +82,7 @@ func TestOptionSet_isBasicAuthorized(t *testing.T) {
 
 	set := NewOptionSet().(*optionSet)
 	resp := set.isBasicAuthorized(set.BeforeCtx(req))
-	assert.Equal(t, http.StatusUnauthorized, resp.Err.Code)
+	assert.Contains(t, resp.Error(), http.StatusText(http.StatusUnauthorized))
 
 	// case 1.2: not authorized
 	req = httptest.NewRequest(http.MethodGet, "/ut-path", nil)
@@ -92,7 +92,7 @@ func TestOptionSet_isBasicAuthorized(t *testing.T) {
 	ctx := set.BeforeCtx(req)
 	resp = set.isBasicAuthorized(ctx)
 	assert.NotEmpty(t, ctx.Output.HeadersToReturn)
-	assert.Equal(t, http.StatusUnauthorized, resp.Err.Code)
+	assert.Contains(t, resp.Error(), http.StatusText(http.StatusUnauthorized))
 
 	// case 1.3: authorized
 	req = httptest.NewRequest(http.MethodGet, "/ut-path", nil)
@@ -109,7 +109,7 @@ func TestOptionSet_isBasicAuthorized(t *testing.T) {
 	set = NewOptionSet().(*optionSet)
 	ctx = set.BeforeCtx(req)
 	resp = set.isBasicAuthorized(ctx)
-	assert.Equal(t, http.StatusUnauthorized, resp.Err.Code)
+	assert.Contains(t, resp.Error(), http.StatusText(http.StatusUnauthorized))
 }
 
 func TestOptionSet_isApiKeyAuthorized(t *testing.T) {
@@ -121,7 +121,7 @@ func TestOptionSet_isApiKeyAuthorized(t *testing.T) {
 	set := NewOptionSet().(*optionSet)
 	ctx := set.BeforeCtx(req)
 	resp := set.isApiKeyAuthorized(ctx)
-	assert.Equal(t, http.StatusUnauthorized, resp.Err.Code)
+	assert.Contains(t, resp.Error(), http.StatusText(http.StatusUnauthorized))
 
 	// case 1.2: authorized
 	req = httptest.NewRequest(http.MethodGet, "/ut-path", nil)
@@ -138,7 +138,7 @@ func TestOptionSet_isApiKeyAuthorized(t *testing.T) {
 	set = NewOptionSet().(*optionSet)
 	ctx = set.BeforeCtx(req)
 	resp = set.isApiKeyAuthorized(ctx)
-	assert.Equal(t, http.StatusUnauthorized, resp.Err.Code)
+	assert.Contains(t, resp.Error(), http.StatusText(http.StatusUnauthorized))
 }
 
 func TestOptionSet_Before(t *testing.T) {
@@ -176,7 +176,7 @@ func TestOptionSet_Before(t *testing.T) {
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.NotNil(t, ctx.Output.ErrResp)
-	assert.Equal(t, http.StatusUnauthorized, ctx.Output.ErrResp.Err.Code)
+	assert.Contains(t, ctx.Output.ErrResp.Error(), http.StatusText(http.StatusUnauthorized))
 	assert.NotEmpty(t, ctx.Output.HeadersToReturn)
 
 	// case 4: X-API-Key provided, then return code and response related to X-API-Key
@@ -187,7 +187,7 @@ func TestOptionSet_Before(t *testing.T) {
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.NotNil(t, ctx.Output.ErrResp)
-	assert.Equal(t, http.StatusUnauthorized, ctx.Output.ErrResp.Err.Code)
+	assert.Contains(t, ctx.Output.ErrResp.Error(), http.StatusText(http.StatusUnauthorized))
 
 	// case 5: no auth provided, return bellow code and response
 	// case 5.1: basic auth needed
@@ -197,7 +197,7 @@ func TestOptionSet_Before(t *testing.T) {
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.NotNil(t, ctx.Output.ErrResp)
-	assert.Equal(t, http.StatusUnauthorized, ctx.Output.ErrResp.Err.Code)
+	assert.Contains(t, ctx.Output.ErrResp.Error(), http.StatusText(http.StatusUnauthorized))
 	assert.NotEmpty(t, ctx.Output.HeadersToReturn)
 
 	// case 5.2: X-API-Key needed
@@ -207,7 +207,7 @@ func TestOptionSet_Before(t *testing.T) {
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.NotNil(t, ctx.Output.ErrResp)
-	assert.Equal(t, http.StatusUnauthorized, ctx.Output.ErrResp.Err.Code)
+	assert.Contains(t, ctx.Output.ErrResp.Error(), http.StatusText(http.StatusUnauthorized))
 }
 
 func TestNewOptionSetMock(t *testing.T) {

@@ -9,8 +9,10 @@ package rkmidpanic
 import (
 	"fmt"
 	"github.com/rookie-ninja/rk-entry/v2/error"
+	rkmid "github.com/rookie-ninja/rk-entry/v2/middleware"
 	"github.com/rookie-ninja/rk-query"
 	"go.uber.org/zap"
+	"net/http"
 	"runtime/debug"
 )
 
@@ -82,23 +84,23 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 
 	ctx.Output.DeferFunc = func() {
 		if recv := recover(); recv != nil {
-			var res *rkerror.ErrorResp
+			var res rkerror.ErrorInterface
 
-			if se, ok := recv.(*rkerror.ErrorResp); ok {
+			if se, ok := recv.(rkerror.ErrorInterface); ok {
 				res = se
 			} else if re, ok := recv.(error); ok {
-				res = rkerror.FromError(re)
+				res = rkmid.GetErrorBuilder().New(http.StatusInternalServerError, "", re)
 			} else {
-				res = rkerror.NewInternalError(fmt.Sprintf("%v", recv))
+				res = rkmid.GetErrorBuilder().New(http.StatusInternalServerError, fmt.Sprintf("%v", recv))
 			}
 
 			if ctx.Input.Event != nil {
 				ctx.Input.Event.SetCounter("panic", 1)
-				ctx.Input.Event.AddErr(res.Err)
+				ctx.Input.Event.AddErr(res)
 			}
 
 			if ctx.Input.Logger != nil {
-				ctx.Input.Logger.Error(fmt.Sprintf("panic occurs:\n%s", string(debug.Stack())), zap.Error(res.Err))
+				ctx.Input.Logger.Error(fmt.Sprintf("panic occurs:\n%s", string(debug.Stack())), zap.Error(res))
 			}
 
 			if ctx.Input.PanicHandler != nil {
@@ -154,7 +156,7 @@ type BeforeCtx struct {
 	Input struct {
 		Event        rkquery.Event
 		Logger       *zap.Logger
-		PanicHandler func(resp *rkerror.ErrorResp)
+		PanicHandler func(resp rkerror.ErrorInterface)
 	}
 	Output struct {
 		DeferFunc func()
@@ -182,4 +184,4 @@ func WithMockOptionSet(mock OptionSetInterface) Option {
 }
 
 // User provided handler fun
-type handlerFunc func(resp *rkerror.ErrorResp)
+type handlerFunc func(resp rkerror.ErrorInterface)

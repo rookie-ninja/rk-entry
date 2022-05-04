@@ -96,7 +96,7 @@ func (set *optionSet) BeforeCtx(req *http.Request) *BeforeCtx {
 func (set *optionSet) Before(ctx *BeforeCtx) {
 	// normalize
 	if ctx == nil {
-		ctx.Output.ErrResp = rkerror.NewInternalError("Nil context")
+		ctx.Output.ErrResp = rkmid.GetErrorBuilder().New(http.StatusInternalServerError, "Nil context")
 		return
 	}
 
@@ -141,7 +141,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		tmp = append(tmp, "X-API-Key")
 	}
 
-	ctx.Output.ErrResp = rkerror.NewUnauthorized(fmt.Sprintf("missing authorization, provide one of bellow auth header:[%s]", strings.Join(tmp, ",")))
+	ctx.Output.ErrResp = rkmid.GetErrorBuilder().New(http.StatusUnauthorized, fmt.Sprintf("Missing authorization, provide one of bellow auth header:[%s]", strings.Join(tmp, ",")))
 }
 
 // ShouldIgnore determine whether auth should be ignored based on path
@@ -160,13 +160,13 @@ func (set *optionSet) ShouldIgnore(path string) bool {
 }
 
 // Validate basic auth
-func (set *optionSet) isBasicAuthorized(ctx *BeforeCtx) *rkerror.ErrorResp {
+func (set *optionSet) isBasicAuthorized(ctx *BeforeCtx) rkerror.ErrorInterface {
 	// case 1: auth header is provided
 	if len(ctx.Input.BasicAuthHeader) > 0 {
 		tokens := strings.SplitN(ctx.Input.BasicAuthHeader, " ", 2)
 		// case 1.1: invalid basic auth
 		if len(tokens) != 2 {
-			return rkerror.NewUnauthorized("Invalid Basic Auth format")
+			return rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid Basic Auth format")
 		}
 
 		// case 1.2: not authorized
@@ -176,7 +176,7 @@ func (set *optionSet) isBasicAuthorized(ctx *BeforeCtx) *rkerror.ErrorResp {
 				ctx.Output.HeadersToReturn["WWW-Authenticate"] = fmt.Sprintf(`%s realm="%s"`, authTypeBasic, set.basicRealm)
 			}
 
-			return rkerror.NewUnauthorized("Invalid credential")
+			return rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid credential")
 		}
 
 		// case 1.3: authorized
@@ -184,17 +184,17 @@ func (set *optionSet) isBasicAuthorized(ctx *BeforeCtx) *rkerror.ErrorResp {
 	}
 
 	// case 2: auth header missing
-	return rkerror.NewUnauthorized("Missing authorization header")
+	return rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Missing authorization header")
 }
 
 // Validate X-API-Key
-func (set *optionSet) isApiKeyAuthorized(ctx *BeforeCtx) *rkerror.ErrorResp {
+func (set *optionSet) isApiKeyAuthorized(ctx *BeforeCtx) rkerror.ErrorInterface {
 	// case 1: auth header is provided
 	if len(ctx.Input.ApiKeyHeader) > 0 {
 		// case 1.1: not authorized
 		_, ok := set.apiKey[ctx.Input.ApiKeyHeader]
 		if !ok {
-			return rkerror.NewUnauthorized("Invalid X-API-Key")
+			return rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid X-API-Key")
 		}
 
 		// case 1.2: authorized
@@ -202,7 +202,7 @@ func (set *optionSet) isApiKeyAuthorized(ctx *BeforeCtx) *rkerror.ErrorResp {
 	}
 
 	// case 2: auth header missing
-	return rkerror.NewUnauthorized("Missing authorization header")
+	return rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Missing authorization header")
 }
 
 // ***************** OptionSet Mock *****************
@@ -261,7 +261,7 @@ type BeforeCtx struct {
 	}
 	Output struct {
 		HeadersToReturn map[string]string
-		ErrResp         *rkerror.ErrorResp
+		ErrResp         rkerror.ErrorInterface
 	}
 }
 

@@ -88,27 +88,6 @@ definitions:
         example: true
         type: boolean
     type: object
-  rkerror.Error:
-    properties:
-      code:
-        example: 500
-        type: integer
-      details:
-        items: {}
-        type: array
-      message:
-        example: Internal error occurs
-        type: string
-      status:
-        example: Internal Server Error
-        type: string
-    type: object
-  rkerror.ErrorResp:
-    properties:
-      error:
-        $ref: '#/definitions/rkerror.Error'
-        description: Err is RK style error type
-    type: object
   rkos.CpuInfo:
     properties:
       count:
@@ -237,10 +216,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/rkentry.aliveResp'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/rkerror.ErrorResp'
       security:
       - ApiKeyAuth: []
       - BasicAuth: []
@@ -256,10 +231,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/rkentry.gcResp'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/rkerror.ErrorResp'
       security:
       - ApiKeyAuth: []
       - BasicAuth: []
@@ -275,10 +246,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/rkentry.ProcessInfo'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/rkerror.ErrorResp'
       security:
       - ApiKeyAuth: []
       - BasicAuth: []
@@ -296,8 +263,7 @@ paths:
             $ref: '#/definitions/rkentry.readyResp'
         "500":
           description: Internal Server Error
-          schema:
-            $ref: '#/definitions/rkerror.ErrorResp'
+          schema: {}
       security:
       - ApiKeyAuth: []
       - BasicAuth: []
