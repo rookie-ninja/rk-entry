@@ -185,13 +185,13 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		}
 
 		if err != nil {
-			ctx.Output.ErrResp = rkerror.NewBadRequest("Failed to extract client token", err)
+			ctx.Output.ErrResp = rkmid.GetErrorBuilder().New(http.StatusBadRequest, "Failed to extract client token", err)
 			return
 		}
 
 		// 3.3: return 403 to client if token is not matched
 		if !set.isValidToken(ctx.Input.Token, clientToken) {
-			ctx.Output.ErrResp = rkerror.NewForbidden("Invalid csrf token")
+			ctx.Output.ErrResp = rkmid.GetErrorBuilder().New(http.StatusForbidden, "Invalid csrf token")
 			return
 		}
 	}
@@ -294,7 +294,7 @@ type BeforeCtx struct {
 	Output struct {
 		VaryHeaders []string
 		Cookie      *http.Cookie
-		ErrResp     *rkerror.ErrorResp
+		ErrResp     rkerror.ErrorInterface
 	}
 }
 

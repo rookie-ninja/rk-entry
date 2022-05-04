@@ -135,7 +135,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 
 	limiter := set.getLimiter(ctx.Input.UrlPath)
 	if err := limiter(); err != nil {
-		ctx.Output.ErrResp = rkerror.NewTooManyRequests(err.Error())
+		ctx.Output.ErrResp = rkmid.GetErrorBuilder().New(http.StatusTooManyRequests, err.Error())
 		return
 	}
 
@@ -222,7 +222,7 @@ type BeforeCtx struct {
 		UrlPath string
 	}
 	Output struct {
-		ErrResp *rkerror.ErrorResp
+		ErrResp rkerror.ErrorInterface
 	}
 }
 

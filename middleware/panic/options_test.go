@@ -27,7 +27,7 @@ func TestNewOptionSet(t *testing.T) {
 func TestOptionSet_BeforeCtx(t *testing.T) {
 	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
 	logger := rkentry.LoggerEntryNoop.Logger
-	handler := func(*rkerror.ErrorResp) {}
+	handler := func(rkerror.ErrorInterface) {}
 
 	set := NewOptionSet()
 	ctx := set.BeforeCtx(event, logger, handler)
@@ -39,7 +39,7 @@ func TestOptionSet_BeforeCtx(t *testing.T) {
 func TestOptionSet_Before(t *testing.T) {
 	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
 	logger := rkentry.LoggerEntryNoop.Logger
-	handler := func(*rkerror.ErrorResp) {}
+	handler := func(rkerror.ErrorInterface) {}
 
 	set := NewOptionSet()
 	ctx := set.BeforeCtx(event, logger, handler)

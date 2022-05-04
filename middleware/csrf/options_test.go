@@ -99,7 +99,7 @@ func TestOptionSet_Before(t *testing.T) {
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.NotNil(t, ctx.Output.ErrResp)
-	assert.Equal(t, http.StatusBadRequest, ctx.Output.ErrResp.Err.Code)
+	assert.Contains(t, ctx.Output.ErrResp.Error(), http.StatusText(http.StatusBadRequest))
 	assert.Nil(t, ctx.Output.Cookie)
 
 	// match 3.3
@@ -107,7 +107,7 @@ func TestOptionSet_Before(t *testing.T) {
 	req.Header.Set(rkmid.HeaderXCSRFToken, "ut-csrf-token")
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
-	assert.Equal(t, http.StatusForbidden, ctx.Output.ErrResp.Err.Code)
+	assert.Contains(t, ctx.Output.ErrResp.Error(), http.StatusText(http.StatusForbidden))
 	assert.Nil(t, ctx.Output.Cookie)
 
 	// match 4.1

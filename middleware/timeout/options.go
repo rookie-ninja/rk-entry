@@ -19,7 +19,7 @@ import (
 const global = "rk-global"
 
 var (
-	defaultErrResp = rkerror.NewTimeout("")
+	defaultErrResp = rkmid.GetErrorBuilder().New(http.StatusRequestTimeout, "")
 	defaultTimeout = 10 * time.Second
 )
 
@@ -241,7 +241,7 @@ type BeforeCtx struct {
 	}
 	Output struct {
 		WaitFunc       func()
-		TimeoutErrResp *rkerror.ErrorResp
+		TimeoutErrResp rkerror.ErrorInterface
 	}
 }
 

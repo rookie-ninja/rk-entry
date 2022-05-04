@@ -12,7 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/rookie-ninja/rk-entry/v2"
-	"github.com/rookie-ninja/rk-entry/v2/error"
+	rkmid "github.com/rookie-ninja/rk-entry/v2/middleware"
 	"html/template"
 	"io/fs"
 	"math"
@@ -212,7 +212,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 		// open file
 		if file, err = entry.httpFS.Open(p); err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
-			bytes, _ := json.Marshal(rkerror.NewInternalError("Failed to open file", err))
+			bytes, _ := json.Marshal(rkmid.GetErrorBuilder().New(http.StatusInternalServerError, "Failed to open file", err))
 			writer.Write(bytes)
 			return
 		}
@@ -221,7 +221,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 		fileInfo, err := file.Stat()
 		if err != nil {
 			writer.WriteHeader(http.StatusInternalServerError)
-			bytes, _ := json.Marshal(rkerror.NewInternalError("Failed to stat file", err))
+			bytes, _ := json.Marshal(rkmid.GetErrorBuilder().New(http.StatusInternalServerError, "Failed to stat file", err))
 			writer.Write(bytes)
 			return
 		}
@@ -253,7 +253,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 			buf := new(bytes.Buffer)
 			if err := entry.Template.ExecuteTemplate(buf, "index", resp); err != nil {
 				writer.WriteHeader(http.StatusInternalServerError)
-				bytes, _ := json.Marshal(rkerror.NewInternalError("Failed to execute go template", err))
+				bytes, _ := json.Marshal(rkmid.GetErrorBuilder().New(http.StatusInternalServerError, "Failed to execute go template", err))
 				writer.Write(bytes)
 				return
 			}
