@@ -74,8 +74,8 @@ func TestGlobalAppCtx_init(t *testing.T) {
 	// validate appInfoEntry.
 	assert.NotNil(t, GlobalAppCtx.GetAppInfoEntry())
 
-	// validate basic entry reg functions.
-	assert.Empty(t, entryRegFuncList)
+	// validate builtin entry reg functions.
+	assert.NotEmpty(t, builtinRegFuncList)
 
 	// validate app info entry
 	assert.NotNil(t, GlobalAppCtx.GetAppInfoEntry())
@@ -97,9 +97,9 @@ func TestGlobalAppCtx_init(t *testing.T) {
 }
 
 func TestRegisterEntryRegFunc_WithNilInput(t *testing.T) {
-	length := len(entryRegFuncList)
-	RegisterEntryRegFunc(nil)
-	assert.Len(t, entryRegFuncList, length)
+	length := len(pluginRegFuncList)
+	RegisterPluginRegFunc(nil)
+	assert.Len(t, pluginRegFuncList, length)
 }
 
 func TestRegisterEntryRegFunc_HappyCase(t *testing.T) {
@@ -107,12 +107,12 @@ func TestRegisterEntryRegFunc_HappyCase(t *testing.T) {
 		return make(map[string]Entry)
 	}
 
-	length := len(entryRegFuncList)
+	length := len(pluginRegFuncList)
 
-	RegisterEntryRegFunc(regFunc)
-	assert.Len(t, entryRegFuncList, length+1)
+	RegisterPluginRegFunc(regFunc)
+	assert.Len(t, pluginRegFuncList, length+1)
 	// clear reg functions
-	entryRegFuncList = entryRegFuncList[:0]
+	pluginRegFuncList = pluginRegFuncList[:0]
 }
 
 func TestListEntryRegFunc_HappyCase(t *testing.T) {
@@ -120,10 +120,10 @@ func TestListEntryRegFunc_HappyCase(t *testing.T) {
 		return make(map[string]Entry)
 	}
 
-	RegisterEntryRegFunc(regFunc)
-	assert.Len(t, ListEntryRegFunc(), 1)
+	RegisterPluginRegFunc(regFunc)
+	assert.Len(t, ListPluginEntryRegFunc(), 1)
 	// clear reg functions
-	entryRegFuncList = entryRegFuncList[:0]
+	pluginRegFuncList = pluginRegFuncList[:0]
 }
 
 // value related
@@ -373,32 +373,6 @@ func TestAppContext_WaitForShutdownSig(t *testing.T) {
 	}()
 
 	GlobalAppCtx.WaitForShutdownSig()
-}
-
-func TestRegisterPreloadRegFunc(t *testing.T) {
-	defer assertNotPanic(t)
-
-	m := map[string]Entry{}
-	f := func(raw []byte) map[string]Entry {
-		return m
-	}
-
-	RegisterPreloadRegFunc(f)
-	assert.True(t, len(builtinRegFuncList) > 0)
-}
-
-func TestBootstrapPreloadEntryYAML(t *testing.T) {
-	defer assertNotPanic(t)
-
-	m := map[string]Entry{}
-	f := func(raw []byte) map[string]Entry {
-		return m
-	}
-
-	RegisterPreloadRegFunc(f)
-	assert.True(t, len(builtinRegFuncList) > 0)
-
-	BootstrapPreloadEntryYAML([]byte{})
 }
 
 func TestAppContext_AddEmbedFS(t *testing.T) {
