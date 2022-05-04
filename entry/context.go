@@ -31,9 +31,6 @@ var (
 		userValues:    make(map[string]interface{}),
 	}
 
-	// List of entry registration function
-	entryRegFuncList = make([]RegFunc, 0)
-
 	builtinRegFuncList = []RegFunc{
 		registerAppInfoEntryYAML,
 		RegisterLoggerEntryYAML,
@@ -41,6 +38,9 @@ var (
 		RegisterConfigEntryYAML,
 		RegisterCertEntryYAML,
 	}
+	pluginRegFuncList   = make([]RegFunc, 0)
+	webFrameRegFuncList = make([]RegFunc, 0)
+	userDefRegFuncList  = make([]RegFunc, 0)
 
 	LoggerEntryNoop   = NewLoggerEntryNoop()
 	LoggerEntryStdout = NewLoggerEntryStdout()
@@ -78,41 +78,108 @@ type appContext struct {
 	shutdownHooks  map[string]ShutdownHook         `json:"-" yaml:"-"`
 }
 
-// RegisterEntryRegFunc register user defined registration function.
-// rkboot.Bootstrap will iterate every registration function and call it
-func RegisterEntryRegFunc(regFunc RegFunc) {
+// RegisterPluginRegFunc register rk plugins registration function.
+// Call this while you need provided Entry needs to be registered and bootstrapped before user defined Entries.
+func RegisterPluginRegFunc(regFunc RegFunc) {
 	if regFunc == nil {
 		return
 	}
-	entryRegFuncList = append(entryRegFuncList, regFunc)
+	pluginRegFuncList = append(pluginRegFuncList, regFunc)
 }
 
-// RegisterPreloadRegFunc register user defined registration function.
-// Call this while you need provided Entry needs to be registered and bootstrapped before any other Entry.
-func RegisterPreloadRegFunc(regFunc RegFunc) {
+// RegisterWebFrameRegFunc register rk web framework registration function.
+// Call this while you need provided Entry needs to be registered and bootstrapped before user defined Entries.
+func RegisterWebFrameRegFunc(regFunc RegFunc) {
 	if regFunc == nil {
 		return
 	}
-	builtinRegFuncList = append(builtinRegFuncList, regFunc)
+	webFrameRegFuncList = append(webFrameRegFuncList, regFunc)
 }
 
-// ListEntryRegFunc list user defined registration functions.
-func ListEntryRegFunc() []RegFunc {
+// RegisterUserEntryRegFunc register user defined registration function.
+// Call this while you need provided Entry needs to be registered and bootstrapped before user defined Entries.
+func RegisterUserEntryRegFunc(regFunc RegFunc) {
+	if regFunc == nil {
+		return
+	}
+	userDefRegFuncList = append(userDefRegFuncList, regFunc)
+}
+
+// ListPluginEntryRegFunc list plugin registration functions.
+func ListPluginEntryRegFunc() []RegFunc {
 	// make a copy of the list
 	res := make([]RegFunc, 0)
-	for i := range entryRegFuncList {
-		res = append(res, entryRegFuncList[i])
+	for i := range pluginRegFuncList {
+		res = append(res, pluginRegFuncList[i])
 	}
 
 	return res
 }
 
-// BootstrapPreloadEntryYAML register and bootstrap builtin entries first
-func BootstrapPreloadEntryYAML(raw []byte) {
+// ListWebFrameEntryRegFunc list web framework registration functions.
+func ListWebFrameEntryRegFunc() []RegFunc {
+	// make a copy of the list
+	res := make([]RegFunc, 0)
+	for i := range webFrameRegFuncList {
+		res = append(res, webFrameRegFuncList[i])
+	}
+
+	return res
+}
+
+// ListUserEntryRegFunc list web framework registration functions.
+func ListUserEntryRegFunc() []RegFunc {
+	// make a copy of the list
+	res := make([]RegFunc, 0)
+	for i := range userDefRegFuncList {
+		res = append(res, userDefRegFuncList[i])
+	}
+
+	return res
+}
+
+// BootstrapBuiltInEntryFromYAML register and bootstrap builtin entries first
+func BootstrapBuiltInEntryFromYAML(raw []byte) {
 	ctx := context.Background()
 
 	for i := range builtinRegFuncList {
 		entries := builtinRegFuncList[i](raw)
+		for _, v := range entries {
+			v.Bootstrap(ctx)
+		}
+	}
+}
+
+// BootstrapPluginEntryFromYAML register and bootstrap plugin entries first
+func BootstrapPluginEntryFromYAML(raw []byte) {
+	ctx := context.Background()
+
+	for i := range pluginRegFuncList {
+		entries := pluginRegFuncList[i](raw)
+		for _, v := range entries {
+			v.Bootstrap(ctx)
+		}
+	}
+}
+
+// BootstrapWebFrameEntryFromYAML register and bootstrap web framework entries first
+func BootstrapWebFrameEntryFromYAML(raw []byte) {
+	ctx := context.Background()
+
+	for i := range webFrameRegFuncList {
+		entries := webFrameRegFuncList[i](raw)
+		for _, v := range entries {
+			v.Bootstrap(ctx)
+		}
+	}
+}
+
+// BootstrapUserEntryFromYAML register and bootstrap builtin entries first
+func BootstrapUserEntryFromYAML(raw []byte) {
+	ctx := context.Background()
+
+	for i := range userDefRegFuncList {
+		entries := userDefRegFuncList[i](raw)
 		for _, v := range entries {
 			v.Bootstrap(ctx)
 		}
@@ -210,6 +277,23 @@ func (ctx *appContext) GetLoggerEntry(entryName string) *LoggerEntry {
 	return nil
 }
 
+// GetLoggerEntryDefault returns LoggerEntry marked as default.
+// Return logger with STDOUT if no LoggerEntry was marked as default
+func (ctx *appContext) GetLoggerEntryDefault() *LoggerEntry {
+	res := LoggerEntryStdout
+
+	entries := ctx.entries[LoggerEntryType]
+
+	for _, v := range entries {
+		if v.(*LoggerEntry).IsDefault {
+			res = v.(*LoggerEntry)
+			break
+		}
+	}
+
+	return res
+}
+
 func (ctx *appContext) GetEventEntry(entryName string) *EventEntry {
 	entries := ctx.entries[EventEntryType]
 
@@ -218,6 +302,23 @@ func (ctx *appContext) GetEventEntry(entryName string) *EventEntry {
 	}
 
 	return nil
+}
+
+// GetEventEntryDefault returns EventEntry marked as default.
+// Return logger with STDOUT if no EventEntry was marked as default
+func (ctx *appContext) GetEventEntryDefault() *EventEntry {
+	res := EventEntryStdout
+
+	entries := ctx.entries[EventEntryType]
+
+	for _, v := range entries {
+		if v.(*EventEntry).IsDefault {
+			res = v.(*EventEntry)
+			break
+		}
+	}
+
+	return res
 }
 
 func (ctx *appContext) GetCertEntry(entryName string) *CertEntry {

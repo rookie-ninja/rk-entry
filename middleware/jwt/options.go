@@ -78,7 +78,7 @@ type optionSet struct {
 
 	// skip the step of validate token,just parse.
 	// Optional. Default value "false".
-	skipValidate bool
+	skipVerify bool
 
 	mock OptionSetInterface
 }
@@ -97,7 +97,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 		opts[i](set)
 	}
 
-	if set.signer == nil {
+	if set.signer == nil && !set.skipVerify {
 		set.signer = rkentry.RegisterSymmetricJwtSigner(set.entryName, jwt.SigningMethodHS256.Name, []byte("rk jwt key"))
 	}
 
@@ -174,11 +174,13 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 			return
 		}
 	}
-	if set.skipValidate || set.signer == nil { // case 1: when skip validate or disable sign, just parse token
+	if set.skipVerify || set.signer == nil {
+		// case 1: when skip validate or disable sign, just parse token
 		claims := jwt.MapClaims{}
 		parser := &jwt.Parser{}
 		token, _, err = parser.ParseUnverified(authRaw, claims)
-	} else { // case 2: parse and validate token
+	} else {
+		// case 2: parse and validate token
 		token, err = set.signer.VerifyJwt(authRaw)
 	}
 
@@ -264,15 +266,14 @@ type BeforeCtx struct {
 
 // BootConfig for YAML
 type BootConfig struct {
-	Enabled      bool              `yaml:"enabled" json:"enabled"`
-	Ignore       []string          `yaml:"ignore" json:"ignore"`
-	SignerEntry  string            `yaml:"signerEntry" json:"signerEntry"`
-	Symmetric    *SymmetricConfig  `yaml:"symmetric" json:"symmetric"`
-	Asymmetric   *AsymmetricConfig `yaml:"asymmetric" json:"asymmetric"`
-	TokenLookup  string            `yaml:"tokenLookup" json:"tokenLookup"`
-	AuthScheme   string            `yaml:"authScheme" json:"authScheme"`
-	SkipValidate bool              `yaml:"skipValidate" json:"skipValidate"`
-	DisabledSign bool              `yaml:"disabledSign" json:"disabledSign"`
+	Enabled     bool              `yaml:"enabled" json:"enabled"`
+	Ignore      []string          `yaml:"ignore" json:"ignore"`
+	SignerEntry string            `yaml:"signerEntry" json:"signerEntry"`
+	Symmetric   *SymmetricConfig  `yaml:"symmetric" json:"symmetric"`
+	Asymmetric  *AsymmetricConfig `yaml:"asymmetric" json:"asymmetric"`
+	TokenLookup string            `yaml:"tokenLookup" json:"tokenLookup"`
+	AuthScheme  string            `yaml:"authScheme" json:"authScheme"`
+	SkipVerify  bool              `yaml:"skipVerify" json:"skipVerify"`
 }
 
 type SymmetricConfig struct {
@@ -296,49 +297,47 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 	if config.Enabled {
 		var signerJwt rkentry.SignerJwt
 
-		if !config.DisabledSign {
-			// check signer entry first
-			if v := rkentry.GlobalAppCtx.GetEntry(rkentry.SignerJwtEntryType, config.SignerEntry); v != nil {
-				signer, ok := v.(rkentry.SignerJwt)
-				if !ok {
-					rkentry.ShutdownWithError(errors.New("invalid signer jwt entry"))
-				}
+		// check signer entry first
+		if v := rkentry.GlobalAppCtx.GetEntry(rkentry.SignerJwtEntryType, config.SignerEntry); v != nil {
+			signer, ok := v.(rkentry.SignerJwt)
+			if !ok {
+				rkentry.ShutdownWithError(errors.New("invalid signer jwt entry"))
+			}
 
-				signerJwt = signer
-				if signerJwt == nil {
-					rkentry.ShutdownWithError(errors.New("invalid asymmetric configuration"))
-				}
-			} else if config.Asymmetric != nil {
-				var pubKey, privKey []byte
+			signerJwt = signer
+			if signerJwt == nil {
+				rkentry.ShutdownWithError(errors.New("cannot find signer entry"))
+			}
+		} else if config.Asymmetric != nil {
+			var pubKey, privKey []byte
 
-				if len(config.Asymmetric.PublicKey) > 0 {
-					pubKey = []byte(config.Asymmetric.PublicKey)
-				} else {
-					pubKey = mustRead(config.Asymmetric.PublicKeyPath)
-				}
+			if len(config.Asymmetric.PublicKey) > 0 {
+				pubKey = []byte(config.Asymmetric.PublicKey)
+			} else {
+				pubKey = mustRead(config.Asymmetric.PublicKeyPath)
+			}
 
-				if len(config.Asymmetric.PrivateKey) > 0 {
-					privKey = []byte(config.Asymmetric.PrivateKey)
-				} else {
-					privKey = mustRead(config.Asymmetric.PrivateKeyPath)
-				}
+			if len(config.Asymmetric.PrivateKey) > 0 {
+				privKey = []byte(config.Asymmetric.PrivateKey)
+			} else {
+				privKey = mustRead(config.Asymmetric.PrivateKeyPath)
+			}
 
-				signerJwt = rkentry.RegisterAsymmetricJwtSigner(entryName, config.Asymmetric.Algorithm, privKey, pubKey)
-				if signerJwt == nil {
-					rkentry.ShutdownWithError(errors.New("invalid asymmetric configuration"))
-				}
-			} else if config.Symmetric != nil {
-				var token []byte
-				if len(config.Symmetric.Token) > 0 {
-					token = []byte(config.Symmetric.Token)
-				} else {
-					token = mustRead(config.Symmetric.TokenPath)
-				}
+			signerJwt = rkentry.RegisterAsymmetricJwtSigner(entryName, config.Asymmetric.Algorithm, privKey, pubKey)
+			if signerJwt == nil {
+				rkentry.ShutdownWithError(errors.New("invalid asymmetric configuration"))
+			}
+		} else if config.Symmetric != nil {
+			var token []byte
+			if len(config.Symmetric.Token) > 0 {
+				token = []byte(config.Symmetric.Token)
+			} else {
+				token = mustRead(config.Symmetric.TokenPath)
+			}
 
-				signerJwt = rkentry.RegisterSymmetricJwtSigner(entryName, config.Symmetric.Algorithm, token)
-				if signerJwt == nil {
-					rkentry.ShutdownWithError(errors.New("invalid symmetric configuration"))
-				}
+			signerJwt = rkentry.RegisterSymmetricJwtSigner(entryName, config.Symmetric.Algorithm, token)
+			if signerJwt == nil {
+				rkentry.ShutdownWithError(errors.New("invalid symmetric configuration"))
 			}
 		}
 
@@ -348,7 +347,7 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 			WithSigner(signerJwt),
 			WithAuthScheme(config.AuthScheme),
 			WithPathToIgnore(config.Ignore...),
-			WithSkipValidate(config.SkipValidate),
+			WithSkipVerify(config.SkipVerify),
 		}
 
 	}
@@ -435,11 +434,11 @@ func WithPathToIgnore(paths ...string) Option {
 	}
 }
 
-// WithSkipValidate provide skipValidate
+// WithSkipVerify provide skipVerify
 // Default is false
-func WithSkipValidate(skipValidate bool) Option {
+func WithSkipVerify(skipVerify bool) Option {
 	return func(opt *optionSet) {
-		opt.skipValidate = skipValidate
+		opt.skipVerify = skipVerify
 	}
 }
 

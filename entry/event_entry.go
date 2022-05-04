@@ -90,6 +90,7 @@ func RegisterEventEntry(boot *BootEvent) []*EventEntry {
 			entryName:        event.Name,
 			entryType:        EventEntryType,
 			entryDescription: event.Description,
+			IsDefault:        event.Default,
 		}
 
 		var eventFactory *rkquery.EventFactory
@@ -207,6 +208,7 @@ type BootEventE struct {
 	Name        string             `yaml:"name" json:"name"`
 	Description string             `yaml:"description" json:"description"`
 	Domain      string             `yaml:"domain" json:"domain"`
+	Default     bool               `yaml:"default" json:"default"`
 	Encoding    string             `yaml:"encoding" json:"encoding"`
 	OutputPaths []string           `yaml:"outputPaths" json:"outputPaths"`
 	Lumberjack  *lumberjack.Logger `yaml:"lumberjack" json:"lumberjack"`
@@ -220,6 +222,7 @@ type EventEntry struct {
 	entryName        string               `yaml:"-" json:"-"`
 	entryType        string               `yaml:"-" json:"-"`
 	entryDescription string               `yaml:"-" json:"-"`
+	IsDefault        bool                 `yaml:"-" json:"-"`
 	LoggerConfig     *zap.Config          `yaml:"-" json:"-"`
 	LumberjackConfig *lumberjack.Logger   `yaml:"-" json:"-"`
 	lokiSyncer       *rklogger.LokiSyncer `yaml:"-" json:"-"`
