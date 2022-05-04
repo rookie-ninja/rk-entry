@@ -34,7 +34,7 @@ func main() {
 
 // Register entry, must be in init() function since we need to register entry at beginning
 func init() {
-	rkentry.RegisterEntryRegFunc(RegisterMyEntryFromConfig)
+	rkentry.RegisterUserEntryRegFunc(RegisterMyEntryFromConfig)
 }
 
 // BootConfig A struct which is for unmarshalled YAML
