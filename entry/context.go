@@ -210,6 +210,23 @@ func (ctx *appContext) GetLoggerEntry(entryName string) *LoggerEntry {
 	return nil
 }
 
+// GetLoggerEntryDefault returns LoggerEntry marked as default.
+// Return logger with STDOUT if no LoggerEntry was marked as default
+func (ctx *appContext) GetLoggerEntryDefault() *LoggerEntry {
+	res := LoggerEntryStdout
+
+	entries := ctx.entries[LoggerEntryType]
+
+	for _, v := range entries {
+		if v.(*LoggerEntry).IsDefault {
+			res = v.(*LoggerEntry)
+			break
+		}
+	}
+
+	return res
+}
+
 func (ctx *appContext) GetEventEntry(entryName string) *EventEntry {
 	entries := ctx.entries[EventEntryType]
 
@@ -218,6 +235,23 @@ func (ctx *appContext) GetEventEntry(entryName string) *EventEntry {
 	}
 
 	return nil
+}
+
+// GetEventEntryDefault returns EventEntry marked as default.
+// Return logger with STDOUT if no EventEntry was marked as default
+func (ctx *appContext) GetEventEntryDefault() *EventEntry {
+	res := EventEntryStdout
+
+	entries := ctx.entries[EventEntryType]
+
+	for _, v := range entries {
+		if v.(*EventEntry).IsDefault {
+			res = v.(*EventEntry)
+			break
+		}
+	}
+
+	return res
 }
 
 func (ctx *appContext) GetCertEntry(entryName string) *CertEntry {

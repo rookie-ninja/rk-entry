@@ -73,8 +73,8 @@ var (
 //
 // We can override values in example-boot.yaml file as bellow:
 //
-// os.Setenv("RK_GIN[0]_PORT", "2008")
-// os.Setenv("RK_GIN[0]_COMMONSERVICE_ENABLED", "false")
+// os.Setenv("RK_GIN_0_PORT", "2008")
+// os.Setenv("RK_GIN_0_COMMONSERVICE_ENABLED", "false")
 //
 // ./your_compiled_binary
 func UnmarshalBootYAML(raw []byte, config interface{}) {

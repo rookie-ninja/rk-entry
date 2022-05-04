@@ -78,6 +78,7 @@ func RegisterLoggerEntry(boot *BootLogger) []*LoggerEntry {
 			entryName:        logger.Name,
 			entryType:        LoggerEntryType,
 			entryDescription: logger.Description,
+			IsDefault:        logger.Default,
 		}
 
 		// Assign default zap config and lumberjack config
@@ -169,6 +170,7 @@ type BootLoggerE struct {
 	Name        string                  `yaml:"name" json:"name"`
 	Description string                  `yaml:"description" json:"description"`
 	Domain      string                  `yaml:"domain" json:"domain"`
+	Default     bool                    `yaml:"default" json:"default"`
 	Zap         *rklogger.ZapConfigWrap `yaml:"zap" json:"zap"`
 	Lumberjack  *lumberjack.Logger      `yaml:"lumberjack" json:"lumberjack"`
 	Loki        BootLoki                `yaml:"loki" json:"loki"`
@@ -177,12 +179,13 @@ type BootLoggerE struct {
 // LoggerEntry contains bellow fields.
 type LoggerEntry struct {
 	*zap.Logger
-	entryName        string               `yaml:"name" json:"name"`
-	entryType        string               `yaml:"type" json:"type"`
-	entryDescription string               `yaml:"description" json:"description"`
-	LoggerConfig     *zap.Config          `yaml:"zapConfig" json:"zapConfig"`
-	LumberjackConfig *lumberjack.Logger   `yaml:"lumberjackConfig" json:"lumberjackConfig"`
-	lokiSyncer       *rklogger.LokiSyncer `yaml:"lokiSyncer" json:"lokiSyncer"`
+	entryName        string               `yaml:"-" json:"-"`
+	entryType        string               `yaml:"-" json:"-"`
+	entryDescription string               `yaml:"-" json:"-"`
+	IsDefault        bool                 `yaml:"-" json:"-"`
+	LoggerConfig     *zap.Config          `yaml:"-" json:"-"`
+	LumberjackConfig *lumberjack.Logger   `yaml:"-" json:"-"`
+	lokiSyncer       *rklogger.LokiSyncer `yaml:"-" json:"-"`
 	bootstrapOnce    sync.Once            `yaml:"-" json:"-"`
 }
 
