@@ -31,7 +31,7 @@ func (e *ErrorBuilderAMZN) New(code int, msg string, details ...interface{}) Err
 		if v, ok := detail.(error); ok {
 			element.Err.Details = append(element.Err.Details, v.Error())
 		} else {
-			element.Err.Details = append(element.Err.Details, v)
+			element.Err.Details = append(element.Err.Details, detail)
 		}
 	}
 

@@ -29,7 +29,7 @@ func (e *ErrorBuilderGoogle) New(code int, msg string, details ...interface{}) E
 		if v, ok := detail.(error); ok {
 			resp.Err.Details = append(resp.Err.Details, v.Error())
 		} else {
-			resp.Err.Details = append(resp.Err.Details, v)
+			resp.Err.Details = append(resp.Err.Details, detail)
 		}
 	}
 
@@ -67,7 +67,7 @@ func (err *ErrorGoogle) Details() []interface{} {
 func (err *ErrorGoogle) Error() string {
 	res := "{}"
 
-	if bytes, err := json.Marshal(err); err == nil {
+	if bytes, marshalErr := json.Marshal(err); marshalErr == nil {
 		res = string(bytes)
 	}
 
