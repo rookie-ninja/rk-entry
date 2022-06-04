@@ -24,7 +24,14 @@ func (e *ErrorBuilderGoogle) New(code int, msg string, details ...interface{}) E
 		resp.Err.Status = http.StatusText(http.StatusInternalServerError)
 	}
 
-	resp.Err.Details = append(resp.Err.Details, details...)
+	for i := range details {
+		detail := details[i]
+		if v, ok := detail.(error); ok {
+			resp.Err.Details = append(resp.Err.Details, v.Error())
+		} else {
+			resp.Err.Details = append(resp.Err.Details, v)
+		}
+	}
 
 	return resp
 }

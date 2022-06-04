@@ -26,7 +26,14 @@ func (e *ErrorBuilderAMZN) New(code int, msg string, details ...interface{}) Err
 		element.Err.Status = http.StatusText(http.StatusInternalServerError)
 	}
 
-	element.Err.Details = append(element.Err.Details, details...)
+	for i := range details {
+		detail := details[i]
+		if v, ok := detail.(error); ok {
+			element.Err.Details = append(element.Err.Details, v.Error())
+		} else {
+			element.Err.Details = append(element.Err.Details, v)
+		}
+	}
 
 	resp.Resp.Errors = append(resp.Resp.Errors, element)
 
@@ -86,7 +93,7 @@ func (err *ErrorAMZN) Details() []interface{} {
 func (err *ErrorAMZN) Error() string {
 	res := "{}"
 
-	if bytes, err := json.Marshal(err); err == nil {
+	if bytes, marshalErr := json.Marshal(err); marshalErr == nil {
 		res = string(bytes)
 	}
 
