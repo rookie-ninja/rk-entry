@@ -88,10 +88,8 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 
 			if se, ok := recv.(rkerror.ErrorInterface); ok {
 				res = se
-			} else if re, ok := recv.(error); ok {
-				res = rkmid.GetErrorBuilder().New(http.StatusInternalServerError, "", re)
 			} else {
-				res = rkmid.GetErrorBuilder().New(http.StatusInternalServerError, fmt.Sprintf("%v", recv))
+				res = rkmid.GetErrorBuilder().New(http.StatusInternalServerError, "Panic occurs", recv)
 			}
 
 			if ctx.Input.Event != nil {
