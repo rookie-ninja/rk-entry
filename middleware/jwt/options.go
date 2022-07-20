@@ -114,6 +114,8 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 			set.extractors = append(set.extractors, jwtFromQuery(parts[1]))
 		case "header":
 			set.extractors = append(set.extractors, jwtFromHeader(parts[1], set.authScheme))
+		case "cookie":
+			set.extractors = append(set.extractors, jwtFromCookie(parts[1]))
 		}
 	}
 
@@ -403,6 +405,7 @@ func WithExtractor(ex JwtExtractor) Option {
 // Possible values:
 // - "header:<name>"
 // - "query:<name>"
+// - "cookie:<name>"
 // Multiply sources example:
 // - "header: Authorization,cookie: myowncookie"
 func WithTokenLookup(lookup string) Option {
@@ -487,5 +490,21 @@ func jwtFromQuery(name string) jwtHttpExtractor {
 			return "", errJwtMissing
 		}
 		return token, nil
+	}
+}
+
+// jwtFromCookie returns a `jwtExtractor` that extracts token from the cookie.
+func jwtFromCookie(name string) jwtHttpExtractor {
+	return func(req *http.Request) (string, error) {
+		if req == nil || req.URL == nil {
+			return "", errJwtMissing
+		}
+
+		cookie, err := req.Cookie(name)
+		if err != nil {
+			return "", err
+		}
+
+		return cookie.Value, nil
 	}
 }
