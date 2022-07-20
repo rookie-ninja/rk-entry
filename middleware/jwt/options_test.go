@@ -137,7 +137,7 @@ func TestNewOptionSet(t *testing.T) {
 	assert.NotEmpty(t, set.pathToIgnore)
 	assert.Equal(t, signer, set.signer)
 	assert.Equal(t, "ut-scheme", set.authScheme)
-	assert.Len(t, set.extractors, 2)
+	assert.Len(t, set.extractors, 3)
 	rkentry.GlobalAppCtx.RemoveEntryByType(rkentry.SignerJwtEntryType)
 }
 
