@@ -24,9 +24,11 @@ func TestNewOptionSet(t *testing.T) {
 
 	// with option
 	l := func() error { return nil }
+	reqPerSec := 1
+
 	set = NewOptionSet(
 		WithEntryNameAndType("name", "type"),
-		WithReqPerSec(1),
+		WithReqPerSec(&reqPerSec),
 		WithReqPerSecByPath("/ut", 1),
 		WithAlgorithm(LeakyBucket),
 		WithGlobalLimiter(l),

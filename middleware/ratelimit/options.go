@@ -233,7 +233,7 @@ type BootConfig struct {
 	Enabled   bool     `yaml:"enabled" json:"enabled"`
 	Ignore    []string `yaml:"ignore" json:"ignore"`
 	Algorithm string   `yaml:"algorithm" json:"algorithm"`
-	ReqPerSec int      `yaml:"reqPerSec" json:"reqPerSec"`
+	ReqPerSec *int     `yaml:"reqPerSec" json:"reqPerSec"`
 	Paths     []struct {
 		Path      string `yaml:"path" json:"path"`
 		ReqPerSec int    `yaml:"reqPerSec" json:"reqPerSec"`
@@ -278,10 +278,14 @@ func WithEntryNameAndType(entryName, entryType string) Option {
 }
 
 // WithReqPerSec Provide request per second.
-func WithReqPerSec(reqPerSec int) Option {
+func WithReqPerSec(reqPerSec *int) Option {
 	return func(opt *optionSet) {
-		if reqPerSec >= 0 {
-			opt.reqPerSec = reqPerSec
+		if reqPerSec != nil {
+			if *reqPerSec <= 0 {
+				opt.reqPerSec = 0
+			} else {
+				opt.reqPerSec = *reqPerSec
+			}
 		}
 	}
 }
@@ -295,6 +299,8 @@ func WithReqPerSecByPath(path string, reqPerSec int) Option {
 
 		if reqPerSec >= 0 {
 			opt.reqPerSecByPath[path] = reqPerSec
+		} else {
+			opt.reqPerSecByPath[path] = 0
 		}
 	}
 }
