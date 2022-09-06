@@ -104,7 +104,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 		if logger, err := rklogger.NewZapLoggerWithConf(set.loggerEntry.LoggerConfig, set.loggerEntry.LumberjackConfig); err != nil {
 			rkentry.ShutdownWithError(err)
 		} else {
-			set.zapLogger = logger
+			set.zapLogger = logger.WithOptions(zap.WithCaller(true))
 		}
 	}
 
