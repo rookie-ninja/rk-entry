@@ -474,6 +474,7 @@ func toAbsPath(p ...string) []string {
 	for i := range p {
 		if path.IsAbs(p[i]) || p[i] == "stdout" || p[i] == "stderr" {
 			res = append(res, p[i])
+			continue
 		}
 		wd, _ := os.Getwd()
 		res = append(res, path.Join(wd, p[i]))
