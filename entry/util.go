@@ -203,8 +203,6 @@ func lowerKeySlice(src []interface{}) []interface{} {
 			res = append(res, lowerKeySlice(src[i].([]interface{})))
 		case reflect.Map:
 			res = append(res, lowerKeyMap(src[i].(map[interface{}]interface{})))
-		//case reflect.String:
-		//	res = append(res, strings.ToLower(src[i].(string)))
 		default:
 			res = append(res, src[i])
 		}
