@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
+	"unicode"
 )
 
 func TestFileExists_ExpectTrue(t *testing.T) {
@@ -524,4 +525,60 @@ func TestParseEnvOverrides(t *testing.T) {
 	}
 
 	assert.Nil(t, os.Setenv("RK_GIN_NAME", ""))
+}
+
+func TestLowerKeyMap(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			// this should never be called in case of a bug
+			assert.True(t, false)
+		} else {
+			// no panic expected
+			assert.True(t, true)
+		}
+	}()
+
+	src := make(map[interface{}]interface{})
+	src["lower"] = "ShouldNotChange"
+	src["UPPER"] = "ShouldNotChange"
+	src["LetsMix"] = "ShouldNotChange"
+	src["nested"] = map[interface{}]interface{}{
+		"lower":   "ShouldNotChange",
+		"UPPER":   "ShouldNotChange",
+		"LetsMix": "ShouldNotChange",
+	}
+	src["slice"] = []interface{}{
+		"ShouldNotChange",
+		"ShouldNotChange",
+		"ShouldNotChange",
+	}
+
+	res := lowerKeyMap(src)
+	for k, v := range res {
+		assert.True(t, isLower(k.(string)))
+
+		switch reflect.TypeOf(v).Kind() {
+		case reflect.Map:
+			innerM := v.(map[interface{}]interface{})
+			for k1 := range innerM {
+				assert.True(t, isLower(k1.(string)))
+			}
+		case reflect.Slice:
+			innerS := v.([]interface{})
+			for i := range innerS {
+				assert.True(t, innerS[i].(string) == "ShouldNotChange")
+			}
+		case reflect.String:
+			assert.Equal(t, v.(string), "ShouldNotChange")
+		}
+	}
+}
+
+func isLower(s string) bool {
+	for _, r := range s {
+		if !unicode.IsLower(r) && unicode.IsLetter(r) {
+			return false
+		}
+	}
+	return true
 }

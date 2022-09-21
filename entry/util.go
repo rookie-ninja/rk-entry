@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"path"
@@ -77,15 +77,19 @@ var (
 // os.Setenv("RK_GIN_0_COMMONSERVICE_ENABLED", "false")
 //
 // ./your_compiled_binary
+//
+// Important! Please make sure the type of value keeps the same, otherwise, it won't override.
+// For example, os.Setenv("RK_GIN_0_PORT", "invalid-port") won't success, but keep original value.
 func UnmarshalBootYAML(raw []byte, config interface{}) {
 	// 1: unmarshal original
 	originalBootM := map[interface{}]interface{}{}
-	vp := viper.New()
-	vp.SetConfigType("yaml")
-	vp.ReadConfig(bytes.NewReader(raw))
-	if err := vp.Unmarshal(&originalBootM); err != nil {
+	// unmarshal with yaml
+	if err := yaml.Unmarshal(raw, &originalBootM); err != nil {
 		ShutdownWithError(err)
 	}
+
+	// lower key
+	originalBootM = lowerKeyMap(originalBootM)
 
 	// 2: get ENV overrides
 	// ignoring error, output to stdout already
@@ -105,6 +109,7 @@ func UnmarshalBootYAML(raw []byte, config interface{}) {
 	if err := mapstructure.Decode(originalBootM, config); err != nil {
 		ShutdownWithError(err)
 	}
+
 }
 
 // ShutdownWithError shuts down and panic.
@@ -154,6 +159,58 @@ func readFile(filePath string, fs *embed.FS, shouldPanic bool) []byte {
 		ShutdownWithError(err)
 	}
 	return data
+}
+
+// iterate map structure and convert string type key to lower case
+func lowerKeyMap(src map[interface{}]interface{}) map[interface{}]interface{} {
+	if src == nil {
+		return src
+	}
+
+	res := map[interface{}]interface{}{}
+
+	for k, v := range src {
+		keyKind := reflect.TypeOf(k).Kind()
+		if keyKind == reflect.String {
+			k = strings.ToLower(k.(string))
+		}
+
+		valueKind := reflect.TypeOf(v).Kind()
+		switch valueKind {
+		case reflect.Slice, reflect.Array:
+			res[k] = lowerKeySlice(v.([]interface{}))
+		case reflect.Map:
+			res[k] = lowerKeyMap(v.(map[interface{}]interface{}))
+		default:
+			res[k] = v
+		}
+	}
+
+	return res
+}
+
+// iterate slice structure and convert string type key to lower case
+func lowerKeySlice(src []interface{}) []interface{} {
+	if src == nil {
+		return src
+	}
+
+	res := make([]interface{}, 0)
+
+	for i := range src {
+		switch reflect.TypeOf(src[i]).Kind() {
+		case reflect.Slice, reflect.Array:
+			res = append(res, lowerKeySlice(src[i].([]interface{})))
+		case reflect.Map:
+			res = append(res, lowerKeyMap(src[i].(map[interface{}]interface{})))
+		//case reflect.String:
+		//	res = append(res, strings.ToLower(src[i].(string)))
+		default:
+			res = append(res, src[i])
+		}
+	}
+
+	return res
 }
 
 // parseBootOverrides parses a set line.
