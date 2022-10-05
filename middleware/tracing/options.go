@@ -16,12 +16,15 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/jaeger"
+	otexporterotlp "go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/propagation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
+	"google.golang.org/grpc"
 	"net/http"
 	"os"
 	"path"
@@ -369,6 +372,10 @@ type BootConfig struct {
 			Enabled    bool   `yaml:"enabled" json:"enabled"`
 			OutputPath string `yaml:"outputPath" json:"outputPath"`
 		} `yaml:"file" json:"file"`
+		Otlp struct {
+			Enabled  bool   `yaml:"enabled" json:"enabled"`
+			Endpoint string `yaml:"endpoint" json:"endpoint"`
+		} `yaml:"otlp" json:"otlp"`
 		Jaeger struct {
 			Agent struct {
 				Enabled bool   `yaml:"enabled" json:"enabled"`
@@ -394,6 +401,20 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 
 		if config.Exporter.File.Enabled {
 			exporter = NewFileExporter(config.Exporter.File.OutputPath)
+		}
+		if config.Exporter.Otlp.Enabled {
+			opts := make([]otlptracegrpc.Option, 0)
+			client := otlptracegrpc.NewClient(opts...)
+			if len(config.Exporter.Otlp.Endpoint) > 0 {
+				opts := []otlptracegrpc.Option{
+					otlptracegrpc.WithInsecure(),
+					otlptracegrpc.WithEndpoint(config.Exporter.Otlp.Endpoint),
+					otlptracegrpc.WithDialOption(grpc.WithBlock()),
+				}
+				client = otlptracegrpc.NewClient(opts...)
+			}
+
+			exporter = NewOTLPTraceExporter(client)
 		}
 
 		if config.Exporter.Jaeger.Agent.Enabled {
@@ -559,6 +580,26 @@ func NewJaegerExporter(opt jaeger.EndpointOption) sdktrace.SpanExporter {
 	}
 
 	exporter, err := jaeger.New(opt)
+
+	if err != nil {
+		rkentry.ShutdownWithError(err)
+	}
+
+	return exporter
+}
+
+func NewOTLPTraceExporter(client otexporterotlp.Client) sdktrace.SpanExporter {
+	// Assign default otlp endpoint which is localhost:4317
+	if client == nil {
+		addr := "localhost:4317"
+		client = otlptracegrpc.NewClient(
+			otlptracegrpc.WithInsecure(),
+			otlptracegrpc.WithEndpoint(addr),
+			otlptracegrpc.WithDialOption(grpc.WithBlock()),
+		)
+	}
+	ctx := context.Background()
+	exporter, err := otexporterotlp.New(ctx, client)
 
 	if err != nil {
 		rkentry.ShutdownWithError(err)
