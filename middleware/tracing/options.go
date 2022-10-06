@@ -25,7 +25,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
-	"google.golang.org/grpc"
 	"net/http"
 	"os"
 	"path"
@@ -415,7 +414,6 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 				opts := []otlptracegrpc.Option{
 					otlptracegrpc.WithInsecure(),
 					otlptracegrpc.WithEndpoint(config.Exporter.Otlp.Endpoint),
-					otlptracegrpc.WithDialOption(grpc.WithBlock()),
 					otlptracegrpc.WithReconnectionPeriod(50 * time.Millisecond),
 				}
 				client = otlptracegrpc.NewClient(opts...)
@@ -583,10 +581,13 @@ func NewFileExporter(outputPath string, opts ...stdouttrace.Option) sdktrace.Spa
 //
 // 1: If no option provided, then export to jaeger agent at localhost:6831
 // 2: Jaeger agent
-//    If no jaeger agent host was provided, then use localhost
-//    If no jaeger agent port was provided, then use 6831
+//
+//	If no jaeger agent host was provided, then use localhost
+//	If no jaeger agent port was provided, then use 6831
+//
 // 3: Jaeger collector
-//    If no jaeger collector endpoint was provided, then use http://localhost:14268/api/traces
+//
+//	If no jaeger collector endpoint was provided, then use http://localhost:14268/api/traces
 func NewJaegerExporter(opt jaeger.EndpointOption) sdktrace.SpanExporter {
 	// Assign default jaeger agent endpoint which is localhost:6831
 	if opt == nil {
@@ -609,13 +610,10 @@ func NewOTLPTraceExporter(client otexporterotlp.Client) sdktrace.SpanExporter {
 		client = otlptracegrpc.NewClient(
 			otlptracegrpc.WithInsecure(),
 			otlptracegrpc.WithEndpoint(addr),
-			otlptracegrpc.WithDialOption(grpc.WithBlock()),
 			otlptracegrpc.WithReconnectionPeriod(50*time.Millisecond),
 		)
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
-	defer cancel()
-	exporter, err := otexporterotlp.New(ctx, client)
+	exporter, err := otexporterotlp.New(context.Background(), client)
 
 	if err != nil {
 		rkentry.ShutdownWithError(err)
