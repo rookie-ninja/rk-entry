@@ -94,7 +94,19 @@ func TestCreateOtlpExporter(t *testing.T) {
 	exporter = NewOTLPTraceExporter(client)
 	assert.NotNil(t, exporter)
 }
+func TestCreateZipkinExporter(t *testing.T) {
+	defer assertNotPanic(t)
 
+	// without endpoint
+	var url string
+	exporter := NewZipkinExporter(url)
+	assert.NotNil(t, exporter)
+
+	// with default Zipkin
+	url = "http://localhost:9411/api/v2/spans"
+	exporter = NewZipkinExporter(url)
+	assert.NotNil(t, exporter)
+}
 func TestCreateFileExporter(t *testing.T) {
 	defer assertNotPanic(t)
 
@@ -146,6 +158,12 @@ func TestToOptions(t *testing.T) {
 		Enabled: true,
 	}
 	config.Exporter.Otlp.Enabled = true
+	NewOptionSet(ToOptions(config, "", "")...)
+	// with zipkin
+	config = &BootConfig{
+		Enabled: true,
+	}
+	config.Exporter.Zipkin.Enabled = true
 	NewOptionSet(ToOptions(config, "", "")...)
 }
 

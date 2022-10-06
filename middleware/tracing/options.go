@@ -19,6 +19,7 @@ import (
 	otexporterotlp "go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	otexporterzipkin "go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/propagation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -29,6 +30,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
 // ***************** OptionSet Interface *****************
@@ -376,6 +378,10 @@ type BootConfig struct {
 			Enabled  bool   `yaml:"enabled" json:"enabled"`
 			Endpoint string `yaml:"endpoint" json:"endpoint"`
 		} `yaml:"otlp" json:"otlp"`
+		Zipkin struct {
+			Enabled  bool   `yaml:"enabled" json:"enabled"`
+			Endpoint string `yaml:"endpoint" json:"endpoint"`
+		} `yaml:"zipkin" json:"zipkin"`
 		Jaeger struct {
 			Agent struct {
 				Enabled bool   `yaml:"enabled" json:"enabled"`
@@ -410,13 +416,21 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 					otlptracegrpc.WithInsecure(),
 					otlptracegrpc.WithEndpoint(config.Exporter.Otlp.Endpoint),
 					otlptracegrpc.WithDialOption(grpc.WithBlock()),
+					otlptracegrpc.WithReconnectionPeriod(50 * time.Millisecond),
 				}
 				client = otlptracegrpc.NewClient(opts...)
 			}
 
 			exporter = NewOTLPTraceExporter(client)
 		}
+		if config.Exporter.Zipkin.Enabled {
+			var url string
+			if len(config.Exporter.Zipkin.Endpoint) > 0 {
+				exporter = NewZipkinExporter(config.Exporter.Zipkin.Endpoint)
+			}
 
+			exporter = NewZipkinExporter(url)
+		}
 		if config.Exporter.Jaeger.Agent.Enabled {
 			opts := make([]jaeger.AgentEndpointOption, 0)
 			if len(config.Exporter.Jaeger.Agent.Host) > 0 {
@@ -596,11 +610,25 @@ func NewOTLPTraceExporter(client otexporterotlp.Client) sdktrace.SpanExporter {
 			otlptracegrpc.WithInsecure(),
 			otlptracegrpc.WithEndpoint(addr),
 			otlptracegrpc.WithDialOption(grpc.WithBlock()),
+			otlptracegrpc.WithReconnectionPeriod(50*time.Millisecond),
 		)
 	}
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
 	exporter, err := otexporterotlp.New(ctx, client)
 
+	if err != nil {
+		rkentry.ShutdownWithError(err)
+	}
+
+	return exporter
+}
+func NewZipkinExporter(url string) sdktrace.SpanExporter {
+	// Assign default zipkin endpoint which is localhost:9411
+	if url == "" {
+		url = "http://localhost:9411/api/v2/spans"
+	}
+	exporter, err := otexporterzipkin.New(url, otexporterzipkin.WithLogger(nil))
 	if err != nil {
 		rkentry.ShutdownWithError(err)
 	}
