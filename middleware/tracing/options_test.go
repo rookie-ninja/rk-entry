@@ -7,6 +7,7 @@ package rkmidtrace
 import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"net/http"
@@ -80,6 +81,32 @@ func TestCreateJaegerExporter(t *testing.T) {
 	assert.NotNil(t, exporter)
 }
 
+func TestCreateOtlpExporter(t *testing.T) {
+	defer assertNotPanic(t)
+
+	// without endpoint
+	exporter := NewOTLPTraceExporter(nil)
+	assert.NotNil(t, exporter)
+
+	// with default otlp collector
+	opts := make([]otlptracegrpc.Option, 0)
+	client := otlptracegrpc.NewClient(opts...)
+	exporter = NewOTLPTraceExporter(client)
+	assert.NotNil(t, exporter)
+}
+func TestCreateZipkinExporter(t *testing.T) {
+	defer assertNotPanic(t)
+
+	// without endpoint
+	var url string
+	exporter := NewZipkinExporter(url)
+	assert.NotNil(t, exporter)
+
+	// with default Zipkin
+	url = "http://localhost:9411/api/v2/spans"
+	exporter = NewZipkinExporter(url)
+	assert.NotNil(t, exporter)
+}
 func TestCreateFileExporter(t *testing.T) {
 	defer assertNotPanic(t)
 
@@ -124,6 +151,19 @@ func TestToOptions(t *testing.T) {
 		Enabled: true,
 	}
 	config.Exporter.Jaeger.Collector.Enabled = true
+	NewOptionSet(ToOptions(config, "", "")...)
+
+	// with otlp collector
+	config = &BootConfig{
+		Enabled: true,
+	}
+	config.Exporter.Otlp.Enabled = true
+	NewOptionSet(ToOptions(config, "", "")...)
+	// with zipkin
+	config = &BootConfig{
+		Enabled: true,
+	}
+	config.Exporter.Zipkin.Enabled = true
 	NewOptionSet(ToOptions(config, "", "")...)
 }
 
