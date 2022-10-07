@@ -3,10 +3,10 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-package rkmidtimeout
+package timeout
 
 import (
-	"github.com/rookie-ninja/rk-entry/v2/entry"
+	"github.com/rookie-ninja/rk-entry/v3/entry"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -17,16 +17,16 @@ import (
 func TestNewOptionSet(t *testing.T) {
 	// without options
 	set := NewOptionSet().(*optionSet)
-	assert.NotEmpty(t, set.GetEntryName())
+	assert.NotEmpty(t, set.EntryName())
 	assert.NotEmpty(t, set.timeouts)
 
 	// with options
 	set = NewOptionSet(
-		WithEntryNameAndType("name", "type"),
+		WithEntryNameAndKind("name", "type"),
 		WithTimeout(1*time.Second),
 		WithTimeoutByPath("/ut", 1*time.Second)).(*optionSet)
-	assert.Equal(t, "name", set.GetEntryName())
-	assert.Equal(t, "type", set.GetEntryType())
+	assert.Equal(t, "name", set.EntryName())
+	assert.Equal(t, "type", set.EntryKind())
 	assert.Equal(t, 1*time.Second, set.timeouts[global])
 	assert.Equal(t, 1*time.Second, set.getTimeout("/ut"))
 }
@@ -39,7 +39,7 @@ func TestOptionSet_BeforeCtx(t *testing.T) {
 
 	// with req
 	req := httptest.NewRequest(http.MethodGet, "/ut", nil)
-	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
+	event := rk.NewEventEntryNoop().CreateEventNoop()
 	ctx = set.BeforeCtx(req, event)
 
 	assert.Equal(t, "/ut", ctx.Input.UrlPath)
@@ -68,7 +68,7 @@ func TestOptionSet_Before(t *testing.T) {
 	set := NewOptionSet(
 		WithTimeout(1 * time.Second))
 	req := httptest.NewRequest(http.MethodGet, "/ut", nil)
-	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
+	event := rk.EventEntryNoop.EventFactory.CreateEventNoop()
 	ctx := set.BeforeCtx(req, event)
 
 	ctx.Input.InitHandler = initF
@@ -137,8 +137,8 @@ func TestToOptions(t *testing.T) {
 
 func TestNewOptionSetMock(t *testing.T) {
 	mock := NewOptionSetMock(NewBeforeCtx())
-	assert.NotEmpty(t, mock.GetEntryName())
-	assert.NotEmpty(t, mock.GetEntryType())
+	assert.NotEmpty(t, mock.EntryName())
+	assert.NotEmpty(t, mock.EntryKind())
 	assert.NotNil(t, mock.BeforeCtx(nil, nil))
 	mock.Before(nil)
 }

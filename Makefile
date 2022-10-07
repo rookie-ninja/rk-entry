@@ -23,6 +23,6 @@ fmt:
 .PHONY: swag
 swag:
 	@echo "[swag] Running swag..."
-	@swag init --generalInfo entry/common_service_entry.go --output assets/sw/config --propertyStrategy camelcase --markdownFiles assets/docs
+	@swag init --dir entry,error,os -g common_entry.go --output assets/sw/config --propertyStrategy camelcase --markdownFiles assets/docs
 	@rm -rf assets/sw/config/docs.go
 	@echo "------------------------------------[Done]"

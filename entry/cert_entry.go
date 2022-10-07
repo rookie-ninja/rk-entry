@@ -1,184 +1,184 @@
-// Copyright (c) 2021 rookie-ninja
-//
-// Use of this source code is governed by an Apache-style
-// license that can be found in the LICENSE file.
-
-package rkentry
+package rk
 
 import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
+	"github.com/rookie-ninja/rk-entry/v3/util"
+	"gopkg.in/yaml.v3"
 	"sync"
 )
 
-// RegisterCertEntry create cert entry with options.
-func RegisterCertEntry(boot *BootCert) []*CertEntry {
-	res := make([]*CertEntry, 0)
+const CertKind = "cert"
 
-	// filter out based domain
-	configMap := make(map[string]*BootCertE)
-	for _, config := range boot.Cert {
-		if len(config.Name) < 1 {
-			continue
-		}
+type CertConfig struct {
+	EntryConfigHeader `yaml:",inline"`
+	Entry             struct {
+		//Api struct {
+		//	Enabled   bool   `yaml:"enabled"`
+		//	UrlPrefix string `yaml:"urlPrefix"`
+		//} `yaml:"api"`
+		CA struct {
+			LocalPath string `yaml:"localPath"`
+			EmbedPath string `yaml:"embedPath"`
+			PemBase64 string `yaml:"pemBase64"`
+		} `yaml:"ca"`
+		Cert struct {
+			LocalPath string `yaml:"localPath"`
+			EmbedPath string `yaml:"embedPath"`
+			PemBase64 string `yaml:"pemBase64"`
+		} `yaml:"cert"`
+		Key struct {
+			LocalPath string `yaml:"localPath"`
+			EmbedPath string `yaml:"embedPath"`
+			PemBase64 string `yaml:"pemBase64"`
+		} `yaml:"key"`
+	} `yaml:"entry"`
+}
 
-		if !IsValidDomain(config.Domain) {
-			continue
-		}
+func (c *CertConfig) JSON() string {
+	b, _ := json.Marshal(c)
+	return string(b)
+}
 
-		// * or matching domain
-		// 1: add it to map if missing
-		if _, ok := configMap[config.Name]; !ok {
-			configMap[config.Name] = config
-			continue
-		}
+func (c *CertConfig) YAML() string {
+	b, _ := yaml.Marshal(c)
+	return string(b)
+}
 
-		// 2: already has an entry, then compare domain,
-		//    only one case would occur, previous one is already the correct one, continue
-		if config.Domain == "" || config.Domain == "*" {
-			continue
-		}
+func (c *CertConfig) Header() *EntryConfigHeader {
+	return &c.EntryConfigHeader
+}
 
-		configMap[config.Name] = config
+func (c *CertConfig) Register() (Entry, error) {
+	if !c.Metadata.Enabled {
+		return nil, nil
 	}
 
-	for _, cert := range configMap {
-		entry := &CertEntry{
-			entryName:        cert.Name,
-			entryType:        CertEntryType,
-			entryDescription: cert.Description,
-			caPath:           cert.CAPath,
-			keyPemPath:       cert.KeyPemPath,
-			certPemPath:      cert.CertPemPath,
-			embedFS:          GlobalAppCtx.GetEmbedFS(CertEntryType, cert.Name),
-		}
-
-		GlobalAppCtx.AddEntry(entry)
-		res = append(res, entry)
+	if !rku.IsValidDomain(c.Metadata.Domain) {
+		return nil, nil
 	}
 
-	return res
-}
-
-// RegisterCertEntryYAML register function
-func RegisterCertEntryYAML(raw []byte) map[string]Entry {
-	boot := &BootCert{}
-	UnmarshalBootYAML(raw, boot)
-
-	res := map[string]Entry{}
-
-	entries := RegisterCertEntry(boot)
-	for i := range entries {
-		entry := entries[i]
-		res[entry.GetName()] = entry
+	entry := &CertEntry{
+		config: c,
+		once:   sync.Once{},
 	}
+	entry.embedFS = Registry.EntryFS(entry.Kind(), entry.Name())
 
-	return res
+	Registry.AddEntry(entry)
+
+	return entry, nil
 }
 
-// BootCert is bootstrap config of CertEntry.
-type BootCert struct {
-	Cert []*BootCertE `yaml:"cert" json:"cert"`
-}
-
-// BootCertE element of CertEntry
-type BootCertE struct {
-	Name        string `yaml:"name" json:"name"`
-	Description string `yaml:"description" json:"description"`
-	Domain      string `yaml:"domain" json:"domain"`
-	CAPath      string `yaml:"caPath" json:"caPath"`
-	CertPemPath string `yaml:"certPemPath" json:"certPemPath"`
-	KeyPemPath  string `yaml:"keyPemPath" json:"keyPemPath"`
-}
-
-// CertEntry contains bellow fields.
 type CertEntry struct {
-	entryName        string            `json:"-" yaml:"-"`
-	entryType        string            `json:"-" yaml:"-"`
-	entryDescription string            `json:"-" yaml:"-"`
-	caPath           string            `json:"-" yaml:"-"`
-	keyPemPath       string            `json:"-" yaml:"-"`
-	certPemPath      string            `json:"-" yaml:"-"`
-	embedFS          *embed.FS         `json:"-" yaml:"-"`
-	RootCA           *x509.Certificate `json:"-" json:"-"`
-	Certificate      *tls.Certificate  `json:"-" yaml:"-"`
-	bootstrapOnce    sync.Once         `yaml:"-" json:"-"`
+	config  *CertConfig
+	embedFS *embed.FS
+	RootCA  *x509.Certificate `json:"-" json:"-"`
+	Cert    *tls.Certificate  `json:"-" yaml:"-"`
+	once    sync.Once
 }
 
-// Bootstrap iterate retrievers and call Retrieve() for each of them.
-func (entry *CertEntry) Bootstrap(ctx context.Context) {
-	entry.bootstrapOnce.Do(func() {
-		// server cert path
-		if len(entry.keyPemPath) > 0 && len(entry.certPemPath) > 0 {
-			cert, err := tls.X509KeyPair(
-				readFile(entry.certPemPath, entry.embedFS, true),
-				readFile(entry.keyPemPath, entry.embedFS, true))
-			if err != nil {
-				ShutdownWithError(err)
-			}
+func (c *CertEntry) Category() string {
+	return CategoryIndependent
+}
 
-			entry.Certificate = &cert
+func (c *CertEntry) Kind() string {
+	return c.config.Kind
+}
+
+func (c *CertEntry) Name() string {
+	return c.config.Metadata.Name
+}
+
+func (c *CertEntry) Config() EntryConfig {
+	return c.config
+}
+
+func (c *CertEntry) Bootstrap(ctx context.Context) {
+	c.once.Do(func() {
+		certPem := make([]byte, 0)
+		keyPem := make([]byte, 0)
+
+		// 1: cert pem
+		if len(c.config.Entry.Cert.PemBase64) > 0 {
+			if _, err := base64.StdEncoding.Decode(certPem, []byte(c.config.Entry.Cert.PemBase64)); err != nil {
+				rku.ShutdownWithError(err)
+			}
+		} else if len(c.config.Entry.Cert.EmbedPath) > 0 && c.embedFS != nil {
+			v, err := c.embedFS.ReadFile(c.config.Entry.Cert.EmbedPath)
+			if err != nil {
+				rku.ShutdownWithError(err)
+			}
+			certPem = v
+		} else if len(c.config.Entry.Cert.LocalPath) > 0 {
+			certPem = rku.ReadFileFromLocal(c.config.Entry.Cert.LocalPath, true)
 		}
 
-		if len(entry.caPath) > 0 {
-			block, _ := pem.Decode(readFile(entry.caPath, entry.embedFS, true))
-			if block == nil || block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
-				return
+		// 2: key pem
+		if len(c.config.Entry.Key.PemBase64) > 0 {
+			if _, err := base64.StdEncoding.Decode(certPem, []byte(c.config.Entry.Key.PemBase64)); err != nil {
+				rku.ShutdownWithError(err)
 			}
-
-			cert, err := x509.ParseCertificate(block.Bytes)
-			if err != nil {
-				ShutdownWithError(err)
+		} else if len(c.config.Entry.Key.EmbedPath) > 0 && c.embedFS != nil {
+			if v, err := c.embedFS.ReadFile(c.config.Entry.Key.EmbedPath); err != nil {
+				rku.ShutdownWithError(err)
+			} else {
+				certPem = v
 			}
+		} else if len(c.config.Entry.Key.LocalPath) > 0 {
+			certPem = rku.ReadFileFromLocal(c.config.Entry.Key.LocalPath, true)
+		}
 
-			entry.RootCA = cert
+		if v, err := tls.X509KeyPair(certPem, keyPem); err != nil {
+			rku.ShutdownWithError(err)
+		} else {
+			c.Cert = &v
+		}
+
+		// 2: root pem
+		caPem := make([]byte, 0)
+		if len(c.config.Entry.CA.PemBase64) > 0 {
+			if _, err := base64.StdEncoding.Decode(caPem, []byte(c.config.Entry.CA.PemBase64)); err != nil {
+				rku.ShutdownWithError(err)
+			}
+		} else if len(c.config.Entry.CA.EmbedPath) > 0 && c.embedFS != nil {
+			if v, err := c.embedFS.ReadFile(c.config.Entry.CA.EmbedPath); err != nil {
+				rku.ShutdownWithError(err)
+			} else {
+				caPem = v
+			}
+		} else if len(c.config.Entry.CA.LocalPath) > 0 {
+			caPem = rku.ReadFileFromLocal(c.config.Entry.CA.LocalPath, true)
+		}
+
+		block, _ := pem.Decode(caPem)
+		if block == nil || block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+			return
+		}
+
+		if v, err := x509.ParseCertificate(block.Bytes); err != nil {
+			rku.ShutdownWithError(err)
+		} else {
+			c.RootCA = v
 		}
 	})
 }
 
-// Interrupt entry.
-func (entry *CertEntry) Interrupt(context.Context) {}
+func (c *CertEntry) Interrupt(ctx context.Context) {}
 
-// String return string of entry.
-func (entry *CertEntry) String() string {
-	bytes, _ := json.Marshal(entry)
-	return string(bytes)
-}
-
-// MarshalJSON marshal entry
-func (entry *CertEntry) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
-		"name":        entry.entryName,
-		"type":        entry.entryType,
-		"description": entry.entryDescription,
-		"caPath":      entry.caPath,
-		"keyPemPath":  entry.keyPemPath,
-		"certPemPath": entry.certPemPath,
-	}
-
-	return json.Marshal(&m)
-}
-
-// UnmarshalJSON unmarshal entry
-func (entry *CertEntry) UnmarshalJSON([]byte) error {
+func (c *CertEntry) Monitor() *Monitor {
 	return nil
 }
 
-// GetName return name of entry.
-func (entry *CertEntry) GetName() string {
-	return entry.entryName
+func (c *CertEntry) FS() *embed.FS {
+	return c.embedFS
 }
 
-// GetType return type of entry.
-func (entry *CertEntry) GetType() string {
-	return entry.entryType
-}
-
-// GetDescription return description of entry
-func (entry *CertEntry) GetDescription() string {
-	return entry.entryDescription
+func (c *CertEntry) Apis() []*BuiltinApi {
+	res := make([]*BuiltinApi, 0)
+	return res
 }

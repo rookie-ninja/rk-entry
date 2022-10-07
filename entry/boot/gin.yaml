@@ -1,0 +1,10 @@
+---
+kind: gin
+apiVersion: v1
+metadata:
+  name: *
+  version: v1
+  enabled: true
+  domain: *
+entry:
+

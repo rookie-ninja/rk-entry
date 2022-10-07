@@ -1,0 +1,17 @@
+---
+kind: event
+apiVersion: v1
+metadata:
+  domain: *
+entry:
+  - name: event
+    isDefault: true
+    desc: ""
+    encoding: ""
+    outputPaths: []
+    loki:
+      enabled: false
+      addr: ""
+      path: ""
+      username: ""
+      password: ""

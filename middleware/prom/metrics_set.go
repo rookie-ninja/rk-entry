@@ -3,8 +3,8 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// Package rkmidprom has a couple of utility functions to start prometheus and pushgateway client locally.
-package rkmidprom
+// Package prom has a couple of utility functions to start prometheus and pushgateway client locally.
+package prom
 
 import (
 	"errors"

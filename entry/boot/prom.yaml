@@ -1,0 +1,15 @@
+---
+kind: prometheus
+apiVersion: v1
+metadata:
+  name: prom
+  default: true
+  enabled: true
+  domain: *
+entry:
+  path: ""
+  errorHandling: "HTTPErrorOnError || ContinueOnError || PanicOnError"
+  disableCompression: false
+  maxRequestsInFlight: 10
+  timeout: 5s
+  enableOpenMetrics: false

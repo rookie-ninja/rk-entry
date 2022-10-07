@@ -3,16 +3,17 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// Package rkmidjwt is a middleware for JWT
-package rkmidjwt
+// Package jwt is a middleware for JWT
+package jwt
 
 import (
 	"context"
 	"errors"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/rookie-ninja/rk-entry/v2/entry"
-	"github.com/rookie-ninja/rk-entry/v2/error"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/entry"
+	"github.com/rookie-ninja/rk-entry/v3/error"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/util"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -21,17 +22,17 @@ import (
 )
 
 var (
-	errJwtMissing = rkmid.GetErrorBuilder().New(http.StatusBadRequest, "Missing or malformed jwt")
-	errJwtInvalid = rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid or expired jwt")
+	errJwtMissing = rkm.GetErrorBuilder().New(http.StatusBadRequest, "Missing or malformed jwt")
+	errJwtInvalid = rkm.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid or expired jwt")
 )
 
 // ***************** OptionSet Interface *****************
 
 // OptionSetInterface mainly for testing purpose
 type OptionSetInterface interface {
-	GetEntryName() string
+	EntryName() string
 
-	GetEntryType() string
+	EntryKind() string
 
 	Before(*BeforeCtx)
 
@@ -47,8 +48,8 @@ type optionSet struct {
 	// name of entry
 	entryName string
 
-	// type of entry
-	entryType string
+	// kind of entry
+	entryKind string
 
 	// path to ignore
 	pathToIgnore []string
@@ -60,7 +61,7 @@ type optionSet struct {
 	extractor JwtExtractor
 
 	// implementation of rkentry.SignerJwt
-	signer rkentry.SignerJwt
+	signer rk.SignerJwt
 
 	// TokenLookup is a string in the form of "<source>:<name>" or "<source>:<name>,<source>:<name>" that is used
 	// to extract token from the request.
@@ -87,8 +88,8 @@ type optionSet struct {
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName:    "fake-entry",
-		entryType:    "",
-		tokenLookup:  "header:" + rkmid.HeaderAuthorization,
+		entryKind:    "",
+		tokenLookup:  "header:" + rkm.HeaderAuthorization,
 		authScheme:   "Bearer",
 		pathToIgnore: []string{},
 	}
@@ -98,7 +99,7 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	}
 
 	if set.signer == nil && !set.skipVerify {
-		set.signer = rkentry.RegisterSymmetricJwtSigner(set.entryName, jwt.SigningMethodHS256.Name, []byte("rk jwt key"))
+		set.signer = rk.NewSymmetricSignerJwt(set.entryName, jwt.SigningMethodHS256.Name, []byte("rk jwt key"))
 	}
 
 	if set.mock != nil {
@@ -122,17 +123,17 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	return set
 }
 
-// GetEntryName returns entry name
-func (set *optionSet) GetEntryName() string {
+// EntryName returns entry name
+func (set *optionSet) EntryName() string {
 	return set.entryName
 }
 
-// GetEntryType returns entry type
-func (set *optionSet) GetEntryType() string {
-	return set.entryType
+// EntryKind returns entry kind
+func (set *optionSet) EntryKind() string {
+	return set.entryKind
 }
 
-// BeforeCtx should be created before Before()
+// BeforeCtx should be created before this
 func (set *optionSet) BeforeCtx(req *http.Request, userCtx context.Context) *BeforeCtx {
 	ctx := NewBeforeCtx()
 
@@ -202,7 +203,7 @@ func (set *optionSet) ShouldIgnore(path string) bool {
 		}
 	}
 
-	return rkmid.ShouldIgnoreGlobal(path)
+	return rkm.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -218,17 +219,17 @@ type optionSetMock struct {
 	before *BeforeCtx
 }
 
-// GetEntryName returns entry name
-func (mock *optionSetMock) GetEntryName() string {
+// EntryName returns entry name
+func (mock *optionSetMock) EntryName() string {
 	return "mock"
 }
 
-// GetEntryType returns entry type
-func (mock *optionSetMock) GetEntryType() string {
+// EntryKind returns entry kind
+func (mock *optionSetMock) EntryKind() string {
 	return "mock"
 }
 
-// BeforeCtx should be created before Before()
+// BeforeCtx should be created before this
 func (mock *optionSetMock) BeforeCtx(request *http.Request, userCtx context.Context) *BeforeCtx {
 	return mock.before
 }
@@ -293,22 +294,22 @@ type AsymmetricConfig struct {
 }
 
 // ToOptions convert BootConfig into Option list
-func ToOptions(config *BootConfig, entryName, entryType string) []Option {
+func ToOptions(config *BootConfig, name, kind string) []Option {
 	opts := make([]Option, 0)
 
 	if config.Enabled {
-		var signerJwt rkentry.SignerJwt
+		var signerJwt rk.SignerJwt
 
 		// check signer entry first
-		if v := rkentry.GlobalAppCtx.GetEntry(rkentry.SignerJwtEntryType, config.SignerEntry); v != nil {
-			signer, ok := v.(rkentry.SignerJwt)
+		if v := rk.Registry.GetEntry("jwtSigner", config.SignerEntry); v != nil {
+			signer, ok := v.(rk.SignerJwt)
 			if !ok {
-				rkentry.ShutdownWithError(errors.New("invalid signer jwt entry"))
+				rku.ShutdownWithError(errors.New("invalid signer jwt entry"))
 			}
 
 			signerJwt = signer
 			if signerJwt == nil {
-				rkentry.ShutdownWithError(errors.New("cannot find signer entry"))
+				rku.ShutdownWithError(errors.New("cannot find signer entry"))
 			}
 		} else if config.Asymmetric != nil {
 			var pubKey, privKey []byte
@@ -325,9 +326,9 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 				privKey = mustRead(config.Asymmetric.PrivateKeyPath)
 			}
 
-			signerJwt = rkentry.RegisterAsymmetricJwtSigner(entryName, config.Asymmetric.Algorithm, privKey, pubKey)
+			signerJwt = rk.NewAsymmetricSignerJwt(name, config.Asymmetric.Algorithm, privKey, pubKey)
 			if signerJwt == nil {
-				rkentry.ShutdownWithError(errors.New("invalid asymmetric configuration"))
+				rku.ShutdownWithError(errors.New("invalid asymmetric configuration"))
 			}
 		} else if config.Symmetric != nil {
 			var token []byte
@@ -337,14 +338,14 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 				token = mustRead(config.Symmetric.TokenPath)
 			}
 
-			signerJwt = rkentry.RegisterSymmetricJwtSigner(entryName, config.Symmetric.Algorithm, token)
+			signerJwt = rk.NewSymmetricSignerJwt(name, config.Symmetric.Algorithm, token)
 			if signerJwt == nil {
-				rkentry.ShutdownWithError(errors.New("invalid symmetric configuration"))
+				rku.ShutdownWithError(errors.New("invalid symmetric configuration"))
 			}
 		}
 
 		opts = []Option{
-			WithEntryNameAndType(entryName, entryType),
+			WithEntryNameAndKind(name, kind),
 			WithTokenLookup(config.TokenLookup),
 			WithSigner(signerJwt),
 			WithAuthScheme(config.AuthScheme),
@@ -365,7 +366,7 @@ func mustRead(p string) []byte {
 
 	res, err := ioutil.ReadFile(p)
 	if err != nil {
-		rkentry.ShutdownWithError(err)
+		rku.ShutdownWithError(err)
 	}
 
 	return res
@@ -376,16 +377,16 @@ func mustRead(p string) []byte {
 // Option if for middleware options while creating middleware
 type Option func(*optionSet)
 
-// WithEntryNameAndType provide entry name and entry type.
-func WithEntryNameAndType(entryName, entryType string) Option {
+// WithEntryNameAndKind provide entry name and entry kind.
+func WithEntryNameAndKind(name, kind string) Option {
 	return func(opt *optionSet) {
-		opt.entryName = entryName
-		opt.entryType = entryType
+		opt.entryName = name
+		opt.entryKind = kind
 	}
 }
 
-// WithSigner provide rkentry.SignerJwt.
-func WithSigner(signer rkentry.SignerJwt) Option {
+// WithSigner provide rk.SignerJwt.
+func WithSigner(signer rk.SignerJwt) Option {
 	return func(opt *optionSet) {
 		opt.signer = signer
 	}

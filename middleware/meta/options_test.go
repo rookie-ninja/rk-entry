@@ -3,10 +3,10 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-package rkmidmeta
+package meta
 
 import (
-	"github.com/rookie-ninja/rk-entry/v2/entry"
+	"github.com/rookie-ninja/rk-entry/v3/entry"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -37,7 +37,7 @@ func TestNewOptionSet(t *testing.T) {
 
 func TestOptionSet_BeforeCtx(t *testing.T) {
 	set := NewOptionSet().(*optionSet)
-	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
+	event := rk.EventEntryNoop.EventFactory.CreateEventNoop()
 	req := httptest.NewRequest(http.MethodGet, "/ut", nil)
 	ctx := set.BeforeCtx(req, event)
 
@@ -56,15 +56,15 @@ func TestOptionSet_Before(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/ut", nil)
 
-	ctx := set.BeforeCtx(req, rkentry.EventEntryNoop.EventFactory.CreateEventNoop())
+	ctx := set.BeforeCtx(req, rk.EventEntryNoop.EventFactory.CreateEventNoop())
 	set.Before(ctx)
 	assert.NotEmpty(t, ctx.Output.HeadersToReturn)
 }
 
 func TestNewOptionSetMock(t *testing.T) {
 	mock := NewOptionSetMock(NewBeforeCtx())
-	assert.NotEmpty(t, mock.GetEntryName())
-	assert.NotEmpty(t, mock.GetEntryType())
+	assert.NotEmpty(t, mock.EntryName())
+	assert.NotEmpty(t, mock.EntryKind())
 	assert.NotNil(t, mock.BeforeCtx(nil, nil))
 	mock.Before(nil)
 }

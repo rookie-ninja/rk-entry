@@ -3,12 +3,12 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// Package rkmidprom provide options
-package rkmidprom
+// Package prom provide options
+package prom
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
 	"net/http"
 	"strings"
 	"time"
@@ -18,7 +18,7 @@ var (
 	// labelKeysHttp are default labels for prometheus metrics
 	labelKeysHttp = []string{
 		"entryName",
-		"entryType",
+		"entryKind",
 		"domain",
 		"instance",
 		"restMethod",
@@ -29,7 +29,7 @@ var (
 	// labelKeysGrpc are default labels for prometheus metrics
 	labelKeysGrpc = []string{
 		"entryName",
-		"entryType",
+		"entryKind",
 		"domain",
 		"instance",
 		"grpcService",
@@ -52,9 +52,9 @@ const (
 
 // OptionSetInterface mainly for testing purpose
 type OptionSetInterface interface {
-	GetEntryName() string
+	EntryName() string
 
-	GetEntryType() string
+	EntryKind() string
 
 	BeforeCtx(*http.Request) *BeforeCtx
 
@@ -72,7 +72,7 @@ type OptionSetInterface interface {
 // optionSet which is used for middleware implementation
 type optionSet struct {
 	entryName    string
-	entryType    string
+	entryKind    string
 	registerer   prometheus.Registerer
 	labelerType  string
 	pathToIgnore []string
@@ -84,7 +84,7 @@ type optionSet struct {
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName:    "fake-entry",
-		entryType:    "",
+		entryKind:    "",
 		registerer:   prometheus.DefaultRegisterer,
 		pathToIgnore: []string{},
 		labelerType:  LabelerTypeHttp,
@@ -124,14 +124,14 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	return set
 }
 
-// GetEntryName returns entry name
-func (set *optionSet) GetEntryName() string {
+// EntryName returns entry name
+func (set *optionSet) EntryName() string {
 	return set.entryName
 }
 
-// GetEntryType returns entry type
-func (set *optionSet) GetEntryType() string {
-	return set.entryType
+// EntryKind returns entry kind
+func (set *optionSet) EntryKind() string {
+	return set.entryKind
 }
 
 // BeforeCtx should be created before Before()
@@ -173,9 +173,9 @@ func (set *optionSet) After(before *BeforeCtx, after *AfterCtx) {
 	case LabelerTypeGrpc:
 		l = &labelerGrpc{
 			entryName:   set.entryName,
-			entryType:   set.entryType,
-			domain:      rkmid.Domain.String,
-			instance:    rkmid.LocalHostname.String,
+			entryKind:   set.entryKind,
+			domain:      rkm.Domain.String,
+			instance:    rkm.LocalHostname.String,
 			restPath:    before.Input.RestPath,
 			restMethod:  before.Input.RestMethod,
 			grpcType:    before.Input.GrpcType,
@@ -186,9 +186,9 @@ func (set *optionSet) After(before *BeforeCtx, after *AfterCtx) {
 	case LabelerTypeHttp:
 		l = &labelerHttp{
 			entryName: set.entryName,
-			entryType: set.entryType,
-			domain:    rkmid.Domain.String,
-			instance:  rkmid.LocalHostname.String,
+			entryKind: set.entryKind,
+			domain:    rkm.Domain.String,
+			instance:  rkm.LocalHostname.String,
 			method:    before.Input.RestMethod,
 			path:      before.Input.RestPath,
 			resCode:   after.Input.ResCode,
@@ -196,9 +196,9 @@ func (set *optionSet) After(before *BeforeCtx, after *AfterCtx) {
 	default:
 		l = &labelerHttp{
 			entryName: set.entryName,
-			entryType: set.entryType,
-			domain:    rkmid.Domain.String,
-			instance:  rkmid.LocalHostname.String,
+			entryKind: set.entryKind,
+			domain:    rkm.Domain.String,
+			instance:  rkm.LocalHostname.String,
 			method:    before.Input.RestMethod,
 			path:      before.Input.RestPath,
 			resCode:   after.Input.ResCode,
@@ -234,7 +234,7 @@ func (set *optionSet) ShouldIgnore(path string) bool {
 		}
 	}
 
-	return rkmid.ShouldIgnoreGlobal(path)
+	return rkm.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -252,13 +252,13 @@ type optionSetMock struct {
 	after  *AfterCtx
 }
 
-// GetEntryName returns entry name
-func (mock *optionSetMock) GetEntryName() string {
+// EntryName returns entry name
+func (mock *optionSetMock) EntryName() string {
 	return "mock"
 }
 
-// GetEntryType returns entry type
-func (mock *optionSetMock) GetEntryType() string {
+// EntryKind returns entry kind
+func (mock *optionSetMock) EntryKind() string {
 	return "mock"
 }
 
@@ -332,14 +332,13 @@ type BootConfig struct {
 }
 
 // ToOptions convert BootConfig into Option list
-func ToOptions(config *BootConfig,
-	entryName, entryType string,
+func ToOptions(config *BootConfig, name, kind string,
 	reg *prometheus.Registry, labelerType string) []Option {
 	opts := make([]Option, 0)
 
 	if config.Enabled {
 		opts = append(opts,
-			WithEntryNameAndType(entryName, entryType),
+			WithEntryNameAndKind(name, kind),
 			WithRegisterer(reg),
 			WithLabelerType(labelerType),
 			WithPathToIgnore(config.Ignore...))
@@ -353,15 +352,15 @@ func ToOptions(config *BootConfig,
 // Option options provided to Interceptor or optionsSet while creating
 type Option func(*optionSet)
 
-// WithEntryNameAndType provide entry name and entry type.
-func WithEntryNameAndType(entryName, entryType string) Option {
+// WithEntryNameAndKind provide entry name and entry kind.
+func WithEntryNameAndKind(name, kind string) Option {
 	return func(opt *optionSet) {
-		if len(entryName) > 0 {
-			opt.entryName = entryName
+		if len(name) > 0 {
+			opt.entryName = name
 		}
 
-		if len(entryType) > 0 {
-			opt.entryType = entryType
+		if len(kind) > 0 {
+			opt.entryKind = kind
 		}
 	}
 }
@@ -412,7 +411,7 @@ type labeler interface {
 // Implementation of labeler for http request
 type labelerHttp struct {
 	entryName string
-	entryType string
+	entryKind string
 	domain    string
 	instance  string
 	method    string
@@ -429,7 +428,7 @@ func (l *labelerHttp) Keys() []string {
 func (l *labelerHttp) Values() []string {
 	return []string{
 		l.entryName,
-		l.entryType,
+		l.entryKind,
 		l.domain,
 		l.instance,
 		l.method,
@@ -441,7 +440,7 @@ func (l *labelerHttp) Values() []string {
 // Implementation of labeler for gRPC
 type labelerGrpc struct {
 	entryName   string
-	entryType   string
+	entryKind   string
 	domain      string
 	instance    string
 	restMethod  string
@@ -461,7 +460,7 @@ func (l *labelerGrpc) Keys() []string {
 func (l *labelerGrpc) Values() []string {
 	return []string{
 		l.entryName,
-		l.entryType,
+		l.entryKind,
 		l.domain,
 		l.instance,
 		l.grpcService,

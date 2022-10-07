@@ -2,7 +2,7 @@
 //
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
-package rkmidprom
+package prom
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
@@ -22,7 +22,7 @@ func TestLabelerHttp_Keys(t *testing.T) {
 func TestLabelerHttp_Values(t *testing.T) {
 	l := &labelerHttp{
 		entryName: "entryName",
-		entryType: "entryType",
+		entryKind: "entryKind",
 		domain:    "domain",
 		instance:  "instance",
 		method:    "GET",
@@ -66,7 +66,7 @@ func TestLabelerGrpc_Keys(t *testing.T) {
 func TestLabelerGrpc_Values(t *testing.T) {
 	l := &labelerGrpc{
 		entryName:   "entryName",
-		entryType:   "entryType",
+		entryKind:   "entryKind",
 		domain:      "domain",
 		instance:    "instance",
 		restMethod:  "GET",
@@ -129,14 +129,14 @@ func TestToOptions(t *testing.T) {
 func TestNewOptionSet(t *testing.T) {
 	// without options
 	set := NewOptionSet().(*optionSet)
-	assert.NotEmpty(t, set.GetEntryName())
+	assert.NotEmpty(t, set.EntryName())
 	assert.Empty(t, set.pathToIgnore)
 	assert.Equal(t, LabelerTypeHttp, set.labelerType)
 	assert.NotNil(t, set.registerer)
 	assert.NotNil(t, set.metricsSet)
 	assert.NotNil(t, set.metricsSet.GetSummary(MetricsNameElapsedNano))
 	assert.NotNil(t, set.metricsSet.GetCounter(MetricsNameResCode))
-	assert.NotNil(t, GetServerMetricsSet(set.GetEntryName()))
+	assert.NotNil(t, GetServerMetricsSet(set.EntryName()))
 
 	ClearAllMetrics()
 
@@ -144,13 +144,13 @@ func TestNewOptionSet(t *testing.T) {
 	reg := prometheus.NewRegistry()
 
 	set = NewOptionSet(
-		WithEntryNameAndType("name", "type"),
+		WithEntryNameAndKind("name", "kind"),
 		WithRegisterer(reg),
 		WithPathToIgnore("/ut-ignore"),
 		WithLabelerType(LabelerTypeGrpc)).(*optionSet)
 
-	assert.NotEmpty(t, set.GetEntryName())
-	assert.NotEmpty(t, set.GetEntryType())
+	assert.NotEmpty(t, set.EntryName())
+	assert.NotEmpty(t, set.EntryKind())
 	assert.Contains(t, set.pathToIgnore, "/ut-ignore")
 	assert.Equal(t, LabelerTypeGrpc, set.labelerType)
 	assert.Equal(t, reg, set.registerer)
@@ -262,8 +262,8 @@ func TestOptionSet_After(t *testing.T) {
 
 func TestNewOptionSetMock(t *testing.T) {
 	mock := NewOptionSetMock(NewBeforeCtx(), NewAfterCtx())
-	assert.NotEmpty(t, mock.GetEntryName())
-	assert.NotEmpty(t, mock.GetEntryType())
+	assert.NotEmpty(t, mock.EntryName())
+	assert.NotEmpty(t, mock.EntryKind())
 	assert.NotNil(t, mock.BeforeCtx(nil))
 	assert.NotNil(t, mock.AfterCtx(""))
 	mock.Before(nil)

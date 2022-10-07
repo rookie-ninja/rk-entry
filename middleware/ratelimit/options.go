@@ -3,13 +3,13 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// Package rkmidlimit provide options
-package rkmidlimit
+// Package limit provide options
+package limit
 
 import (
 	"errors"
-	"github.com/rookie-ninja/rk-entry/v2/error"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/error"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
 	uber "go.uber.org/ratelimit"
 	"net/http"
 	"strings"
@@ -25,9 +25,9 @@ const (
 
 // OptionSetInterface mainly for testing purpose
 type OptionSetInterface interface {
-	GetEntryName() string
+	EntryName() string
 
-	GetEntryType() string
+	EntryKind() string
 
 	Before(*BeforeCtx)
 
@@ -41,7 +41,7 @@ type OptionSetInterface interface {
 // optionSet which is used for middleware implementation
 type optionSet struct {
 	entryName       string
-	entryType       string
+	entryKind       string
 	reqPerSec       int
 	reqPerSecByPath map[string]int
 	algorithm       string
@@ -54,7 +54,7 @@ type optionSet struct {
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName:       "fake-entry",
-		entryType:       "",
+		entryKind:       "",
 		reqPerSec:       DefaultLimit,
 		reqPerSecByPath: make(map[string]int),
 		algorithm:       LeakyBucket,
@@ -101,14 +101,14 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	return set
 }
 
-// GetEntryName returns entry name
-func (set *optionSet) GetEntryName() string {
+// EntryName returns entry name
+func (set *optionSet) EntryName() string {
 	return set.entryName
 }
 
-// GetEntryType returns entry type
-func (set *optionSet) GetEntryType() string {
-	return set.entryType
+// EntryKind returns entry kind
+func (set *optionSet) EntryKind() string {
+	return set.entryKind
 }
 
 // BeforeCtx should be created before Before()
@@ -135,7 +135,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 
 	limiter := set.getLimiter(ctx.Input.UrlPath)
 	if err := limiter(); err != nil {
-		ctx.Output.ErrResp = rkmid.GetErrorBuilder().New(http.StatusTooManyRequests, err.Error())
+		ctx.Output.ErrResp = rkm.GetErrorBuilder().New(http.StatusTooManyRequests, err.Error())
 		return
 	}
 
@@ -167,7 +167,7 @@ func (set *optionSet) ShouldIgnore(path string) bool {
 		}
 	}
 
-	return rkmid.ShouldIgnoreGlobal(path)
+	return rkm.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -183,13 +183,13 @@ type optionSetMock struct {
 	before *BeforeCtx
 }
 
-// GetEntryName returns entry name
-func (mock *optionSetMock) GetEntryName() string {
+// EntryName returns entry name
+func (mock *optionSetMock) EntryName() string {
 	return "mock"
 }
 
-// GetEntryType returns entry type
-func (mock *optionSetMock) GetEntryType() string {
+// EntryKind returns entry kind
+func (mock *optionSetMock) EntryKind() string {
 	return "mock"
 }
 
@@ -233,7 +233,7 @@ type BootConfig struct {
 	Enabled   bool     `yaml:"enabled" json:"enabled"`
 	Ignore    []string `yaml:"ignore" json:"ignore"`
 	Algorithm string   `yaml:"algorithm" json:"algorithm"`
-	ReqPerSec *int     `yaml:"reqPerSec" json:"reqPerSec"`
+	ReqPerSec int      `yaml:"reqPerSec" json:"reqPerSec"`
 	Paths     []struct {
 		Path      string `yaml:"path" json:"path"`
 		ReqPerSec int    `yaml:"reqPerSec" json:"reqPerSec"`
@@ -241,11 +241,11 @@ type BootConfig struct {
 }
 
 // ToOptions convert BootConfig into Option list
-func ToOptions(config *BootConfig, entryName, entryType string) []Option {
+func ToOptions(config *BootConfig, name, kind string) []Option {
 	opts := make([]Option, 0)
 
 	if config.Enabled {
-		opts = append(opts, WithEntryNameAndType(entryName, entryType))
+		opts = append(opts, WithEntryNameAndKind(name, kind))
 
 		if len(config.Algorithm) > 0 {
 			opts = append(opts, WithAlgorithm(config.Algorithm))
@@ -269,23 +269,19 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 // Option if for middleware options while creating middleware
 type Option func(*optionSet)
 
-// WithEntryNameAndType provide entry name and entry type.
-func WithEntryNameAndType(entryName, entryType string) Option {
+// WithEntryNameAndKind provide entry name and entry kind.
+func WithEntryNameAndKind(name, kind string) Option {
 	return func(opt *optionSet) {
-		opt.entryName = entryName
-		opt.entryType = entryType
+		opt.entryName = name
+		opt.entryKind = kind
 	}
 }
 
 // WithReqPerSec Provide request per second.
-func WithReqPerSec(reqPerSec *int) Option {
+func WithReqPerSec(reqPerSec int) Option {
 	return func(opt *optionSet) {
-		if reqPerSec != nil {
-			if *reqPerSec <= 0 {
-				opt.reqPerSec = 0
-			} else {
-				opt.reqPerSec = *reqPerSec
-			}
+		if reqPerSec >= 0 {
+			opt.reqPerSec = reqPerSec
 		}
 	}
 }
@@ -299,8 +295,6 @@ func WithReqPerSecByPath(path string, reqPerSec int) Option {
 
 		if reqPerSec >= 0 {
 			opt.reqPerSecByPath[path] = reqPerSec
-		} else {
-			opt.reqPerSecByPath[path] = 0
 		}
 	}
 }

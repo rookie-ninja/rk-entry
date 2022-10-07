@@ -3,7 +3,7 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-package rkmidlimit
+package limit
 
 import (
 	"errors"
@@ -16,7 +16,7 @@ import (
 func TestNewOptionSet(t *testing.T) {
 	// without options
 	set := NewOptionSet().(*optionSet)
-	assert.NotEmpty(t, set.GetEntryName())
+	assert.NotEmpty(t, set.EntryName())
 	assert.Equal(t, DefaultLimit, set.reqPerSec)
 	assert.Empty(t, set.reqPerSecByPath)
 	assert.Equal(t, LeakyBucket, set.algorithm)
@@ -24,18 +24,16 @@ func TestNewOptionSet(t *testing.T) {
 
 	// with option
 	l := func() error { return nil }
-	reqPerSec := 1
-
 	set = NewOptionSet(
-		WithEntryNameAndType("name", "type"),
-		WithReqPerSec(&reqPerSec),
+		WithEntryNameAndKind("name", "kind"),
+		WithReqPerSec(1),
 		WithReqPerSecByPath("/ut", 1),
 		WithAlgorithm(LeakyBucket),
 		WithGlobalLimiter(l),
 		WithLimiterByPath("/ut-sub", l),
 	).(*optionSet)
 
-	assert.NotEmpty(t, set.GetEntryName())
+	assert.NotEmpty(t, set.EntryName())
 	assert.Equal(t, 1, set.reqPerSec)
 	assert.NotEmpty(t, set.reqPerSecByPath)
 	assert.Equal(t, LeakyBucket, set.algorithm)
@@ -97,8 +95,8 @@ func TestToOptions(t *testing.T) {
 
 func TestNewOptionSetMock(t *testing.T) {
 	mock := NewOptionSetMock(NewBeforeCtx())
-	assert.NotEmpty(t, mock.GetEntryName())
-	assert.NotEmpty(t, mock.GetEntryType())
+	assert.NotEmpty(t, mock.EntryName())
+	assert.NotEmpty(t, mock.EntryKind())
 	assert.NotNil(t, mock.BeforeCtx(nil))
 	mock.Before(nil)
 }

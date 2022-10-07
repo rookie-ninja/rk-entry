@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rookie-ninja/rk-entry/v2/entry"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
-	"github.com/rookie-ninja/rk-query"
+	"github.com/rookie-ninja/rk-entry/v3/entry"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
+	"github.com/rookie-ninja/rk-query/v2"
 	"go.uber.org/zap"
 	"runtime"
 	"strings"
@@ -54,7 +54,7 @@ func init() {
 	prometheus.DefaultRegisterer.Register(summaryVec)
 
 	// 3: init logger
-	logger = rkentry.NewLoggerEntryStdout().Logger
+	logger = rk.NewZapEntryStdout().Logger
 }
 
 // ************* Global *************
@@ -138,8 +138,8 @@ func WithEvent(e rkquery.Event) Option {
 
 func NewCursor(opts ...Option) *Cursor {
 	c := &Cursor{
-		Logger:    rkentry.LoggerEntryStdout.Logger,
-		Event:     rkentry.EventEntryNoop.CreateEventNoop(),
+		Logger:    rk.NewZapEntryStdout().Logger,
+		Event:     rk.NewEventEntryNoop().CreateEventNoop(),
 		entryName: "",
 		entryType: "",
 		Now:       time.Now(),

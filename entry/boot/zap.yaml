@@ -1,0 +1,54 @@
+---
+kind: zap
+apiVersion: v1
+metadata:
+  name: logger
+  version: v1
+  domain: *
+  enabled: true
+  default: true
+entry:
+  api:
+    enabled: true
+    path: /v1/zap/level
+  zap:
+    level: "info"                                       # Optional, default: info, options: [debug, info, warn, error, dPanic, panic, fatal]
+    development: true                                   # Optional, default: true
+    disableCaller: false                                # Optional, default: false
+    disableStacktrace: true                             # Optional, default: true
+    encoding: console                                   # Optional, default: console, options: [json, console, flatten]
+    outputPaths: ["stdout"]                             # Optional, default: [stdout]
+    errorOutputPaths: ["stderr"]                        # Optional, default: [stderr]
+    encoderConfig:                                      # Optional
+      timeKey: "ts"                                     # Optional, default: ts
+      levelKey: "level"                                 # Optional, default: level
+      nameKey: "logger"                                 # Optional, default: logger
+      callerKey: "caller"                               # Optional, default: caller
+      messageKey: "msg"                                 # Optional, default: msg
+      stacktraceKey: "stacktrace"                       # Optional, default: stacktrace
+      skipLineEnding: false                             # Optional, default: false
+      lineEnding: "\n"                                  # Optional, default: \n
+      consoleSeparator: "\t"                            # Optional, default: \t
+    sampling:                                           # Optional, default: nil
+      initial: 0                                        # Optional, default: 0
+      thereafter: 0                                     # Optional, default: 0
+    initialFields:                                      # Optional, default: empty map
+      key: value
+  rotator:
+    filename:
+    maxsize: 1024                                       # Optional, suggested: 1024 (MB)
+    maxage: 7                                           # Optional, suggested: 7 (day)
+    maxbackups: 3                                       # Optional, suggested: 3 (day)
+    localtime: true                                     # Optional, suggested: true
+    compress: true                                      # Optional, suggested: true
+  loki:
+    enabled: true                                       # Optional, default: false
+    addr: localhost:3100                                # Optional, default: localhost:3100
+    path: /loki/api/v1/push                             # Optional, default: /loki/api/v1/push
+    username: ""                                        # Optional, default: ""
+    password: ""                                        # Optional, default: ""
+    maxBatchWait: 3s                                    # Optional, default: 3s
+    maxBatchSize: 1000                                  # Optional, default: 1000
+    insecureSkipVerify: false                           # Optional, default: false
+    labels:                                             # Optional, default: empty map
+      my_label_key: my_label_value

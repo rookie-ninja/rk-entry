@@ -3,12 +3,12 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// Package rkmidsec provide auth related options
-package rkmidsec
+// Package secure provide security related options
+package secure
 
 import (
 	"fmt"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
 	"net/http"
 	"strings"
 )
@@ -17,9 +17,9 @@ import (
 
 // OptionSetInterface mainly for testing purpose
 type OptionSetInterface interface {
-	GetEntryName() string
+	EntryName() string
 
-	GetEntryType() string
+	EntryKind() string
 
 	Before(*BeforeCtx)
 
@@ -35,8 +35,8 @@ type optionSet struct {
 	// EntryName name of entry
 	entryName string
 
-	// EntryType type of entry
-	entryType string
+	// EntryKind type of entry
+	entryKind string
 
 	// pathToIgnore ignoring paths prefix
 	pathToIgnore []string
@@ -108,7 +108,7 @@ type optionSet struct {
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName:          "fake-entry",
-		entryType:          "",
+		entryKind:          "",
 		xssProtection:      "1; mode=block",
 		contentTypeNosniff: "nosniff",
 		xFrameOptions:      "SAMEORIGIN",
@@ -127,14 +127,14 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	return set
 }
 
-// GetEntryName returns entry name
-func (set *optionSet) GetEntryName() string {
+// EntryName returns entry name
+func (set *optionSet) EntryName() string {
 	return set.entryName
 }
 
-// GetEntryType returns entry type
-func (set *optionSet) GetEntryType() string {
-	return set.entryType
+// EntryKind returns entry kind
+func (set *optionSet) EntryKind() string {
+	return set.entryKind
 }
 
 // BeforeCtx should be created before Before()
@@ -144,7 +144,7 @@ func (set *optionSet) BeforeCtx(req *http.Request) *BeforeCtx {
 	if req != nil && req.URL != nil && req.Header != nil {
 		ctx.Input.UrlPath = req.URL.Path
 		ctx.Input.isTLS = req.TLS != nil
-		ctx.Input.xForwardedProto = req.Header.Get(rkmid.HeaderXForwardedProto)
+		ctx.Input.xForwardedProto = req.Header.Get(rkm.HeaderXForwardedProto)
 	}
 
 	return ctx
@@ -159,17 +159,17 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 
 	// Add X-XSS-Protection header
 	if set.xssProtection != "" {
-		ctx.Output.HeadersToReturn[rkmid.HeaderXXSSProtection] = set.xssProtection
+		ctx.Output.HeadersToReturn[rkm.HeaderXXSSProtection] = set.xssProtection
 	}
 
 	// Add X-Content-Type-Options header
 	if set.contentTypeNosniff != "" {
-		ctx.Output.HeadersToReturn[rkmid.HeaderXContentTypeOptions] = set.contentTypeNosniff
+		ctx.Output.HeadersToReturn[rkm.HeaderXContentTypeOptions] = set.contentTypeNosniff
 	}
 
 	// Add X-Frame-Options header
 	if set.xFrameOptions != "" {
-		ctx.Output.HeadersToReturn[rkmid.HeaderXFrameOptions] = set.xFrameOptions
+		ctx.Output.HeadersToReturn[rkm.HeaderXFrameOptions] = set.xFrameOptions
 	}
 
 	// Add Strict-Transport-Security header
@@ -181,21 +181,21 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		if set.hstsPreloadEnabled {
 			subdomains = fmt.Sprintf("%s; preload", subdomains)
 		}
-		ctx.Output.HeadersToReturn[rkmid.HeaderStrictTransportSecurity] = fmt.Sprintf("max-age=%d%s", set.hstsMaxAge, subdomains)
+		ctx.Output.HeadersToReturn[rkm.HeaderStrictTransportSecurity] = fmt.Sprintf("max-age=%d%s", set.hstsMaxAge, subdomains)
 	}
 
 	// Add Content-Security-Policy-Report-Only or Content-Security-Policy header
 	if set.contentSecurityPolicy != "" {
 		if set.cspReportOnly {
-			ctx.Output.HeadersToReturn[rkmid.HeaderContentSecurityPolicyReportOnly] = set.contentSecurityPolicy
+			ctx.Output.HeadersToReturn[rkm.HeaderContentSecurityPolicyReportOnly] = set.contentSecurityPolicy
 		} else {
-			ctx.Output.HeadersToReturn[rkmid.HeaderContentSecurityPolicy] = set.contentSecurityPolicy
+			ctx.Output.HeadersToReturn[rkm.HeaderContentSecurityPolicy] = set.contentSecurityPolicy
 		}
 	}
 
 	// Add Referrer-Policy header
 	if set.referrerPolicy != "" {
-		ctx.Output.HeadersToReturn[rkmid.HeaderReferrerPolicy] = set.referrerPolicy
+		ctx.Output.HeadersToReturn[rkm.HeaderReferrerPolicy] = set.referrerPolicy
 	}
 
 }
@@ -208,7 +208,7 @@ func (set *optionSet) ShouldIgnore(path string) bool {
 		}
 	}
 
-	return rkmid.ShouldIgnoreGlobal(path)
+	return rkm.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -224,13 +224,13 @@ type optionSetMock struct {
 	before *BeforeCtx
 }
 
-// GetEntryName returns entry name
-func (mock *optionSetMock) GetEntryName() string {
+// EntryName returns entry name
+func (mock *optionSetMock) EntryName() string {
 	return "mock"
 }
 
-// GetEntryType returns entry type
-func (mock *optionSetMock) GetEntryType() string {
+// EntryKind returns entry kind
+func (mock *optionSetMock) EntryKind() string {
 	return "mock"
 }
 
@@ -293,7 +293,7 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 
 	if config.Enabled {
 		opts = append(opts,
-			WithEntryNameAndType(entryName, entryType),
+			WithEntryNameAndKind(entryName, entryType),
 			WithXSSProtection(config.XssProtection),
 			WithContentTypeNosniff(config.ContentTypeNosniff),
 			WithXFrameOptions(config.XFrameOptions),
@@ -314,11 +314,11 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 // Option
 type Option func(*optionSet)
 
-// WithEntryNameAndType provide entry name and entry type.
-func WithEntryNameAndType(entryName, entryType string) Option {
+// WithEntryNameAndKind provide entry name and entry kind.
+func WithEntryNameAndKind(name, kind string) Option {
 	return func(set *optionSet) {
-		set.entryName = entryName
-		set.entryType = entryType
+		set.entryName = name
+		set.entryKind = kind
 	}
 }
 

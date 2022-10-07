@@ -3,14 +3,14 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// Package rkmidpanic provide options
-package rkmidpanic
+// Package panic provide options
+package panic
 
 import (
 	"fmt"
-	"github.com/rookie-ninja/rk-entry/v2/error"
-	rkmid "github.com/rookie-ninja/rk-entry/v2/middleware"
-	"github.com/rookie-ninja/rk-query"
+	"github.com/rookie-ninja/rk-entry/v3/error"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
+	"github.com/rookie-ninja/rk-query/v2"
 	"go.uber.org/zap"
 	"net/http"
 	"runtime/debug"
@@ -20,9 +20,9 @@ import (
 
 // OptionSetInterface mainly for testing purpose
 type OptionSetInterface interface {
-	GetEntryName() string
+	EntryName() string
 
-	GetEntryType() string
+	EntryKind() string
 
 	Before(*BeforeCtx)
 
@@ -34,7 +34,7 @@ type OptionSetInterface interface {
 // optionSet which is used for middleware implementation
 type optionSet struct {
 	entryName string
-	entryType string
+	entryKind string
 	mock      OptionSetInterface
 }
 
@@ -42,7 +42,7 @@ type optionSet struct {
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName: "fake-entry",
-		entryType: "",
+		entryKind: "",
 	}
 
 	for i := range opts {
@@ -56,14 +56,14 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	return set
 }
 
-// GetEntryName returns entry name
-func (set *optionSet) GetEntryName() string {
+// EntryName returns entry name
+func (set *optionSet) EntryName() string {
 	return set.entryName
 }
 
-// GetEntryType returns entry type
-func (set *optionSet) GetEntryType() string {
-	return set.entryType
+// EntryKind returns entry kind
+func (set *optionSet) EntryKind() string {
+	return set.entryKind
 }
 
 // BeforeCtx should be created before Before()
@@ -89,7 +89,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 			if se, ok := recv.(rkerror.ErrorInterface); ok {
 				res = se
 			} else {
-				res = rkmid.GetErrorBuilder().New(http.StatusInternalServerError, "Panic occurs", recv)
+				res = rkm.GetErrorBuilder().New(http.StatusInternalServerError, "Panic occurs", recv)
 			}
 
 			if ctx.Input.Event != nil {
@@ -121,13 +121,13 @@ type optionSetMock struct {
 	before *BeforeCtx
 }
 
-// GetEntryName returns entry name
-func (mock *optionSetMock) GetEntryName() string {
+// EntryName returns entry name
+func (mock *optionSetMock) EntryName() string {
 	return "mock"
 }
 
-// GetEntryType returns entry type
-func (mock *optionSetMock) GetEntryType() string {
+// EntryKind returns entry kind
+func (mock *optionSetMock) EntryKind() string {
 	return "mock"
 }
 
@@ -166,11 +166,11 @@ type BeforeCtx struct {
 // Option is for middleware while creating
 type Option func(*optionSet)
 
-// WithEntryNameAndType Provide entry name and entry type.
-func WithEntryNameAndType(entryName, entryType string) Option {
+// WithEntryNameAndKind Provide entry name and entry type.
+func WithEntryNameAndKind(name, kind string) Option {
 	return func(opt *optionSet) {
-		opt.entryName = entryName
-		opt.entryType = entryType
+		opt.entryName = name
+		opt.entryKind = kind
 	}
 }
 

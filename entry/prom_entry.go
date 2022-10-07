@@ -1,283 +1,153 @@
-package rkentry
+package rk
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
+	"embed"
 	"encoding/json"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/collectors"
-	"github.com/prometheus/client_golang/prometheus/push"
-	"go.uber.org/atomic"
-	"go.uber.org/zap"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.uber.org/zap/zapgrpc"
+	"gopkg.in/yaml.v3"
 	"net/http"
-	"strings"
+	"path"
 	"time"
 )
 
-// WithRegistryPromEntry provide prometheus.Registry
-func WithRegistryPromEntry(registry *prometheus.Registry) PromEntryOption {
-	return func(entry *PromEntry) {
-		entry.Registry = registry
-	}
+type PrometheusConfig struct {
+	EntryConfigHeader `yaml:",inline"`
+	Entry             struct {
+		Url                 string `yaml:"url"`
+		ErrorHandling       string `yaml:"errorHandling"`
+		DisableCompression  bool   `yaml:"disableCompression"`
+		MaxRequestsInFlight int    `yaml:"maxRequestsInFlight"`
+		Timeout             string `yaml:"timeout"`
+		EnableOpenMetrics   bool   `yaml:"enableOpenMetrics"`
+		Logger              struct {
+			Kind string `yaml:"kind"`
+			Name string `yaml:"name"`
+		} `yaml:"logger"`
+	} `yaml:"entry"`
 }
 
-// RegisterPromEntry Create a prom entry with options and add prom entry to rkentry.GlobalAppCtx
-func RegisterPromEntry(boot *BootProm, opts ...PromEntryOption) *PromEntry {
-	if !boot.Enabled {
-		return nil
-	}
-
-	entry := &PromEntry{
-		entryName:        "PromEntry",
-		entryType:        PromEntryType,
-		entryDescription: "Internal RK entry which implements prometheus client.",
-		Path:             boot.Path,
-		Registerer:       prometheus.DefaultRegisterer,
-		Gatherer:         prometheus.DefaultGatherer,
-	}
-
-	for i := range opts {
-		opts[i](entry)
-	}
-
-	if entry.Registry == nil {
-		entry.Registry = prometheus.NewRegistry()
-	}
-	entry.Registry.Register(collectors.NewGoCollector())
-
-	if entry.Registry != nil {
-		entry.Registerer = entry.Registry
-		entry.Gatherer = entry.Registry
-	}
-
-	// Trim space by default
-	entry.Path = strings.TrimSpace(entry.Path)
-
-	if len(entry.Path) < 1 {
-		// Invalid path, use default one
-		entry.Path = "/metrics"
-	}
-
-	if !strings.HasPrefix(entry.Path, "/") {
-		entry.Path = "/" + entry.Path
-	}
-
-	entry.Pusher = newPushGatewayPusher(boot, entry.Gatherer)
-
-	return entry
+func (p *PrometheusConfig) JSON() string {
+	b, _ := json.Marshal(p)
+	return string(b)
 }
 
-// BootProm Boot config which is for prom entry.
-type BootProm struct {
-	Enabled bool   `yaml:"enabled" json:"enabled"`
-	Path    string `yaml:"path" json:"path"`
-	Pusher  struct {
-		Enabled       bool   `yaml:"enabled" json:"enabled"`
-		IntervalMs    int64  `yaml:"IntervalMs" json:"IntervalMs"`
-		JobName       string `yaml:"jobName" json:"jobName"`
-		RemoteAddress string `yaml:"remoteAddress" json:"remoteAddress"`
-		BasicAuth     string `yaml:"basicAuth" json:"basicAuth"`
-		CertEntry     string `yaml:"certEntry" json:"certEntry"`
-		LoggerEntry   string `yaml:"loggerEntry" json:"loggerEntry"`
-	} `yaml:"pusher" json:"pusher"`
+func (p *PrometheusConfig) YAML() string {
+	b, _ := yaml.Marshal(p)
+	return string(b)
 }
 
-// PromEntry Prometheus entry which implements rkentry.Entry.
-type PromEntry struct {
-	*prometheus.Registry
-	Registerer prometheus.Registerer
-	Gatherer   prometheus.Gatherer
-
-	entryName        string             `json:"-" yaml:"-"`
-	entryType        string             `json:"-" yaml:"-"`
-	entryDescription string             `json:"-" yaml:"-"`
-	Path             string             `json:"-" yaml:"-"`
-	Pusher           *PushGatewayPusher `json:"-" yaml:"-"`
+func (p *PrometheusConfig) Header() *EntryConfigHeader {
+	return &p.EntryConfigHeader
 }
 
-type PromEntryOption func(entry *PromEntry)
-
-// Bootstrap Start prometheus client
-func (entry *PromEntry) Bootstrap(ctx context.Context) {
-	// start pusher
-	if entry.Pusher != nil {
-		entry.Pusher.Bootstrap(ctx)
-	}
-}
-
-// Interrupt Shutdown prometheus client
-func (entry *PromEntry) Interrupt(ctx context.Context) {
-	if entry.Pusher != nil {
-		entry.Pusher.Interrupt(ctx)
-	}
-}
-
-// GetName Return name of prom entry
-func (entry *PromEntry) GetName() string {
-	return entry.entryName
-}
-
-// GetType Return type of prom entry
-func (entry *PromEntry) GetType() string {
-	return entry.entryType
-}
-
-// GetDescription Get description of entry
-func (entry *PromEntry) GetDescription() string {
-	return entry.entryDescription
-}
-
-// String Stringfy prom entry
-func (entry *PromEntry) String() string {
-	bytes, _ := json.Marshal(entry)
-	return string(bytes)
-}
-
-// MarshalJSON Marshal entry
-func (entry *PromEntry) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
-		"name":              entry.entryName,
-		"type":              entry.entryType,
-		"description":       entry.entryDescription,
-		"pushGateWayPusher": entry.Pusher,
+func (p *PrometheusConfig) Register() (Entry, error) {
+	if !p.Metadata.Enabled {
+		return nil, nil
 	}
 
-	return json.Marshal(&m)
+	reg := prometheus.NewRegistry()
+
+	errorHandling := promhttp.HTTPErrorOnError
+	switch p.Entry.ErrorHandling {
+	case "ContinueOnError":
+		errorHandling = promhttp.ContinueOnError
+	case "PanicOnError":
+		errorHandling = promhttp.PanicOnError
+	}
+
+	timeout := time.Duration(0)
+	if len(p.Entry.Timeout) > 0 {
+		v, err := time.ParseDuration(p.Entry.Timeout)
+		if err != nil {
+			return nil, err
+		}
+		timeout = v
+	}
+
+	loggerEntry := Registry.GetEntryOrDefault(p.Entry.Logger.Kind, p.Entry.Logger.Name)
+
+	var logger promhttp.Logger
+	if loggerEntry == nil {
+		if v, ok := loggerEntry.(*ZapEntry); ok {
+			logger = zapgrpc.NewLogger(v.Logger)
+		}
+	}
+
+	entry := &PrometheusEntry{
+		config:   p,
+		Registry: reg,
+		WebHandler: func(writer http.ResponseWriter, request *http.Request) {
+			promhttp.HandlerFor(reg, promhttp.HandlerOpts{
+				ErrorLog:            logger,
+				ErrorHandling:       errorHandling,
+				Registry:            reg,
+				DisableCompression:  p.Entry.DisableCompression,
+				MaxRequestsInFlight: p.Entry.MaxRequestsInFlight,
+				Timeout:             timeout,
+				EnableOpenMetrics:   p.Entry.EnableOpenMetrics,
+			}).ServeHTTP(writer, request)
+		},
+	}
+
+	if len(p.Entry.Url) < 1 {
+		p.Entry.Url = "/metrics"
+	}
+	p.Entry.Url = path.Join("/", p.Entry.Url)
+
+	Registry.AddEntry(entry)
+
+	return entry, nil
 }
 
-// UnmarshalJSON Unmarshal entry
-func (entry *PromEntry) UnmarshalJSON([]byte) error {
+type PrometheusEntry struct {
+	config     *PrometheusConfig
+	Registry   *prometheus.Registry
+	WebHandler http.HandlerFunc
+}
+
+func (p *PrometheusEntry) Bootstrap(ctx context.Context) {
+	return
+}
+
+func (p *PrometheusEntry) Interrupt(ctx context.Context) {
+	return
+}
+
+func (p *PrometheusEntry) FS() *embed.FS {
+	return Registry.EntryFS(p.Kind(), p.Name())
+}
+
+func (p *PrometheusEntry) Category() string {
+	return CategoryPlugin
+}
+
+func (p *PrometheusEntry) Kind() string {
+	return p.config.Kind
+}
+
+func (p *PrometheusEntry) Name() string {
+	return p.config.Metadata.Name
+}
+
+func (p *PrometheusEntry) Config() EntryConfig {
+	return p.config
+}
+
+func (p *PrometheusEntry) Monitor() *Monitor {
 	return nil
 }
 
-// RegisterCollectors Register collectors in default registry
-func (entry *PromEntry) RegisterCollectors(collectors ...prometheus.Collector) {
-	for i := range collectors {
-		entry.Registerer.Register(collectors[i])
-	}
-}
-
-// PushGatewayPusher is a pusher which contains bellow instances
-type PushGatewayPusher struct {
-	loggerEntry   *LoggerEntry  `json:"-" yaml:"-"`
-	Pusher        *push.Pusher  `json:"-" yaml:"-"`
-	IntervalMs    time.Duration `json:"-" yaml:"-"`
-	RemoteAddress string        `json:"-" yaml:"-"`
-	JobName       string        `json:"-" yaml:"-"`
-	running       *atomic.Bool  `json:"-" yaml:"-"`
-	certEntry     *CertEntry    `json:"-" yaml:"-"`
-}
-
-// newPushGatewayPusher creates a new pushGateway periodic job instances with intervalMS, remote URL and job name
-func newPushGatewayPusher(boot *BootProm, gatherer prometheus.Gatherer) *PushGatewayPusher {
-	if !boot.Pusher.Enabled {
-		return nil
+func (p *PrometheusEntry) Apis() []*BuiltinApi {
+	res := []*BuiltinApi{
+		{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.Url),
+			Handler: p.WebHandler,
+		},
 	}
 
-	certEntry := GlobalAppCtx.GetCertEntry(boot.Pusher.CertEntry)
-
-	pg := &PushGatewayPusher{
-		IntervalMs:    time.Duration(boot.Pusher.IntervalMs) * time.Millisecond,
-		JobName:       boot.Pusher.JobName,
-		RemoteAddress: boot.Pusher.RemoteAddress,
-		running:       atomic.NewBool(false),
-		certEntry:     certEntry,
-	}
-
-	if pg.IntervalMs < 1 {
-		pg.IntervalMs = 5 * time.Second
-	}
-
-	if len(pg.RemoteAddress) < 1 {
-		pg.RemoteAddress = "http://localhost:9091"
-	}
-
-	if len(pg.JobName) < 1 {
-		pg.JobName = "rk"
-	}
-
-	pg.loggerEntry = GlobalAppCtx.GetLoggerEntry(boot.Pusher.LoggerEntry)
-	if pg.loggerEntry == nil {
-		pg.loggerEntry = LoggerEntryStdout
-	}
-
-	pg.Pusher = push.New(pg.RemoteAddress, pg.JobName)
-
-	// assign credential of basic auth
-	if len(boot.Pusher.BasicAuth) > 0 && strings.Contains(boot.Pusher.BasicAuth, ":") {
-		boot.Pusher.BasicAuth = strings.TrimSpace(boot.Pusher.BasicAuth)
-		tokens := strings.Split(boot.Pusher.BasicAuth, ":")
-		if len(tokens) == 2 {
-			pg.Pusher = pg.Pusher.BasicAuth(tokens[0], tokens[1])
-		}
-	}
-
-	pg.Pusher.Gatherer(gatherer)
-
-	return pg
-}
-
-// Bootstrap starts a periodic job
-func (pub *PushGatewayPusher) Bootstrap(ctx context.Context) {
-	httpClient := http.DefaultClient
-
-	var conf *tls.Config
-	if pub.certEntry != nil {
-		if pub.certEntry.Certificate != nil {
-			conf = &tls.Config{}
-			conf.Certificates = []tls.Certificate{
-				*pub.certEntry.Certificate,
-			}
-		}
-
-		if pub.certEntry.RootCA != nil {
-			caCert := x509.NewCertPool()
-			caCert.AddCert(pub.certEntry.RootCA)
-
-			if conf != nil {
-				conf.RootCAs = caCert
-			} else {
-				conf = &tls.Config{}
-				conf.RootCAs = caCert
-			}
-		}
-	}
-
-	if conf != nil {
-		httpClient.Transport = &http.Transport{
-			TLSClientConfig: conf,
-		}
-	}
-
-	pub.Pusher.Client(httpClient)
-
-	pub.running.CAS(false, true)
-
-	pub.loggerEntry.Info("Starting pushGateway publisher",
-		zap.String("remoteAddress", pub.RemoteAddress),
-		zap.String("jobName", pub.JobName))
-
-	go pub.push()
-}
-
-// Interrupt stops periodic job
-func (pub *PushGatewayPusher) Interrupt(ctx context.Context) {
-	pub.running.CAS(true, false)
-}
-
-// Internal use only
-func (pub *PushGatewayPusher) push() {
-	for pub.running.Load() {
-		err := pub.Pusher.Push()
-
-		if err != nil {
-			pub.loggerEntry.Warn("Failed to push metrics to PushGateway",
-				zap.String("remoteAddress", pub.RemoteAddress),
-				zap.String("jobName", pub.JobName),
-				zap.Error(err))
-		}
-
-		time.Sleep(pub.IntervalMs)
-	}
+	return res
 }

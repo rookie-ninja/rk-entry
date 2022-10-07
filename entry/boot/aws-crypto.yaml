@@ -1,0 +1,58 @@
+---
+kind: aws
+apiVersion: v1
+metadata:
+  name: default
+  version: v1
+  domain: *
+  enabled: true
+  default: true
+entry:
+  profile: ""
+  configFilePaths: []
+  credFilePaths: []
+  override:
+    region: ""
+    accessKey: ""
+    secretKey: ""
+    session: ""
+---
+kind: awsCrypto
+apiVersion: v1
+metadata:
+  name: crypto
+  version: v1
+  domain: *
+  enabled: true
+  default: true
+entry:
+  region: ""
+  configRef: "default"
+  algorithm: ""
+  kmsKeyId: ""
+---
+kind: awsSigner
+apiVersion: v1
+metadata:
+  name: signer
+  version: v1
+  domain: *
+  enabled: true
+  default: true
+entry:
+  region: ""
+  configRef: "default"
+  algorithm: ""
+  kmsKeyId: ""
+---
+kind: awsKms
+apiVersion: v1
+metadata:
+  name: kms
+  version: v1
+  domain: *
+  enabled: true
+  default: true
+entry:
+  region: ""
+  configRef: "default"

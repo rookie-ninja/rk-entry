@@ -1,23 +1,25 @@
-package rkentry
+package rk
 
 import (
 	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"encoding/json"
+	"embed"
 	"errors"
 	"io"
 )
 
-func NewCryptoAES(entryName string, key []byte) (*CryptoAESEntry, error) {
+const CryptoKind = "crypto"
+
+func NewCryptoAES(name string, key []byte) (*CryptoAESEntry, error) {
 	entry := &CryptoAESEntry{
-		entryName: entryName,
-		key:       key,
+		name: name,
+		key:  key,
 	}
 
-	if len(entry.entryName) < 1 {
-		entry.entryName = "CryptoAES"
+	if len(entry.name) < 1 {
+		entry.name = "CryptoAES"
 	}
 
 	block, err := aes.NewCipher(entry.key)
@@ -31,37 +33,42 @@ func NewCryptoAES(entryName string, key []byte) (*CryptoAESEntry, error) {
 }
 
 type CryptoAESEntry struct {
-	entryName string
-	key       []byte
-	block     cipher.Block
+	name  string
+	key   []byte
+	block cipher.Block
+}
+
+func (s *CryptoAESEntry) Category() string {
+	return CategoryInline
+}
+
+func (s *CryptoAESEntry) Kind() string {
+	return "crypto"
+}
+
+func (s *CryptoAESEntry) Name() string {
+	return s.name
+}
+
+func (s *CryptoAESEntry) Config() EntryConfig {
+	return nil
+}
+
+func (s *CryptoAESEntry) Monitor() *Monitor {
+	return nil
+}
+
+func (s *CryptoAESEntry) FS() *embed.FS {
+	return nil
+}
+
+func (s *CryptoAESEntry) Apis() []*BuiltinApi {
+	return []*BuiltinApi{}
 }
 
 func (s *CryptoAESEntry) Bootstrap(ctx context.Context) {}
 
 func (s *CryptoAESEntry) Interrupt(ctx context.Context) {}
-
-func (s *CryptoAESEntry) GetName() string {
-	return s.entryName
-}
-
-func (s *CryptoAESEntry) GetType() string {
-	return CryptoEntryType
-}
-
-func (s *CryptoAESEntry) GetDescription() string {
-	return "Symmetric crypto entry with AES"
-}
-
-func (s *CryptoAESEntry) String() string {
-	m := map[string]string{
-		"name":      s.entryName,
-		"algorithm": "AES",
-	}
-
-	bytes, _ := json.Marshal(m)
-
-	return string(bytes)
-}
 
 func (s *CryptoAESEntry) Encrypt(plaintext []byte) ([]byte, error) {
 	gcm, err := cipher.NewGCM(s.block)

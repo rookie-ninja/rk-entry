@@ -1,23 +1,8 @@
 definitions:
-  rkentry.ProcessInfo:
+  rk.ProcessInfo:
     properties:
-      appName:
-        example: rk-app
-        type: string
-      az:
-        example: us-east-1c
-        type: string
       cpuInfo:
         $ref: '#/definitions/rkos.CpuInfo'
-      description:
-        example: RK application
-        type: string
-      docsUrl:
-        example:
-        - ""
-        items:
-          type: string
-        type: array
       domain:
         example: dev
         type: string
@@ -26,32 +11,17 @@ definitions:
         type: string
       goEnvInfo:
         $ref: '#/definitions/rkos.GoEnvInfo'
-      homeUrl:
-        example: https://example.com
-        type: string
-      keywords:
-        example:
-        - ""
-        items:
-          type: string
-        type: array
-      maintainers:
-        example:
-        - rk-dev
-        items:
-          type: string
-        type: array
       memInfo:
         $ref: '#/definitions/rkos.MemInfo'
       netInfo:
         $ref: '#/definitions/rkos.NetInfo'
       osInfo:
         $ref: '#/definitions/rkos.OsInfo'
-      realm:
-        example: rookie-ninja
+      serviceName:
+        example: rk-app
         type: string
-      region:
-        example: us-east-1
+      serviceVersion:
+        example: dev
         type: string
       startTime:
         example: "2022-03-15T20:43:05+08:00"
@@ -59,34 +29,70 @@ definitions:
       uid:
         example: "501"
         type: string
-      upTimeSec:
-        example: 13
-        type: integer
+      upTime:
+        example: 1h
+        type: string
       username:
         example: lark
         type: string
-      version:
-        example: dev
-        type: string
     type: object
-  rkentry.aliveResp:
+  rk.aliveResp:
     properties:
       alive:
         example: true
         type: boolean
     type: object
-  rkentry.gcResp:
+  rk.eventErrorResp:
+    properties:
+      error:
+        type: string
+    type: object
+  rk.eventLevelResp:
+    properties:
+      level:
+        type: string
+    type: object
+  rk.gcResp:
     properties:
       memStatAfterGc:
         $ref: '#/definitions/rkos.MemInfo'
       memStatBeforeGc:
         $ref: '#/definitions/rkos.MemInfo'
     type: object
-  rkentry.readyResp:
+  rk.readyResp:
     properties:
       ready:
         example: true
         type: boolean
+    type: object
+  rk.viperError:
+    properties:
+      error:
+        type: string
+    type: object
+  rk.viperReq:
+    properties:
+      values:
+        items:
+          properties:
+            key:
+              type: string
+            value: {}
+          type: object
+        type: array
+    type: object
+  rk.viperResp:
+    additionalProperties: true
+    type: object
+  rk.zapErrorResp:
+    properties:
+      error:
+        type: string
+    type: object
+  rk.zapLevelResp:
+    properties:
+      level:
+        type: string
     type: object
   rkos.CpuInfo:
     properties:
@@ -204,33 +210,75 @@ info:
     name: Apache 2.0 License
     url: https://github.com/rookie-ninja/rk-entry/blob/master/LICENSE.txt
   title: RK Common Service
-  version: "2.0"
+  version: "1.0"
 paths:
   /rk/v1/alive:
     get:
-      operationId: "8002"
+      operationId: "30002"
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rkentry.aliveResp'
+            $ref: '#/definitions/rk.aliveResp'
       security:
       - ApiKeyAuth: []
       - BasicAuth: []
       - JWT: []
       summary: Get application liveness status
-  /rk/v1/gc:
-    get:
-      operationId: "8003"
+  /rk/v1/event/activate:
+    post:
+      operationId: "31000"
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rkentry.gcResp'
+            $ref: '#/definitions/rk.eventLevelResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rk.eventErrorResp'
+      security:
+      - ApiKeyAuth: []
+      - BasicAuth: []
+      - JWT: []
+      summary: Activate event logger level
+      tags:
+      - event
+  /rk/v1/event/deactivate:
+    post:
+      operationId: "31001"
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rk.eventLevelResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rk.eventErrorResp'
+      security:
+      - ApiKeyAuth: []
+      - BasicAuth: []
+      - JWT: []
+      summary: Deactivate event logger level
+      tags:
+      - event
+  /rk/v1/gc:
+    get:
+      operationId: "30003"
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rk.gcResp'
       security:
       - ApiKeyAuth: []
       - BasicAuth: []
@@ -238,14 +286,14 @@ paths:
       summary: Trigger Gc
   /rk/v1/info:
     get:
-      operationId: "8004"
+      operationId: "30004"
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rkentry.ProcessInfo'
+            $ref: '#/definitions/rk.ProcessInfo'
       security:
       - ApiKeyAuth: []
       - BasicAuth: []
@@ -253,14 +301,14 @@ paths:
       summary: Get application and process info
   /rk/v1/ready:
     get:
-      operationId: "8001"
+      operationId: "30001"
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rkentry.readyResp'
+            $ref: '#/definitions/rk.readyResp'
         "500":
           description: Internal Server Error
           schema: {}
@@ -269,6 +317,115 @@ paths:
       - BasicAuth: []
       - JWT: []
       summary: Get application readiness status
+  /rk/v1/viper/dump:
+    get:
+      operationId: "32000"
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rk.viperResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rk.viperError'
+      security:
+      - ApiKeyAuth: []
+      - BasicAuth: []
+      - JWT: []
+      summary: Dump viper config values
+      tags:
+      - viper
+  /rk/v1/viper/set:
+    post:
+      operationId: "32001"
+      parameters:
+      - description: viperReq
+        in: body
+        name: viperReq
+        required: true
+        schema:
+          $ref: '#/definitions/rk.viperReq'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rk.viperResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/rk.viperError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rk.viperError'
+      security:
+      - ApiKeyAuth: []
+      - BasicAuth: []
+      - JWT: []
+      summary: Set viper config values
+      tags:
+      - viper
+  /rk/v1/zap/level:
+    get:
+      operationId: "30000"
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rk.zapLevelResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rk.zapErrorResp'
+      security:
+      - ApiKeyAuth: []
+      - BasicAuth: []
+      - JWT: []
+      summary: Get zap logger level
+      tags:
+      - zap
+    put:
+      consumes:
+      - application/x-www-form-urlencoded
+      operationId: "30001"
+      parameters:
+      - description: level
+        enum:
+        - debug
+        - info
+        - warn
+        - error
+        - dPanic
+        - panic
+        - fatal
+        in: query
+        name: enumstring
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rk.zapLevelResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/rk.zapErrorResp'
+      security:
+      - ApiKeyAuth: []
+      - BasicAuth: []
+      - JWT: []
+      summary: Set zap logger level
+      tags:
+      - zap
 schemes:
 - http
 - https

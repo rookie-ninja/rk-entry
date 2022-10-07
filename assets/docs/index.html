@@ -7,7 +7,7 @@
     <script type="module" src="https://cdn.jsdelivr.net/npm/rapidoc@9.2.0/dist/rapidoc-min.js"></script>
 </head>
 <body>
-<rapi-doc id="repi"
+<rapi-doc id="rapi"
         show-info = "true"
         show-header = "false"
         allow-spec-url-load = "false"
@@ -51,7 +51,7 @@
     let specConfig
     // Get list of specs
     document.addEventListener('DOMContentLoaded', () => {
-        let docEl = document.getElementById("repi");
+        let docEl = document.getElementById("rapi");
 
         // Get list of specs
         fetch("specs")
@@ -100,7 +100,7 @@
     document.getElementById('specs').onchange = function (e) {
         for (let i = 0; i < specConfig.specs.length; i++) {
             if (specConfig["specs"][i].name == e.target.value) {
-                const docE = document.getElementById('repi');
+                const docE = document.getElementById('rapi');
                 docE.loadSpec(window.location.origin+specConfig["specs"][i].url);
                 return
             }

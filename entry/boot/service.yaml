@@ -1,0 +1,7 @@
+---
+kind: service
+apiVersion: v1
+metadata:
+  name: mof
+  version: v0.1
+  domain: *

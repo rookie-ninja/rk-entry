@@ -1,95 +1,153 @@
-package rkentry
+package rk
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
+	"github.com/rookie-ninja/rk-entry/v3/util"
+	"gopkg.in/yaml.v3"
+	"net/http"
+	"net/http/pprof"
 	"path"
-	"strings"
 )
 
-type BootPProf struct {
-	Enabled bool   `yaml:"enabled" json:"enabled"`
-	Path    string `yaml:"path" json:"path"`
+type PprofConfig struct {
+	EntryConfigHeader `yaml:",inline"`
+	Entry             struct {
+		UrlPrefix string `yaml:"urlPrefix"`
+	} `yaml:"entry"`
 }
 
-type PProfEntry struct {
-	entryName        string `json:"-" yaml:"-"`
-	entryType        string `json:"-" yaml:"-"`
-	entryDescription string `json:"-" yaml:"-"`
-	Path             string `json:"-" yaml:"-"`
+func (p *PprofConfig) JSON() string {
+	b, _ := json.Marshal(p)
+	return string(b)
 }
 
-func (entry *PProfEntry) Bootstrap(ctx context.Context) {}
-
-func (entry *PProfEntry) Interrupt(ctx context.Context) {}
-
-func (entry *PProfEntry) GetName() string {
-	return entry.entryName
+func (p *PprofConfig) YAML() string {
+	b, _ := yaml.Marshal(p)
+	return string(b)
 }
 
-func (entry *PProfEntry) GetType() string {
-	return entry.entryType
+func (p *PprofConfig) Header() *EntryConfigHeader {
+	return &p.EntryConfigHeader
 }
 
-func (entry *PProfEntry) GetDescription() string {
-	return entry.entryDescription
-}
-
-func (entry *PProfEntry) String() string {
-	bytes, _ := json.Marshal(entry)
-	return string(bytes)
-}
-
-// MarshalJSON Marshal entry
-func (entry *PProfEntry) MarshalJSON() ([]byte, error) {
-	m := map[string]interface{}{
-		"name":        entry.GetName(),
-		"type":        entry.GetType(),
-		"description": entry.GetDescription(),
-		"path":        entry.Path,
+func (p *PprofConfig) Register() (Entry, error) {
+	if !p.Metadata.Enabled {
+		return nil, nil
 	}
 
-	return json.Marshal(m)
+	if !rku.IsValidDomain(p.Metadata.Domain) {
+		return nil, nil
+	}
+
+	entry := &PprofEntry{
+		config: p,
+	}
+
+	if len(p.Entry.UrlPrefix) < 1 {
+		p.Entry.UrlPrefix = "/pprof"
+	}
+
+	p.Entry.UrlPrefix = path.Join("/", p.Entry.UrlPrefix, "/")
+
+	Registry.AddEntry(entry)
+
+	return entry, nil
 }
 
-// UnmarshalJSON Unmarshal entry
-func (entry *PProfEntry) UnmarshalJSON([]byte) error {
+type PprofEntry struct {
+	config *PprofConfig
+}
+
+func (p *PprofEntry) Category() string {
+	return CategoryIndependent
+}
+
+func (p *PprofEntry) Kind() string {
+	return p.config.Kind
+}
+
+func (p *PprofEntry) Name() string {
+	return p.config.Metadata.Name
+}
+
+func (p *PprofEntry) Config() EntryConfig {
+	return p.config
+}
+
+func (p *PprofEntry) Bootstrap(ctx context.Context) {}
+
+func (p *PprofEntry) Interrupt(ctx context.Context) {}
+
+func (p *PprofEntry) Monitor() *Monitor {
 	return nil
 }
 
-type PProfEntryOption func(entry *PProfEntry)
-
-func WithNamePProfEntry(name string) PProfEntryOption {
-	return func(entry *PProfEntry) {
-		entry.entryName = name
-	}
+func (p *PprofEntry) FS() *embed.FS {
+	return Registry.EntryFS(p.Kind(), p.Name())
 }
 
-// RegisterPProfEntry Create new pprof entry with config
-func RegisterPProfEntry(boot *BootPProf, opts ...PProfEntryOption) *PProfEntry {
-	if !boot.Enabled {
-		return nil
-	}
+func (p *PprofEntry) Apis() []*BuiltinApi {
+	res := make([]*BuiltinApi, 0)
 
-	entry := &PProfEntry{
-		entryName:        "PProfEntry",
-		entryType:        PProfEntryType,
-		entryDescription: "Internal RK entry for pprof.",
-		Path:             boot.Path,
-	}
+	res = append(res,
+		&BuiltinApi{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.UrlPrefix),
+			Handler: pprof.Index,
+		},
+		&BuiltinApi{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.UrlPrefix, "cmdline"),
+			Handler: pprof.Cmdline,
+		},
+		&BuiltinApi{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.UrlPrefix, "profile"),
+			Handler: pprof.Profile,
+		},
+		&BuiltinApi{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.UrlPrefix, "symbol"),
+			Handler: pprof.Symbol,
+		},
+		&BuiltinApi{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.UrlPrefix, "trace"),
+			Handler: pprof.Trace,
+		},
+		&BuiltinApi{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.UrlPrefix, "allocs"),
+			Handler: pprof.Handler("allocs").ServeHTTP,
+		},
+		&BuiltinApi{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.UrlPrefix, "block"),
+			Handler: pprof.Handler("block").ServeHTTP,
+		},
+		&BuiltinApi{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.UrlPrefix, "goroutine"),
+			Handler: pprof.Handler("goroutine").ServeHTTP,
+		},
+		&BuiltinApi{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.UrlPrefix, "heap"),
+			Handler: pprof.Handler("heap").ServeHTTP,
+		},
+		&BuiltinApi{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.UrlPrefix, "mutex"),
+			Handler: pprof.Handler("mutex").ServeHTTP,
+		},
+		&BuiltinApi{
+			Method:  http.MethodGet,
+			Path:    path.Join("/", p.config.Entry.UrlPrefix, "threadcreate"),
+			Handler: pprof.Handler("threadcreate").ServeHTTP,
+		},
+	)
 
-	for i := range opts {
-		opts[i](entry)
-	}
-
-	if len(entry.Path) < 1 {
-		entry.Path = "/pprof"
-	}
-
-	entry.Path = path.Join("/", entry.Path)
-	if !strings.HasSuffix(entry.Path, "/") {
-		entry.Path = entry.Path + "/"
-	}
-
-	return entry
+	return res
 }

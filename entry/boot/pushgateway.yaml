@@ -1,0 +1,12 @@
+---
+kind: pushgateway
+apiVersion: v1
+metadata:
+  domain: *
+entry:
+  - name: pushgateway
+    job: ""
+    addr: ""
+    auth:
+      username: ""
+      password: ""

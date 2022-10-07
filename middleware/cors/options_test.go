@@ -1,7 +1,7 @@
-package rkmidcors
+package cors
 
 import (
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -24,7 +24,7 @@ func TestToOptions(t *testing.T) {
 func TestNewOptionSet(t *testing.T) {
 	// without options
 	set := NewOptionSet().(*optionSet)
-	assert.NotEmpty(t, set.GetEntryName())
+	assert.NotEmpty(t, set.EntryName())
 	assert.Empty(t, set.pathToIgnore)
 	assert.Contains(t, set.allowOrigins, "*")
 	assert.NotEmpty(t, set.allowMethods)
@@ -35,7 +35,7 @@ func TestNewOptionSet(t *testing.T) {
 
 	// with options
 	set = NewOptionSet(
-		WithEntryNameAndType("name", "type"),
+		WithEntryNameAndKind("name", "kind"),
 		WithAllowOrigins("localhost:*"),
 		WithAllowMethods(http.MethodGet),
 		WithAllowHeaders("ut-header"),
@@ -44,8 +44,8 @@ func TestNewOptionSet(t *testing.T) {
 		WithMaxAge(1),
 		WithPathToIgnore("/ut-path")).(*optionSet)
 
-	assert.Equal(t, "name", set.GetEntryName())
-	assert.Equal(t, "type", set.GetEntryType())
+	assert.Equal(t, "name", set.EntryName())
+	assert.Equal(t, "type", set.EntryKind())
 	assert.Contains(t, set.pathToIgnore, "/ut-path")
 	assert.Contains(t, set.allowOrigins, "localhost:*")
 	assert.Contains(t, set.allowMethods, http.MethodGet)
@@ -62,8 +62,8 @@ func TestOptionSet_BeforeCtx(t *testing.T) {
 
 	// happy case
 	req := httptest.NewRequest(http.MethodOptions, "/ut", nil)
-	req.Header.Set(rkmid.HeaderOrigin, "ut-origin")
-	req.Header.Set(rkmid.HeaderAccessControlRequestHeaders, "ut-header")
+	req.Header.Set(rkm.HeaderOrigin, "ut-origin")
+	req.Header.Set(rkm.HeaderAccessControlRequestHeaders, "ut-header")
 	ctx := set.BeforeCtx(req)
 	assert.Equal(t, "/ut", ctx.Input.UrlPath)
 	assert.Equal(t, "ut-origin", ctx.Input.OriginHeader)
@@ -129,7 +129,7 @@ func TestOptionSet_Before(t *testing.T) {
 	set := NewOptionSet()
 
 	// with empty option, all request will be passed
-	req := newReq(http.MethodGet, header{rkmid.HeaderOrigin, originHeaderValue})
+	req := newReq(http.MethodGet, header{rkm.HeaderOrigin, originHeaderValue})
 	ctx := set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.False(t, ctx.Output.Abort)
@@ -148,85 +148,85 @@ func TestOptionSet_Before(t *testing.T) {
 
 	// match 2
 	set = NewOptionSet(WithAllowOrigins("http://do-not-pass-through"))
-	req = newReq(http.MethodGet, header{rkmid.HeaderOrigin, originHeaderValue})
+	req = newReq(http.MethodGet, header{rkm.HeaderOrigin, originHeaderValue})
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.True(t, ctx.Output.Abort)
 
 	// match 3
 	set = NewOptionSet()
-	req = newReq(http.MethodGet, header{rkmid.HeaderOrigin, originHeaderValue})
+	req = newReq(http.MethodGet, header{rkm.HeaderOrigin, originHeaderValue})
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.False(t, ctx.Output.Abort)
-	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowOrigin])
+	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowOrigin])
 
 	// match 3.1
 	set = NewOptionSet(WithAllowCredentials(true))
-	req = newReq(http.MethodGet, header{rkmid.HeaderOrigin, originHeaderValue})
+	req = newReq(http.MethodGet, header{rkm.HeaderOrigin, originHeaderValue})
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.False(t, ctx.Output.Abort)
-	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowOrigin])
-	assert.Equal(t, "true", ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowCredentials])
+	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowOrigin])
+	assert.Equal(t, "true", ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowCredentials])
 
 	// match 3.2
 	set = NewOptionSet(WithAllowCredentials(true), WithExposeHeaders("expose"))
-	req = newReq(http.MethodGet, header{rkmid.HeaderOrigin, originHeaderValue})
+	req = newReq(http.MethodGet, header{rkm.HeaderOrigin, originHeaderValue})
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.False(t, ctx.Output.Abort)
-	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowOrigin])
-	assert.Equal(t, "true", ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowCredentials])
-	assert.Equal(t, "expose", ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlExposeHeaders])
+	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowOrigin])
+	assert.Equal(t, "true", ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowCredentials])
+	assert.Equal(t, "expose", ctx.Output.HeadersToReturn[rkm.HeaderAccessControlExposeHeaders])
 
 	// match 4
 	set = NewOptionSet()
-	req = newReq(http.MethodOptions, header{rkmid.HeaderOrigin, originHeaderValue})
+	req = newReq(http.MethodOptions, header{rkm.HeaderOrigin, originHeaderValue})
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.True(t, ctx.Output.Abort)
 	assert.Len(t, ctx.Output.HeaderVary, 2)
-	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowOrigin])
+	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowOrigin])
 
 	// match 4.1
 	set = NewOptionSet(WithAllowCredentials(true))
-	req = newReq(http.MethodOptions, header{rkmid.HeaderOrigin, originHeaderValue})
+	req = newReq(http.MethodOptions, header{rkm.HeaderOrigin, originHeaderValue})
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.True(t, ctx.Output.Abort)
 	assert.Len(t, ctx.Output.HeaderVary, 2)
-	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowOrigin])
-	assert.NotEmpty(t, originHeaderValue, ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowMethods])
-	assert.Equal(t, "true", ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowCredentials])
+	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowOrigin])
+	assert.NotEmpty(t, originHeaderValue, ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowMethods])
+	assert.Equal(t, "true", ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowCredentials])
 
 	// match 4.2
 	set = NewOptionSet(WithAllowHeaders("ut-header"))
-	req = newReq(http.MethodOptions, header{rkmid.HeaderOrigin, originHeaderValue})
+	req = newReq(http.MethodOptions, header{rkm.HeaderOrigin, originHeaderValue})
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.True(t, ctx.Output.Abort)
 	assert.Len(t, ctx.Output.HeaderVary, 2)
-	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowOrigin])
-	assert.NotEmpty(t, originHeaderValue, ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowMethods])
-	assert.Equal(t, "ut-header", ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowHeaders])
+	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowOrigin])
+	assert.NotEmpty(t, originHeaderValue, ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowMethods])
+	assert.Equal(t, "ut-header", ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowHeaders])
 
 	// match 4.3
 	set = NewOptionSet(WithMaxAge(1))
-	req = newReq(http.MethodOptions, header{rkmid.HeaderOrigin, originHeaderValue})
+	req = newReq(http.MethodOptions, header{rkm.HeaderOrigin, originHeaderValue})
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.True(t, ctx.Output.Abort)
 	assert.Len(t, ctx.Output.HeaderVary, 2)
-	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowOrigin])
-	assert.NotEmpty(t, originHeaderValue, ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowMethods])
-	assert.Equal(t, "1", ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlMaxAge])
+	assert.Equal(t, originHeaderValue, ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowOrigin])
+	assert.NotEmpty(t, originHeaderValue, ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowMethods])
+	assert.Equal(t, "1", ctx.Output.HeadersToReturn[rkm.HeaderAccessControlMaxAge])
 }
 
 func TestNewOptionSetMock(t *testing.T) {
 	mock := NewOptionSetMock(NewBeforeCtx())
-	assert.NotEmpty(t, mock.GetEntryName())
-	assert.NotEmpty(t, mock.GetEntryType())
+	assert.NotEmpty(t, mock.EntryName())
+	assert.NotEmpty(t, mock.EntryKind())
 	assert.NotNil(t, mock.BeforeCtx(nil))
 	mock.Before(nil)
 }

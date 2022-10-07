@@ -3,14 +3,14 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// Package rkmidtimeout provide options
-package rkmidtimeout
+// Package timeout provide options
+package timeout
 
 import (
-	"github.com/rookie-ninja/rk-entry/v2/entry"
-	"github.com/rookie-ninja/rk-entry/v2/error"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
-	"github.com/rookie-ninja/rk-query"
+	"github.com/rookie-ninja/rk-entry/v3/entry"
+	"github.com/rookie-ninja/rk-entry/v3/error"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
+	"github.com/rookie-ninja/rk-query/v2"
 	"net/http"
 	"strings"
 	"time"
@@ -19,7 +19,7 @@ import (
 const global = "rk-global"
 
 var (
-	defaultErrResp = rkmid.GetErrorBuilder().New(http.StatusRequestTimeout, "")
+	defaultErrResp = rkm.GetErrorBuilder().New(http.StatusRequestTimeout, "")
 	defaultTimeout = 10 * time.Second
 )
 
@@ -27,9 +27,9 @@ var (
 
 // OptionSetInterface mainly for testing purpose
 type OptionSetInterface interface {
-	GetEntryName() string
+	EntryName() string
 
-	GetEntryType() string
+	EntryKind() string
 
 	BeforeCtx(*http.Request, rkquery.Event) *BeforeCtx
 
@@ -43,7 +43,7 @@ type OptionSetInterface interface {
 // Options which is used while initializing extension interceptor
 type optionSet struct {
 	entryName    string
-	entryType    string
+	entryKind    string
 	pathToIgnore []string
 	timeouts     map[string]time.Duration
 	mock         OptionSetInterface
@@ -53,7 +53,7 @@ type optionSet struct {
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName:    "fake-entry",
-		entryType:    "",
+		entryKind:    "",
 		pathToIgnore: []string{},
 		timeouts:     make(map[string]time.Duration),
 	}
@@ -72,14 +72,14 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	return set
 }
 
-// GetEntryName returns entry name
-func (set *optionSet) GetEntryName() string {
+// EntryName returns entry name
+func (set *optionSet) EntryName() string {
 	return set.entryName
 }
 
-// GetEntryType returns entry type
-func (set *optionSet) GetEntryType() string {
-	return set.entryType
+// EntryKind returns entry kind
+func (set *optionSet) EntryKind() string {
+	return set.entryKind
 }
 
 // BeforeCtx should be created before Before()
@@ -172,7 +172,7 @@ func (set *optionSet) ShouldIgnore(path string) bool {
 		}
 	}
 
-	return rkmid.ShouldIgnoreGlobal(path)
+	return rkm.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -188,13 +188,13 @@ type optionSetMock struct {
 	before *BeforeCtx
 }
 
-// GetEntryName returns entry name
-func (mock *optionSetMock) GetEntryName() string {
+// EntryName returns entry name
+func (mock *optionSetMock) EntryName() string {
 	return "mock"
 }
 
-// GetEntryType returns entry type
-func (mock *optionSetMock) GetEntryType() string {
+// EntryKind returns entry kind
+func (mock *optionSetMock) EntryKind() string {
 	return "mock"
 }
 
@@ -218,7 +218,7 @@ func (mock *optionSetMock) ShouldIgnore(string) bool {
 // NewBeforeCtx create new BeforeCtx with fields initialized
 func NewBeforeCtx() *BeforeCtx {
 	ctx := &BeforeCtx{}
-	ctx.Input.Event = rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
+	ctx.Input.Event = rk.EventEntryNoop.CreateEventNoop()
 	ctx.Input.TimeoutHandler = func() {}
 	ctx.Input.FinishHandler = func() {}
 	ctx.Input.InitHandler = func() {}
@@ -263,7 +263,7 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 	opts := make([]Option, 0)
 
 	if config.Enabled {
-		opts = append(opts, WithEntryNameAndType(entryName, entryType))
+		opts = append(opts, WithEntryNameAndKind(entryName, entryType))
 
 		timeout := time.Duration(config.TimeoutMs) * time.Millisecond
 		opts = append(opts, WithTimeout(timeout))
@@ -285,11 +285,11 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 // Option options provided to Interceptor or optionsSet while creating
 type Option func(*optionSet)
 
-// WithEntryNameAndType provide entry name and entry type.
-func WithEntryNameAndType(entryName, entryType string) Option {
+// WithEntryNameAndKind provide entry name and entry kind.
+func WithEntryNameAndKind(name, kind string) Option {
 	return func(opt *optionSet) {
-		opt.entryName = entryName
-		opt.entryType = entryType
+		opt.entryName = name
+		opt.entryKind = kind
 	}
 }
 

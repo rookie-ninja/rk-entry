@@ -3,14 +3,14 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// Package rkmidauth provide auth related options
-package rkmidauth
+// Package auth provide auth related options
+package auth
 
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/rookie-ninja/rk-entry/v2/error"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/error"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
 	"net/http"
 	"strings"
 )
@@ -23,9 +23,9 @@ const (
 
 // OptionSetInterface mainly for testing purpose
 type OptionSetInterface interface {
-	GetEntryName() string
+	EntryKind() string
 
-	GetEntryType() string
+	EntryName() string
 
 	Before(*BeforeCtx)
 
@@ -39,7 +39,7 @@ type OptionSetInterface interface {
 // optionSet which is used for middleware implementation
 type optionSet struct {
 	entryName     string
-	entryType     string
+	entryKind     string
 	basicRealm    string
 	basicAccounts map[string]bool
 	apiKey        map[string]bool
@@ -51,7 +51,7 @@ type optionSet struct {
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName:     "fake-entry",
-		entryType:     "",
+		entryKind:     "",
 		basicRealm:    "",
 		basicAccounts: make(map[string]bool),
 		apiKey:        make(map[string]bool),
@@ -69,24 +69,24 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	return set
 }
 
-// GetEntryName returns entry name
-func (set *optionSet) GetEntryName() string {
+// EntryName returns entry name
+func (set *optionSet) EntryName() string {
 	return set.entryName
 }
 
-// GetEntryType returns entry type
-func (set *optionSet) GetEntryType() string {
-	return set.entryType
+// EntryKind returns entry lomd
+func (set *optionSet) EntryKind() string {
+	return set.entryKind
 }
 
-// BeforeCtx should be created before Before()
+// BeforeCtx should be created before this
 func (set *optionSet) BeforeCtx(req *http.Request) *BeforeCtx {
 	ctx := NewBeforeCtx()
 
 	if req != nil && req.URL != nil && req.Header != nil {
 		ctx.Input.UrlPath = req.URL.Path
-		ctx.Input.BasicAuthHeader = req.Header.Get(rkmid.HeaderAuthorization)
-		ctx.Input.ApiKeyHeader = req.Header.Get(rkmid.HeaderApiKey)
+		ctx.Input.BasicAuthHeader = req.Header.Get(rkm.HeaderAuthorization)
+		ctx.Input.ApiKeyHeader = req.Header.Get(rkm.HeaderApiKey)
 	}
 
 	return ctx
@@ -96,7 +96,7 @@ func (set *optionSet) BeforeCtx(req *http.Request) *BeforeCtx {
 func (set *optionSet) Before(ctx *BeforeCtx) {
 	// normalize
 	if ctx == nil {
-		ctx.Output.ErrResp = rkmid.GetErrorBuilder().New(http.StatusInternalServerError, "Nil context")
+		ctx.Output.ErrResp = rkm.GetErrorBuilder().New(http.StatusInternalServerError, "Nil context")
 		return
 	}
 
@@ -141,7 +141,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		tmp = append(tmp, "X-API-Key")
 	}
 
-	ctx.Output.ErrResp = rkmid.GetErrorBuilder().New(http.StatusUnauthorized, fmt.Sprintf("Missing authorization, provide one of bellow auth header:[%s]", strings.Join(tmp, ",")))
+	ctx.Output.ErrResp = rkm.GetErrorBuilder().New(http.StatusUnauthorized, fmt.Sprintf("Missing authorization, provide one of bellow auth header:[%s]", strings.Join(tmp, ",")))
 }
 
 // ShouldIgnore determine whether auth should be ignored based on path
@@ -156,7 +156,7 @@ func (set *optionSet) ShouldIgnore(path string) bool {
 		}
 	}
 
-	return rkmid.ShouldIgnoreGlobal(path)
+	return rkm.ShouldIgnoreGlobal(path)
 }
 
 // Validate basic auth
@@ -166,7 +166,7 @@ func (set *optionSet) isBasicAuthorized(ctx *BeforeCtx) rkerror.ErrorInterface {
 		tokens := strings.SplitN(ctx.Input.BasicAuthHeader, " ", 2)
 		// case 1.1: invalid basic auth
 		if len(tokens) != 2 {
-			return rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid Basic Auth format")
+			return rkm.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid Basic Auth format")
 		}
 
 		// case 1.2: not authorized
@@ -176,7 +176,7 @@ func (set *optionSet) isBasicAuthorized(ctx *BeforeCtx) rkerror.ErrorInterface {
 				ctx.Output.HeadersToReturn["WWW-Authenticate"] = fmt.Sprintf(`%s realm="%s"`, authTypeBasic, set.basicRealm)
 			}
 
-			return rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid credential")
+			return rkm.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid credential")
 		}
 
 		// case 1.3: authorized
@@ -184,7 +184,7 @@ func (set *optionSet) isBasicAuthorized(ctx *BeforeCtx) rkerror.ErrorInterface {
 	}
 
 	// case 2: auth header missing
-	return rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Missing authorization header")
+	return rkm.GetErrorBuilder().New(http.StatusUnauthorized, "Missing authorization header")
 }
 
 // Validate X-API-Key
@@ -194,7 +194,7 @@ func (set *optionSet) isApiKeyAuthorized(ctx *BeforeCtx) rkerror.ErrorInterface 
 		// case 1.1: not authorized
 		_, ok := set.apiKey[ctx.Input.ApiKeyHeader]
 		if !ok {
-			return rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid X-API-Key")
+			return rkm.GetErrorBuilder().New(http.StatusUnauthorized, "Invalid X-API-Key")
 		}
 
 		// case 1.2: authorized
@@ -202,7 +202,7 @@ func (set *optionSet) isApiKeyAuthorized(ctx *BeforeCtx) rkerror.ErrorInterface 
 	}
 
 	// case 2: auth header missing
-	return rkmid.GetErrorBuilder().New(http.StatusUnauthorized, "Missing authorization header")
+	return rkm.GetErrorBuilder().New(http.StatusUnauthorized, "Missing authorization header")
 }
 
 // ***************** OptionSet Mock *****************
@@ -218,17 +218,17 @@ type optionSetMock struct {
 	before *BeforeCtx
 }
 
-// GetEntryName returns entry name
-func (mock *optionSetMock) GetEntryName() string {
+// EntryName returns entry name
+func (mock *optionSetMock) EntryName() string {
 	return "mock"
 }
 
-// GetEntryType returns entry type
-func (mock *optionSetMock) GetEntryType() string {
+// EntryKind returns entry kind
+func (mock *optionSetMock) EntryKind() string {
 	return "mock"
 }
 
-// BeforeCtx should be created before Before()
+// BeforeCtx should be created before this
 func (mock *optionSetMock) BeforeCtx(request *http.Request) *BeforeCtx {
 	return mock.before
 }
@@ -276,13 +276,13 @@ type BootConfig struct {
 }
 
 // ToOptions convert BootConfig into Option list
-func ToOptions(config *BootConfig, entryName, entryType string) []Option {
+func ToOptions(config *BootConfig, name, kind string) []Option {
 	opts := make([]Option, 0)
 
 	if config.Enabled {
 		opts = append(opts,
-			WithEntryNameAndType(entryName, entryType),
-			WithBasicAuth(entryName, config.Basic...),
+			WithEntryNameAndKind(name, kind),
+			WithBasicAuth(name, config.Basic...),
 			WithApiKeyAuth(config.ApiKey...),
 			WithPathToIgnore(config.Ignore...))
 	}
@@ -295,11 +295,11 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 // Option for optionSet
 type Option func(*optionSet)
 
-// WithEntryNameAndType provide entry name and entry type.
-func WithEntryNameAndType(entryName, entryType string) Option {
+// WithEntryNameAndKind provide entry name and entry kind.
+func WithEntryNameAndKind(name, kind string) Option {
 	return func(set *optionSet) {
-		set.entryName = entryName
-		set.entryType = entryType
+		set.entryName = name
+		set.entryKind = kind
 	}
 }
 

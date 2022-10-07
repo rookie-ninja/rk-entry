@@ -1,92 +1,60 @@
-// Copyright (c) 2021 rookie-ninja
-//
-// Use of this source code is governed by an Apache-style
-// license that can be found in the LICENSE file.
-
-package rkentry
+package rk
 
 import (
 	"context"
+	"embed"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.opentelemetry.io/contrib"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
+	sdkresource "go.opentelemetry.io/otel/sdk/resource"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	oteltrace "go.opentelemetry.io/otel/trace"
+	"net/http"
 )
 
-const (
-	appInfoEntryType = "AppInfo"
-	appInfoEntryName = "AppInfo"
+type EntryConfigHeader struct {
+	Kind       string `yaml:"kind"`
+	ApiVersion string `yaml:"apiVersion"`
+	Metadata   struct {
+		Name    string `yaml:"name"`
+		Version string `yaml:"version"`
+		Domain  string `yaml:"domain"`
+		Enabled bool   `yaml:"enabled"`
+		Default bool   `yaml:"default"`
+	} `yaml:"metadata"`
+}
 
-	// CertEntryType public access
-	CertEntryType = "CertEntry"
-	// ConfigEntryType public access
-	ConfigEntryType = "ConfigEntry"
-	// EventEntryType public access
-	EventEntryType = "EventEntry"
-	// LoggerEntryType public access
-	LoggerEntryType = "LoggerEntry"
-	// CommonServiceEntryType public access
-	CommonServiceEntryType = "CommonServiceEntry"
-	// SWEntryType public access
-	SWEntryType = "SWEntry"
-	// StaticFileHandlerEntryType public access
-	StaticFileHandlerEntryType = "StaticFileHandlerEntry"
-	// PromEntryType public access
-	PromEntryType = "PromEntry"
-	// DocsEntryType public access
-	DocsEntryType      = "DocsEntry"
-	SignerJwtEntryType = "SignerJwtEntry"
-	CryptoEntryType    = "CryptoEntry"
-	PProfEntryType     = "PProfEntry"
-)
+type EntryConfig interface {
+	JSON() string
 
-// RegFunc can be used to create an entry could be any kinds of services or pieces of codes which
-// needs to be bootstrap/initialized while application starts.
-//
-// A third party entry could be implemented and inject to rk-boot via rk-boot.yaml file
-//
-// How to create a new custom entry? Please see example/ for details
-// Step 1:
-// Construct your own entry YAML struct as needed
-// example:
-// ---
-// myEntry:
-//   enabled: true
-//   key: value
-//
-// Step 2:
-// Create a struct which implements Entry interface
-//
-// Step 3:
-// Implements EntryRegFunc
-//
-// Step 4:
-// Register your reg function in init() in order to register your entry while application starts
-//
-// How entry interact with rk-boot.Bootstrapper?
-// 1: Entry will be created and registered into rkentry.GlobalAppCtx
-// 2: Bootstrap will be called from Bootstrapper.Bootstrap() function
-// 3: Application will wait for shutdown signal
-// 4: Interrupt will be called from Bootstrapper.Interrupt() function
-type RegFunc func(raw []byte) map[string]Entry
+	YAML() string
 
-// Entry interface which must be implemented for bootstrapper to bootstrap
+	Header() *EntryConfigHeader
+
+	Register() (Entry, error)
+}
+
 type Entry interface {
-	// Bootstrap entry
+	Category() string
+
+	Kind() string
+
+	Name() string
+
+	Config() EntryConfig
+
 	Bootstrap(context.Context)
 
-	// Interrupt entry
-	// Wait for shutdown signal and wait for draining incomplete procedure
 	Interrupt(context.Context)
 
-	// GetName returns name of entry
-	GetName() string
+	Monitor() *Monitor
 
-	// GetType returns type of entry
-	GetType() string
+	FS() *embed.FS
 
-	// GetDescription returns description of entry
-	GetDescription() string
-
-	// String print entry as string
-	String() string
+	Apis() []*BuiltinApi
 }
 
 // SignerJwt interface which must be implemented for JWT signer
@@ -112,4 +80,80 @@ type Crypto interface {
 	Encrypt(plaintext []byte) ([]byte, error)
 
 	Decrypt(plaintext []byte) ([]byte, error)
+}
+
+type BuiltinApi struct {
+	Handler http.HandlerFunc
+	Method  string
+	Path    string
+}
+
+// ********** Monitor **********
+
+func NewMonitorStd() *Monitor {
+	return &Monitor{
+		Prometheus: &Prometheus{
+			Collectors: []prometheus.Collector{},
+		},
+		Otel: NewOtel(&NoopExporter{}, "", "", ""),
+	}
+}
+
+type Monitor struct {
+	Prometheus *Prometheus
+	Otel       *Otel
+}
+
+// ********** Prometheus **********
+
+type Prometheus struct {
+	Collectors []prometheus.Collector
+}
+
+// ********** OTEL **********
+
+func NewOtel(exporter sdktrace.SpanExporter, serviceName, serviceVersion, tracerName string) *Otel {
+	res := &Otel{
+		Exporter: exporter,
+	}
+
+	res.Processor = sdktrace.NewBatchSpanProcessor(exporter)
+	res.Provider = sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSpanProcessor(res.Processor),
+		sdktrace.WithResource(
+			sdkresource.NewWithAttributes(
+				semconv.SchemaURL,
+				attribute.String("service.name", serviceName),
+				attribute.String("service.version", serviceVersion),
+			)),
+	)
+
+	res.Tracer = res.Provider.Tracer(tracerName, oteltrace.WithInstrumentationVersion(contrib.SemVersion()))
+	res.Propagator = propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{})
+
+	return res
+}
+
+type Otel struct {
+	Exporter   sdktrace.SpanExporter
+	Processor  sdktrace.SpanProcessor
+	Tracer     oteltrace.Tracer
+	Provider   *sdktrace.TracerProvider
+	Propagator propagation.TextMapPropagator
+}
+
+// NoopExporter noop
+type NoopExporter struct{}
+
+// ExportSpans handles export of SpanSnapshots by dropping them.
+func (nsb *NoopExporter) ExportSpans(context.Context, []sdktrace.ReadOnlySpan) error {
+	return nil
+}
+
+// Shutdown stops the exporter by doing nothing.
+func (nsb *NoopExporter) Shutdown(context.Context) error {
+	return nil
 }

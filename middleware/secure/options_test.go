@@ -3,11 +3,11 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-package rkmidsec
+package secure
 
 import (
 	"crypto/tls"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -17,7 +17,7 @@ import (
 func TestNewOptionSet(t *testing.T) {
 	// without options
 	set := NewOptionSet().(*optionSet)
-	assert.NotEmpty(t, set.GetEntryName())
+	assert.NotEmpty(t, set.EntryName())
 	assert.Equal(t, "1; mode=block", set.xssProtection)
 	assert.Equal(t, "nosniff", set.contentTypeNosniff)
 	assert.Equal(t, "SAMEORIGIN", set.xFrameOptions)
@@ -26,7 +26,7 @@ func TestNewOptionSet(t *testing.T) {
 
 	// with option
 	set = NewOptionSet(
-		WithEntryNameAndType("ut-entry", "ut-type"),
+		WithEntryNameAndKind("ut-entry", "ut-type"),
 		WithXSSProtection("ut-xss"),
 		WithContentTypeNosniff("ut-sniff"),
 		WithXFrameOptions("ut-frame"),
@@ -39,8 +39,8 @@ func TestNewOptionSet(t *testing.T) {
 		WithPathToIgnore("ut-prefix"),
 	).(*optionSet)
 
-	assert.Equal(t, "ut-entry", set.GetEntryName())
-	assert.Equal(t, "ut-type", set.GetEntryType())
+	assert.Equal(t, "ut-entry", set.EntryName())
+	assert.Equal(t, "ut-type", set.EntryKind())
 	assert.Equal(t, "ut-xss", set.xssProtection)
 	assert.Equal(t, "ut-sniff", set.contentTypeNosniff)
 	assert.Equal(t, "ut-frame", set.xFrameOptions)
@@ -61,7 +61,7 @@ func TestOptionSet_BeforeCtx(t *testing.T) {
 	// with req
 	req := httptest.NewRequest(http.MethodGet, "/ut", nil)
 	req.TLS = &tls.ConnectionState{}
-	req.Header.Set(rkmid.HeaderXForwardedProto, "https")
+	req.Header.Set(rkm.HeaderXForwardedProto, "https")
 
 	ctx := set.BeforeCtx(req)
 	assert.Equal(t, "/ut", ctx.Input.UrlPath)
@@ -76,9 +76,9 @@ func TestOptionSet_Before(t *testing.T) {
 	ctx := set.BeforeCtx(req)
 	set.Before(ctx)
 	containsHeader(t, ctx.Output.HeadersToReturn,
-		rkmid.HeaderXXSSProtection,
-		rkmid.HeaderXContentTypeOptions,
-		rkmid.HeaderXFrameOptions)
+		rkm.HeaderXXSSProtection,
+		rkm.HeaderXContentTypeOptions,
+		rkm.HeaderXFrameOptions)
 
 	// with options
 	set = NewOptionSet(
@@ -99,12 +99,12 @@ func TestOptionSet_Before(t *testing.T) {
 	set.Before(ctx)
 
 	containsHeader(t, ctx.Output.HeadersToReturn,
-		rkmid.HeaderXXSSProtection,
-		rkmid.HeaderXContentTypeOptions,
-		rkmid.HeaderXFrameOptions,
-		rkmid.HeaderStrictTransportSecurity,
-		rkmid.HeaderContentSecurityPolicyReportOnly,
-		rkmid.HeaderReferrerPolicy)
+		rkm.HeaderXXSSProtection,
+		rkm.HeaderXContentTypeOptions,
+		rkm.HeaderXFrameOptions,
+		rkm.HeaderStrictTransportSecurity,
+		rkm.HeaderContentSecurityPolicyReportOnly,
+		rkm.HeaderReferrerPolicy)
 }
 
 func TestToOptions(t *testing.T) {
@@ -121,8 +121,8 @@ func TestToOptions(t *testing.T) {
 
 func TestNewOptionSetMock(t *testing.T) {
 	mock := NewOptionSetMock(NewBeforeCtx())
-	assert.NotEmpty(t, mock.GetEntryName())
-	assert.NotEmpty(t, mock.GetEntryType())
+	assert.NotEmpty(t, mock.EntryName())
+	assert.NotEmpty(t, mock.EntryKind())
 	assert.NotNil(t, mock.BeforeCtx(nil))
 	mock.Before(nil)
 }

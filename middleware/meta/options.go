@@ -3,14 +3,14 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// Package rkmidmeta is a middleware for metadata
-package rkmidmeta
+// Package meta is a middleware for metadata
+package meta
 
 import (
 	"fmt"
-	"github.com/rookie-ninja/rk-entry/v2/entry"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
-	"github.com/rookie-ninja/rk-query"
+	"github.com/rookie-ninja/rk-entry/v3/entry"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
+	"github.com/rookie-ninja/rk-query/v2"
 	"net/http"
 	"strings"
 	"time"
@@ -20,9 +20,9 @@ import (
 
 // OptionSetInterface mainly for testing purpose
 type OptionSetInterface interface {
-	GetEntryName() string
+	EntryName() string
 
-	GetEntryType() string
+	EntryKind() string
 
 	Before(*BeforeCtx)
 
@@ -36,7 +36,7 @@ type OptionSetInterface interface {
 // optionSet which is used for middleware implementation
 type optionSet struct {
 	entryName       string
-	entryType       string
+	entryKind       string
 	prefix          string
 	appNameKey      string
 	appVersionKey   string
@@ -50,7 +50,7 @@ type optionSet struct {
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName:    "fake-entry",
-		entryType:    "",
+		entryKind:    "",
 		prefix:       "RK",
 		pathToIgnore: []string{},
 	}
@@ -75,14 +75,14 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	return set
 }
 
-// GetEntryName returns entry name
-func (set *optionSet) GetEntryName() string {
+// EntryName returns entry name
+func (set *optionSet) EntryName() string {
 	return set.entryName
 }
 
-// GetEntryType returns entry type
-func (set *optionSet) GetEntryType() string {
-	return set.entryType
+// EntryKind returns entry kind
+func (set *optionSet) EntryKind() string {
+	return set.entryKind
 }
 
 // BeforeCtx should be created before Before()
@@ -110,7 +110,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		return
 	}
 
-	reqId := rkmid.GenerateRequestId()
+	reqId := rkm.GenerateRequestId()
 	now := time.Now().Format(time.RFC3339Nano)
 
 	if ctx.Input.Event != nil {
@@ -120,12 +120,12 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 
 	ctx.Output.RequestId = reqId
 
-	ctx.Output.HeadersToReturn[rkmid.HeaderRequestId] = reqId
-	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-App-Name", set.prefix)] = rkentry.GlobalAppCtx.GetAppInfoEntry().AppName
-	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-App-Version", set.prefix)] = rkentry.GlobalAppCtx.GetAppInfoEntry().Version
-	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-App-Unix-Time", set.prefix)] = now
+	ctx.Output.HeadersToReturn[rkm.HeaderRequestId] = reqId
+	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-Service-Name", set.prefix)] = rk.Registry.ServiceName()
+	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-Service-Version", set.prefix)] = rk.Registry.ServiceVersion()
+	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-Service-Unix-Time", set.prefix)] = now
 	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-Received-Time", set.prefix)] = now
-	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-App-Domain", set.prefix)] = rkmid.Domain.String
+	ctx.Output.HeadersToReturn[fmt.Sprintf("X-%s-Service-Domain", set.prefix)] = rkm.Domain.String
 }
 
 // ShouldIgnore determine whether auth should be ignored based on path
@@ -136,7 +136,7 @@ func (set *optionSet) ShouldIgnore(path string) bool {
 		}
 	}
 
-	return rkmid.ShouldIgnoreGlobal(path)
+	return rkm.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -152,13 +152,13 @@ type optionSetMock struct {
 	before *BeforeCtx
 }
 
-// GetEntryName returns entry name
-func (mock *optionSetMock) GetEntryName() string {
+// EntryName returns entry name
+func (mock *optionSetMock) EntryName() string {
 	return "mock"
 }
 
-// GetEntryType returns entry type
-func (mock *optionSetMock) GetEntryType() string {
+// EntryKind returns entry kind
+func (mock *optionSetMock) EntryKind() string {
 	return "mock"
 }
 
@@ -209,12 +209,12 @@ type BootConfig struct {
 }
 
 // ToOptions convert BootConfig into Option list
-func ToOptions(config *BootConfig, entryName, entryType string) []Option {
+func ToOptions(config *BootConfig, name, kind string) []Option {
 	opts := make([]Option, 0)
 
 	if config.Enabled {
 		opts = append(opts,
-			WithEntryNameAndType(entryName, entryType),
+			WithEntryNameAndKind(name, kind),
 			WithPrefix(config.Prefix),
 			WithPathToIgnore(config.Ignore...))
 	}
@@ -227,11 +227,11 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 // Option if for middleware options while creating middleware
 type Option func(*optionSet)
 
-// WithEntryNameAndType provide entry name and entry type.
-func WithEntryNameAndType(entryName, entryType string) Option {
+// WithEntryNameAndKind provide entry name and entry kind.
+func WithEntryNameAndKind(name, kind string) Option {
 	return func(opt *optionSet) {
-		opt.entryName = entryName
-		opt.entryType = entryType
+		opt.entryName = name
+		opt.entryKind = kind
 	}
 }
 

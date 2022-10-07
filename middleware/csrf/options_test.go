@@ -3,11 +3,11 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-package rkmidcsrf
+package csrf
 
 import (
 	"context"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -18,9 +18,9 @@ import (
 func TestNewOptionSet(t *testing.T) {
 	// without options
 	set := NewOptionSet().(*optionSet)
-	assert.NotEmpty(t, set.GetEntryName())
+	assert.NotEmpty(t, set.EntryName())
 	assert.Equal(t, 32, set.tokenLength)
-	assert.Equal(t, "header:"+rkmid.HeaderXCSRFToken, set.tokenLookup)
+	assert.Equal(t, "header:"+rkm.HeaderXCSRFToken, set.tokenLookup)
 	assert.Equal(t, "_csrf", set.cookieName)
 	assert.Equal(t, 86400, set.cookieMaxAge)
 	assert.Equal(t, http.SameSiteDefaultMode, set.cookieSameSite)
@@ -29,7 +29,7 @@ func TestNewOptionSet(t *testing.T) {
 
 	// with option
 	set = NewOptionSet(
-		WithEntryNameAndType("ut-entry", "ut-type"),
+		WithEntryNameAndKind("ut-entry", "ut-kind"),
 		WithExtractor(func(context.Context) (string, error) {
 			return "", nil
 		}),
@@ -43,8 +43,8 @@ func TestNewOptionSet(t *testing.T) {
 		WithCookieSameSite(http.SameSiteDefaultMode),
 	).(*optionSet)
 
-	assert.Equal(t, "ut-entry", set.GetEntryName())
-	assert.Equal(t, "ut-type", set.GetEntryType())
+	assert.Equal(t, "ut-entry", set.EntryName())
+	assert.Equal(t, "ut-type", set.EntryKind())
 	assert.NotNil(t, set.userExtractor)
 	assert.Equal(t, 10, set.tokenLength)
 	assert.Equal(t, "header:ut-header", set.tokenLookup)
@@ -104,7 +104,7 @@ func TestOptionSet_Before(t *testing.T) {
 
 	// match 3.3
 	req = httptest.NewRequest(http.MethodPost, "/ut", nil)
-	req.Header.Set(rkmid.HeaderXCSRFToken, "ut-csrf-token")
+	req.Header.Set(rkm.HeaderXCSRFToken, "ut-csrf-token")
 	ctx = set.BeforeCtx(req)
 	set.Before(ctx)
 	assert.Contains(t, ctx.Output.ErrResp.Error(), http.StatusText(http.StatusForbidden))
@@ -213,8 +213,8 @@ func TestCsrfTokenFromQuery(t *testing.T) {
 
 func TestNewOptionSetMock(t *testing.T) {
 	mock := NewOptionSetMock(NewBeforeCtx())
-	assert.NotEmpty(t, mock.GetEntryName())
-	assert.NotEmpty(t, mock.GetEntryType())
+	assert.NotEmpty(t, mock.EntryName())
+	assert.NotEmpty(t, mock.EntryKind())
 	assert.NotNil(t, mock.BeforeCtx(nil))
 	mock.Before(nil)
 }

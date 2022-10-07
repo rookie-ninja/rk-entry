@@ -1,8 +1,8 @@
-package rkmid
+package rkm
 
 import (
 	"github.com/google/uuid"
-	rkerror "github.com/rookie-ninja/rk-entry/v2/error"
+	"github.com/rookie-ninja/rk-entry/v3/error"
 	"go.uber.org/zap"
 	"net"
 	"net/http"

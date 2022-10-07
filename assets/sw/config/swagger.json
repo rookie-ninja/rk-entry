@@ -16,7 +16,7 @@
             "name": "Apache 2.0 License",
             "url": "https://github.com/rookie-ninja/rk-entry/blob/master/LICENSE.txt"
         },
-        "version": "2.0"
+        "version": "1.0"
     },
     "paths": {
         "/rk/v1/alive": {
@@ -36,12 +36,86 @@
                     "application/json"
                 ],
                 "summary": "Get application liveness status",
-                "operationId": "8002",
+                "operationId": "30002",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rkentry.aliveResp"
+                            "$ref": "#/definitions/rk.aliveResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/rk/v1/event/activate": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "JWT": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "event"
+                ],
+                "summary": "Activate event logger level",
+                "operationId": "31000",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rk.eventLevelResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rk.eventErrorResp"
+                        }
+                    }
+                }
+            }
+        },
+        "/rk/v1/event/deactivate": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "JWT": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "event"
+                ],
+                "summary": "Deactivate event logger level",
+                "operationId": "31001",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rk.eventLevelResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rk.eventErrorResp"
                         }
                     }
                 }
@@ -64,12 +138,12 @@
                     "application/json"
                 ],
                 "summary": "Trigger Gc",
-                "operationId": "8003",
+                "operationId": "30003",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rkentry.gcResp"
+                            "$ref": "#/definitions/rk.gcResp"
                         }
                     }
                 }
@@ -92,12 +166,12 @@
                     "application/json"
                 ],
                 "summary": "Get application and process info",
-                "operationId": "8004",
+                "operationId": "30004",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rkentry.ProcessInfo"
+                            "$ref": "#/definitions/rk.ProcessInfo"
                         }
                     }
                 }
@@ -120,12 +194,12 @@
                     "application/json"
                 ],
                 "summary": "Get application readiness status",
-                "operationId": "8001",
+                "operationId": "30001",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rkentry.readyResp"
+                            "$ref": "#/definitions/rk.readyResp"
                         }
                     },
                     "500": {
@@ -134,35 +208,197 @@
                     }
                 }
             }
+        },
+        "/rk/v1/viper/dump": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "JWT": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "viper"
+                ],
+                "summary": "Dump viper config values",
+                "operationId": "32000",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rk.viperResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rk.viperError"
+                        }
+                    }
+                }
+            }
+        },
+        "/rk/v1/viper/set": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "JWT": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "viper"
+                ],
+                "summary": "Set viper config values",
+                "operationId": "32001",
+                "parameters": [
+                    {
+                        "description": "viperReq",
+                        "name": "viperReq",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rk.viperReq"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rk.viperResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/rk.viperError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rk.viperError"
+                        }
+                    }
+                }
+            }
+        },
+        "/rk/v1/zap/level": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "JWT": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "zap"
+                ],
+                "summary": "Get zap logger level",
+                "operationId": "30000",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rk.zapLevelResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rk.zapErrorResp"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    },
+                    {
+                        "BasicAuth": []
+                    },
+                    {
+                        "JWT": []
+                    }
+                ],
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "zap"
+                ],
+                "summary": "Set zap logger level",
+                "operationId": "30001",
+                "parameters": [
+                    {
+                        "enum": [
+                            "debug",
+                            "info",
+                            "warn",
+                            "error",
+                            "dPanic",
+                            "panic",
+                            "fatal"
+                        ],
+                        "type": "string",
+                        "description": "level",
+                        "name": "enumstring",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rk.zapLevelResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/rk.zapErrorResp"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "rkentry.ProcessInfo": {
+        "rk.ProcessInfo": {
             "type": "object",
             "properties": {
-                "appName": {
-                    "type": "string",
-                    "example": "rk-app"
-                },
-                "az": {
-                    "type": "string",
-                    "example": "us-east-1c"
-                },
                 "cpuInfo": {
                     "$ref": "#/definitions/rkos.CpuInfo"
-                },
-                "description": {
-                    "type": "string",
-                    "example": "RK application"
-                },
-                "docsUrl": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        ""
-                    ]
                 },
                 "domain": {
                     "type": "string",
@@ -175,28 +411,6 @@
                 "goEnvInfo": {
                     "$ref": "#/definitions/rkos.GoEnvInfo"
                 },
-                "homeUrl": {
-                    "type": "string",
-                    "example": "https://example.com"
-                },
-                "keywords": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        ""
-                    ]
-                },
-                "maintainers": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    },
-                    "example": [
-                        "rk-dev"
-                    ]
-                },
                 "memInfo": {
                     "$ref": "#/definitions/rkos.MemInfo"
                 },
@@ -206,13 +420,13 @@
                 "osInfo": {
                     "$ref": "#/definitions/rkos.OsInfo"
                 },
-                "realm": {
+                "serviceName": {
                     "type": "string",
-                    "example": "rookie-ninja"
+                    "example": "rk-app"
                 },
-                "region": {
+                "serviceVersion": {
                     "type": "string",
-                    "example": "us-east-1"
+                    "example": "dev"
                 },
                 "startTime": {
                     "type": "string",
@@ -222,21 +436,17 @@
                     "type": "string",
                     "example": "501"
                 },
-                "upTimeSec": {
-                    "type": "integer",
-                    "example": 13
+                "upTime": {
+                    "type": "string",
+                    "example": "1h"
                 },
                 "username": {
                     "type": "string",
                     "example": "lark"
-                },
-                "version": {
-                    "type": "string",
-                    "example": "dev"
                 }
             }
         },
-        "rkentry.aliveResp": {
+        "rk.aliveResp": {
             "type": "object",
             "properties": {
                 "alive": {
@@ -245,7 +455,23 @@
                 }
             }
         },
-        "rkentry.gcResp": {
+        "rk.eventErrorResp": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "rk.eventLevelResp": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "type": "string"
+                }
+            }
+        },
+        "rk.gcResp": {
             "type": "object",
             "properties": {
                 "memStatAfterGc": {
@@ -256,12 +482,57 @@
                 }
             }
         },
-        "rkentry.readyResp": {
+        "rk.readyResp": {
             "type": "object",
             "properties": {
                 "ready": {
                     "type": "boolean",
                     "example": true
+                }
+            }
+        },
+        "rk.viperError": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "rk.viperReq": {
+            "type": "object",
+            "properties": {
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "key": {
+                                "type": "string"
+                            },
+                            "value": {}
+                        }
+                    }
+                }
+            }
+        },
+        "rk.viperResp": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "rk.zapErrorResp": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "rk.zapLevelResp": {
+            "type": "object",
+            "properties": {
+                "level": {
+                    "type": "string"
                 }
             }
         },

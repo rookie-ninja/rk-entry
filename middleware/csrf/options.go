@@ -3,15 +3,15 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// Package rkmidcsrf provide auth related options
-package rkmidcsrf
+// Package csrf provide auth related options
+package csrf
 
 import (
 	"context"
 	"crypto/subtle"
 	"errors"
-	"github.com/rookie-ninja/rk-entry/v2/error"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/error"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -35,9 +35,9 @@ func randString(n int) string {
 
 // OptionSetInterface mainly for testing purpose
 type OptionSetInterface interface {
-	GetEntryName() string
+	EntryName() string
 
-	GetEntryType() string
+	EntryKind() string
 
 	Before(*BeforeCtx)
 
@@ -53,8 +53,8 @@ type optionSet struct {
 	// EntryName name of entry
 	entryName string
 
-	// EntryType type of entry
-	entryType string
+	// entryKind type of entry
+	entryKind string
 
 	// pathToIgnore ignoring paths prefix
 	pathToIgnore []string
@@ -106,9 +106,9 @@ type optionSet struct {
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName:      "fake-entry",
-		entryType:      "",
+		entryKind:      "",
 		tokenLength:    32,
-		tokenLookup:    "header:" + rkmid.HeaderXCSRFToken,
+		tokenLookup:    "header:" + rkm.HeaderXCSRFToken,
 		cookieName:     "_csrf",
 		cookieMaxAge:   86400,
 		cookieSameSite: http.SameSiteDefaultMode,
@@ -136,17 +136,17 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	return set
 }
 
-// GetEntryName returns entry name
-func (set *optionSet) GetEntryName() string {
+// EntryName returns entry name
+func (set *optionSet) EntryName() string {
 	return set.entryName
 }
 
-// GetEntryType returns entry type
-func (set *optionSet) GetEntryType() string {
-	return set.entryType
+// EntryKind returns entry kind
+func (set *optionSet) EntryKind() string {
+	return set.entryKind
 }
 
-// BeforeCtx should be created before Before()
+// BeforeCtx should be created before this
 func (set *optionSet) BeforeCtx(req *http.Request) *BeforeCtx {
 	ctx := NewBeforeCtx()
 
@@ -185,13 +185,13 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		}
 
 		if err != nil {
-			ctx.Output.ErrResp = rkmid.GetErrorBuilder().New(http.StatusBadRequest, "Failed to extract client token", err)
+			ctx.Output.ErrResp = rkm.GetErrorBuilder().New(http.StatusBadRequest, "Failed to extract client token", err)
 			return
 		}
 
 		// 3.3: return 403 to client if token is not matched
 		if !set.isValidToken(ctx.Input.Token, clientToken) {
-			ctx.Output.ErrResp = rkmid.GetErrorBuilder().New(http.StatusForbidden, "Invalid csrf token")
+			ctx.Output.ErrResp = rkm.GetErrorBuilder().New(http.StatusForbidden, "Invalid csrf token")
 			return
 		}
 	}
@@ -217,7 +217,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 	cookie.HttpOnly = set.cookieHTTPOnly
 	ctx.Output.Cookie = cookie
 
-	ctx.Output.VaryHeaders = append(ctx.Output.VaryHeaders, rkmid.HeaderCookie)
+	ctx.Output.VaryHeaders = append(ctx.Output.VaryHeaders, rkm.HeaderCookie)
 }
 
 // ShouldIgnore determine whether auth should be ignored based on path
@@ -228,7 +228,7 @@ func (set *optionSet) ShouldIgnore(path string) bool {
 		}
 	}
 
-	return rkmid.ShouldIgnoreGlobal(path)
+	return rkm.ShouldIgnoreGlobal(path)
 }
 
 func (set *optionSet) isValidToken(token, clientToken string) bool {
@@ -248,17 +248,17 @@ type optionSetMock struct {
 	before *BeforeCtx
 }
 
-// GetEntryName returns entry name
-func (mock *optionSetMock) GetEntryName() string {
+// EntryName returns entry name
+func (mock *optionSetMock) EntryName() string {
 	return "mock"
 }
 
-// GetEntryType returns entry type
-func (mock *optionSetMock) GetEntryType() string {
+// EntryKind returns entry kind
+func (mock *optionSetMock) EntryKind() string {
 	return "mock"
 }
 
-// BeforeCtx should be created before Before()
+// BeforeCtx should be created before this
 func (mock *optionSetMock) BeforeCtx(request *http.Request) *BeforeCtx {
 	return mock.before
 }
@@ -315,12 +315,12 @@ type BootConfig struct {
 }
 
 // ToOptions convert BootConfig into Option list
-func ToOptions(config *BootConfig, entryName, entryType string) []Option {
+func ToOptions(config *BootConfig, name, kind string) []Option {
 	opts := make([]Option, 0)
 
 	if config.Enabled {
 		opts = append(opts,
-			WithEntryNameAndType(entryName, entryType),
+			WithEntryNameAndKind(name, kind),
 			WithTokenLength(config.TokenLength),
 			WithTokenLookup(config.TokenLookup),
 			WithCookieName(config.CookieName),
@@ -352,14 +352,13 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 
 // ***************** Option *****************
 
-// Option
 type Option func(*optionSet)
 
-// WithEntryNameAndType provide entry name and entry type.
-func WithEntryNameAndType(entryName, entryType string) Option {
+// WithEntryNameAndKind provide entry name and entry kind.
+func WithEntryNameAndKind(name, kind string) Option {
 	return func(set *optionSet) {
-		set.entryName = entryName
-		set.entryType = entryType
+		set.entryName = name
+		set.entryKind = kind
 	}
 }
 

@@ -1,0 +1,12 @@
+---
+kind: viper
+apiVersion: v1
+metadata:
+  domain: *
+entry:
+  - name: config
+    desc: ""
+    path: ""
+    envPrefix: ""
+    content:
+      a: b

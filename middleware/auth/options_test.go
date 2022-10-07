@@ -3,12 +3,12 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-package rkmidauth
+package auth
 
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -24,8 +24,8 @@ func TestOptionSet_BeforeCtx(t *testing.T) {
 
 	// with http.Request
 	req := httptest.NewRequest(http.MethodGet, "/ut-path", nil)
-	req.Header.Set(rkmid.HeaderAuthorization, "basic")
-	req.Header.Set(rkmid.HeaderApiKey, "apiKey")
+	req.Header.Set(rkm.HeaderAuthorization, "basic")
+	req.Header.Set(rkm.HeaderApiKey, "apiKey")
 	ctx = set.BeforeCtx(req)
 
 	assert.Equal(t, "basic", ctx.Input.BasicAuthHeader)
@@ -54,20 +54,20 @@ func TestNewOptionSet(t *testing.T) {
 	// without options
 	set := NewOptionSet().(*optionSet)
 
-	assert.NotEmpty(t, set.GetEntryName())
+	assert.NotEmpty(t, set.EntryName())
 	assert.NotNil(t, set.basicAccounts)
 	assert.NotNil(t, set.apiKey)
 	assert.Empty(t, set.pathToIgnore)
 
 	// with options
 	set = NewOptionSet(
-		WithEntryNameAndType("ut-name", "ut-type"),
+		WithEntryNameAndKind("ut-name", "ut-kind"),
 		WithBasicAuth("ut-realm", "user:pass"),
 		WithApiKeyAuth("ut-key"),
 		WithPathToIgnore("ut-ignore")).(*optionSet)
 
-	assert.NotEmpty(t, set.GetEntryName())
-	assert.NotEmpty(t, set.GetEntryType())
+	assert.NotEmpty(t, set.EntryName())
+	assert.NotEmpty(t, set.EntryKind())
 	assert.NotEmpty(t, set.basicRealm)
 	assert.NotEmpty(t, set.basicAccounts)
 	assert.NotEmpty(t, set.apiKey)
@@ -78,7 +78,7 @@ func TestOptionSet_isBasicAuthorized(t *testing.T) {
 	// case 1: auth header is provided
 	// case 1.1: invalid basic auth
 	req := httptest.NewRequest(http.MethodGet, "/ut-path", nil)
-	req.Header.Set(rkmid.HeaderAuthorization, "invalid")
+	req.Header.Set(rkm.HeaderAuthorization, "invalid")
 
 	set := NewOptionSet().(*optionSet)
 	resp := set.isBasicAuthorized(set.BeforeCtx(req))
@@ -86,7 +86,7 @@ func TestOptionSet_isBasicAuthorized(t *testing.T) {
 
 	// case 1.2: not authorized
 	req = httptest.NewRequest(http.MethodGet, "/ut-path", nil)
-	req.Header.Set(rkmid.HeaderAuthorization, "Basic invalid")
+	req.Header.Set(rkm.HeaderAuthorization, "Basic invalid")
 
 	set = NewOptionSet().(*optionSet)
 	ctx := set.BeforeCtx(req)
@@ -96,7 +96,7 @@ func TestOptionSet_isBasicAuthorized(t *testing.T) {
 
 	// case 1.3: authorized
 	req = httptest.NewRequest(http.MethodGet, "/ut-path", nil)
-	req.Header.Set(rkmid.HeaderAuthorization, fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte("user:pass"))))
+	req.Header.Set(rkm.HeaderAuthorization, fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte("user:pass"))))
 
 	set = NewOptionSet(WithBasicAuth("", "user:pass")).(*optionSet)
 	ctx = set.BeforeCtx(req)
@@ -116,7 +116,7 @@ func TestOptionSet_isApiKeyAuthorized(t *testing.T) {
 	// case 1: auth header is provided
 	// case 1.1: not authorized
 	req := httptest.NewRequest(http.MethodGet, "/ut-path", nil)
-	req.Header.Set(rkmid.HeaderApiKey, "invalid")
+	req.Header.Set(rkm.HeaderApiKey, "invalid")
 
 	set := NewOptionSet().(*optionSet)
 	ctx := set.BeforeCtx(req)
@@ -125,7 +125,7 @@ func TestOptionSet_isApiKeyAuthorized(t *testing.T) {
 
 	// case 1.2: authorized
 	req = httptest.NewRequest(http.MethodGet, "/ut-path", nil)
-	req.Header.Set(rkmid.HeaderApiKey, "key")
+	req.Header.Set(rkm.HeaderApiKey, "key")
 
 	set = NewOptionSet(WithApiKeyAuth("key")).(*optionSet)
 	ctx = set.BeforeCtx(req)
@@ -152,7 +152,7 @@ func TestOptionSet_Before(t *testing.T) {
 
 	// case 1: basic auth passed
 	req = httptest.NewRequest(http.MethodGet, "/ut-path", nil)
-	req.Header.Set(rkmid.HeaderAuthorization, fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte("user:pass"))))
+	req.Header.Set(rkm.HeaderAuthorization, fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte("user:pass"))))
 
 	set = NewOptionSet(WithBasicAuth("", "user:pass"))
 	ctx = set.BeforeCtx(req)
@@ -161,7 +161,7 @@ func TestOptionSet_Before(t *testing.T) {
 
 	// case 2: X-API-Key passed
 	req = httptest.NewRequest(http.MethodGet, "/ut-path", nil)
-	req.Header.Set(rkmid.HeaderApiKey, "key")
+	req.Header.Set(rkm.HeaderApiKey, "key")
 
 	set = NewOptionSet(WithApiKeyAuth("key"))
 	ctx = set.BeforeCtx(req)
@@ -170,7 +170,7 @@ func TestOptionSet_Before(t *testing.T) {
 
 	// case 3: basic auth provided, then return code and response related to basic auth
 	req = httptest.NewRequest(http.MethodGet, "/ut-path", nil)
-	req.Header.Set(rkmid.HeaderAuthorization, "Basic invalid")
+	req.Header.Set(rkm.HeaderAuthorization, "Basic invalid")
 
 	set = NewOptionSet(WithBasicAuth("", "user:pass"))
 	ctx = set.BeforeCtx(req)
@@ -181,7 +181,7 @@ func TestOptionSet_Before(t *testing.T) {
 
 	// case 4: X-API-Key provided, then return code and response related to X-API-Key
 	req = httptest.NewRequest(http.MethodGet, "/ut-path", nil)
-	req.Header.Set(rkmid.HeaderApiKey, "invalid")
+	req.Header.Set(rkm.HeaderApiKey, "invalid")
 
 	set = NewOptionSet(WithApiKeyAuth("key"))
 	ctx = set.BeforeCtx(req)
@@ -212,8 +212,8 @@ func TestOptionSet_Before(t *testing.T) {
 
 func TestNewOptionSetMock(t *testing.T) {
 	mock := NewOptionSetMock(NewBeforeCtx())
-	assert.NotEmpty(t, mock.GetEntryName())
-	assert.NotEmpty(t, mock.GetEntryType())
+	assert.NotEmpty(t, mock.EntryName())
+	assert.NotEmpty(t, mock.EntryKind())
 	assert.NotNil(t, mock.BeforeCtx(nil))
 	mock.Before(nil)
 }

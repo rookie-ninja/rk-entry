@@ -1,0 +1,15 @@
+---
+kind: cert
+apiVersion: v1
+metadata:
+  domain: *
+entry:
+  - name: cert
+    desc: ""
+    domain: ""
+    caBase64: ""
+    caPath: ""
+    certPemBase64: ""
+    certPemPath: ""
+    keyPemBase64: ""
+    keyPemPath: ""

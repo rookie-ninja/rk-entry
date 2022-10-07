@@ -3,11 +3,11 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-// Package rkmidcors provide cors related options
-package rkmidcors
+// Package cors provide cors related options
+package cors
 
 import (
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
+	"github.com/rookie-ninja/rk-entry/v3/middleware"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -18,9 +18,9 @@ import (
 
 // OptionSetInterface mainly for testing purpose
 type OptionSetInterface interface {
-	GetEntryName() string
+	EntryKind() string
 
-	GetEntryType() string
+	EntryName() string
 
 	Before(*BeforeCtx)
 
@@ -34,7 +34,7 @@ type OptionSetInterface interface {
 // optionSet which is used for middleware implementation
 type optionSet struct {
 	entryName    string
-	entryType    string
+	entryKind    string
 	pathToIgnore []string
 	mock         OptionSetInterface
 	// AllowOrigins defines a list of origins that may access the resource.
@@ -71,7 +71,7 @@ type optionSet struct {
 func NewOptionSet(opts ...Option) OptionSetInterface {
 	set := &optionSet{
 		entryName:        "fake-entry",
-		entryType:        "",
+		entryKind:        "",
 		pathToIgnore:     []string{},
 		allowOrigins:     []string{},
 		allowMethods:     []string{},
@@ -109,24 +109,24 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	return set
 }
 
-// GetEntryName returns entry name
-func (set *optionSet) GetEntryName() string {
+// EntryName returns entry name
+func (set *optionSet) EntryName() string {
 	return set.entryName
 }
 
-// GetEntryType returns entry type
-func (set *optionSet) GetEntryType() string {
-	return set.entryType
+// EntryKind returns entry type
+func (set *optionSet) EntryKind() string {
+	return set.entryKind
 }
 
-// BeforeCtx should be created before Before()
+// BeforeCtx should be created before this
 func (set *optionSet) BeforeCtx(req *http.Request) *BeforeCtx {
 	ctx := NewBeforeCtx()
 
 	if req != nil && req.URL != nil && req.Header != nil {
 		ctx.Input.UrlPath = req.URL.Path
-		ctx.Input.OriginHeader = req.Header.Get(rkmid.HeaderOrigin)
-		ctx.Input.AccessControlRequestHeaders = req.Header.Get(rkmid.HeaderAccessControlRequestHeaders)
+		ctx.Input.OriginHeader = req.Header.Get(rkm.HeaderOrigin)
+		ctx.Input.AccessControlRequestHeaders = req.Header.Get(rkm.HeaderAccessControlRequestHeaders)
 		ctx.Input.IsPreflight = req.Method == http.MethodOptions
 	}
 
@@ -159,15 +159,15 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 
 	// case 3: not a OPTION method
 	if !ctx.Input.IsPreflight {
-		ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowOrigin] = ctx.Input.OriginHeader
+		ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowOrigin] = ctx.Input.OriginHeader
 
 		// 3.1: add Access-Control-Allow-Credentials
 		if set.allowCredentials {
-			ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowCredentials] = "true"
+			ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowCredentials] = "true"
 		}
 		// 3.2: add Access-Control-Expose-Headers
 		if len(set.exposeHeaders) > 0 {
-			ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlExposeHeaders] = strings.Join(set.exposeHeaders, ",")
+			ctx.Output.HeadersToReturn[rkm.HeaderAccessControlExposeHeaders] = strings.Join(set.exposeHeaders, ",")
 		}
 		return
 	}
@@ -182,28 +182,28 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 	// - Access-Control-Allow-Headers
 	// - Access-Control-Max-Age
 	ctx.Output.HeaderVary = append(ctx.Output.HeaderVary,
-		rkmid.HeaderAccessControlRequestMethod,
-		rkmid.HeaderAccessControlRequestHeaders)
-	ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowOrigin] = ctx.Input.OriginHeader
-	ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowMethods] = strings.Join(set.allowMethods, ",")
+		rkm.HeaderAccessControlRequestMethod,
+		rkm.HeaderAccessControlRequestHeaders)
+	ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowOrigin] = ctx.Input.OriginHeader
+	ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowMethods] = strings.Join(set.allowMethods, ",")
 
 	// 4.1: Access-Control-Allow-Credentials
 	if set.allowCredentials {
-		ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowCredentials] = "true"
+		ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowCredentials] = "true"
 	}
 
 	// 4.2: Access-Control-Allow-Headers
 	if len(set.allowHeaders) > 0 {
-		ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowHeaders] = strings.Join(set.allowHeaders, ",")
+		ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowHeaders] = strings.Join(set.allowHeaders, ",")
 	} else {
 		if ctx.Input.AccessControlRequestHeaders != "" {
-			ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlAllowHeaders] = ctx.Input.AccessControlRequestHeaders
+			ctx.Output.HeadersToReturn[rkm.HeaderAccessControlAllowHeaders] = ctx.Input.AccessControlRequestHeaders
 		}
 	}
 
 	if set.maxAge > 0 {
 		// 4.3: Access-Control-Max-Age
-		ctx.Output.HeadersToReturn[rkmid.HeaderAccessControlMaxAge] = strconv.Itoa(set.maxAge)
+		ctx.Output.HeadersToReturn[rkm.HeaderAccessControlMaxAge] = strconv.Itoa(set.maxAge)
 	}
 
 	ctx.Output.Abort = true
@@ -252,7 +252,7 @@ func (set *optionSet) ShouldIgnore(path string) bool {
 		}
 	}
 
-	return rkmid.ShouldIgnoreGlobal(path)
+	return rkm.ShouldIgnoreGlobal(path)
 }
 
 // ***************** OptionSet Mock *****************
@@ -268,17 +268,17 @@ type optionSetMock struct {
 	before *BeforeCtx
 }
 
-// GetEntryName returns entry name
-func (mock *optionSetMock) GetEntryName() string {
+// EntryName returns entry name
+func (mock *optionSetMock) EntryName() string {
 	return "mock"
 }
 
-// GetEntryType returns entry type
-func (mock *optionSetMock) GetEntryType() string {
+// EntryKind returns entry type
+func (mock *optionSetMock) EntryKind() string {
 	return "mock"
 }
 
-// BeforeCtx should be created before Before()
+// BeforeCtx should be created before this
 func (mock *optionSetMock) BeforeCtx(request *http.Request) *BeforeCtx {
 	return mock.before
 }
@@ -333,12 +333,12 @@ type BootConfig struct {
 }
 
 // ToOptions convert BootConfig into Option list
-func ToOptions(config *BootConfig, entryName, entryType string) []Option {
+func ToOptions(config *BootConfig, name, kind string) []Option {
 	opts := make([]Option, 0)
 
 	if config.Enabled {
 		opts = append(opts,
-			WithEntryNameAndType(entryName, entryType),
+			WithEntryNameAndKind(name, kind),
 			WithAllowOrigins(config.AllowOrigins...),
 			WithAllowCredentials(config.AllowCredentials),
 			WithExposeHeaders(config.ExposeHeaders...),
@@ -353,14 +353,13 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 
 // ***************** Option *****************
 
-// Option
 type Option func(*optionSet)
 
-// WithEntryNameAndType provide entry name and entry type.
-func WithEntryNameAndType(entryName, entryType string) Option {
+// WithEntryNameAndKind provide entry name and entry type.
+func WithEntryNameAndKind(name, kind string) Option {
 	return func(opt *optionSet) {
-		opt.entryName = entryName
-		opt.entryType = entryType
+		opt.entryName = name
+		opt.entryKind = kind
 	}
 }
 

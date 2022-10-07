@@ -3,11 +3,11 @@
 // Use of this source code is governed by an Apache-style
 // license that can be found in the LICENSE file.
 
-package rkmidpanic
+package panic
 
 import (
-	"github.com/rookie-ninja/rk-entry/v2/entry"
-	"github.com/rookie-ninja/rk-entry/v2/error"
+	"github.com/rookie-ninja/rk-entry/v3/entry"
+	"github.com/rookie-ninja/rk-entry/v3/error"
 	"github.com/stretchr/testify/assert"
 	"reflect"
 	"testing"
@@ -19,14 +19,14 @@ func TestNewOptionSet(t *testing.T) {
 	assert.NotNil(t, set)
 
 	// with option
-	set = NewOptionSet(WithEntryNameAndType("name", "type"))
-	assert.Equal(t, "name", set.GetEntryName())
-	assert.Equal(t, "type", set.GetEntryType())
+	set = NewOptionSet(WithEntryNameAndKind("name", "type"))
+	assert.Equal(t, "name", set.EntryName())
+	assert.Equal(t, "type", set.EntryKind())
 }
 
 func TestOptionSet_BeforeCtx(t *testing.T) {
-	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
-	logger := rkentry.LoggerEntryNoop.Logger
+	event := rk.EventEntryNoop.EventFactory.CreateEventNoop()
+	logger := rk.ZapEntryNoop.Logger
 	handler := func(rkerror.ErrorInterface) {}
 
 	set := NewOptionSet()
@@ -37,8 +37,8 @@ func TestOptionSet_BeforeCtx(t *testing.T) {
 }
 
 func TestOptionSet_Before(t *testing.T) {
-	event := rkentry.EventEntryNoop.EventFactory.CreateEventNoop()
-	logger := rkentry.LoggerEntryNoop.Logger
+	event := rk.EventEntryNoop.EventFactory.CreateEventNoop()
+	logger := rk.ZapEntryNoop.Logger
 	handler := func(rkerror.ErrorInterface) {}
 
 	set := NewOptionSet()
@@ -51,8 +51,8 @@ func TestOptionSet_Before(t *testing.T) {
 
 func TestNewOptionSetMock(t *testing.T) {
 	mock := NewOptionSetMock(NewBeforeCtx())
-	assert.NotEmpty(t, mock.GetEntryName())
-	assert.NotEmpty(t, mock.GetEntryType())
+	assert.NotEmpty(t, mock.EntryName())
+	assert.NotEmpty(t, mock.EntryKind())
 	assert.NotNil(t, mock.BeforeCtx(nil, nil, nil))
 	mock.Before(nil)
 }
