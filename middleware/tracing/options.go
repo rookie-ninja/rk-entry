@@ -23,7 +23,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	sdkresource "go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"net/http"
 	"os"
@@ -97,22 +97,23 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	}
 
 	if set.provider == nil {
+		res, _ := sdkresource.New(context.Background(),
+			sdkresource.WithFromEnv(),
+			sdkresource.WithProcess(),
+			sdkresource.WithTelemetrySDK(),
+			sdkresource.WithHost(),
+			sdkresource.WithAttributes(
+				semconv.ServiceNameKey.String(rkentry.GlobalAppCtx.GetAppInfoEntry().AppName),
+				semconv.ServiceVersionKey.String(rkentry.GlobalAppCtx.GetAppInfoEntry().Version),
+				attribute.String("service.entryName", set.entryName),
+				attribute.String("service.entryType", set.entryType),
+				semconv.TelemetrySDKLanguageGo,
+			),
+		)
 		set.provider = sdktrace.NewTracerProvider(
 			sdktrace.WithSampler(sdktrace.AlwaysSample()),
 			sdktrace.WithSpanProcessor(set.processor),
-			sdktrace.WithResource(
-				sdkresource.WithFromEnv(),
-				sdkresource.WithProcess(),
-				sdkresource.WithTelemetrySDK(),
-				sdkresource.WithHost(),
-				sdkresource.NewWithAttributes(
-					semconv.TelemetrySDKLanguageGo,
-					semconv.SchemaURL,
-					semconv.ServiceNameKey.String(rkentry.GlobalAppCtx.GetAppInfoEntry().AppName),
-					semconv.ServiceVersionKey.String(rkentry.GlobalAppCtx.GetAppInfoEntry().Version),
-					attribute.String("service.entryName", set.entryName),
-					attribute.String("service.entryType", set.entryType),
-				)),
+			sdktrace.WithResource(res),
 		)
 	}
 
