@@ -101,10 +101,15 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 			sdktrace.WithSampler(sdktrace.AlwaysSample()),
 			sdktrace.WithSpanProcessor(set.processor),
 			sdktrace.WithResource(
+				sdkresource.WithFromEnv(),
+				sdkresource.WithProcess(),
+				sdkresource.WithTelemetrySDK(),
+				sdkresource.WithHost(),
 				sdkresource.NewWithAttributes(
+					semconv.TelemetrySDKLanguageGo,
 					semconv.SchemaURL,
-					attribute.String("service.name", rkentry.GlobalAppCtx.GetAppInfoEntry().AppName),
-					attribute.String("service.version", rkentry.GlobalAppCtx.GetAppInfoEntry().Version),
+					semconv.ServiceNameKey.String(rkentry.GlobalAppCtx.GetAppInfoEntry().AppName),
+					semconv.ServiceVersionKey.String(rkentry.GlobalAppCtx.GetAppInfoEntry().Version),
 					attribute.String("service.entryName", set.entryName),
 					attribute.String("service.entryType", set.entryType),
 				)),
