@@ -40,7 +40,7 @@ const (
 // RegFunc can be used to create an entry could be any kinds of services or pieces of codes which
 // needs to be bootstrap/initialized while application starts.
 //
-// A third party entry could be implemented and inject to rk-boot via rk-boot.yaml file
+// # A third party entry could be implemented and inject to rk-boot via rk-boot.yaml file
 //
 // How to create a new custom entry? Please see example/ for details
 // Step 1:
@@ -48,8 +48,9 @@ const (
 // example:
 // ---
 // myEntry:
-//   enabled: true
-//   key: value
+//
+//	enabled: true
+//	key: value
 //
 // Step 2:
 // Create a struct which implements Entry interface

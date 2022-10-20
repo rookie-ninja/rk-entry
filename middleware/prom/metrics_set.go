@@ -95,7 +95,7 @@ func (set *MetricsSet) GetSubSystem() string {
 	return set.subSystem
 }
 
-//GetRegisterer returns registerer
+// GetRegisterer returns registerer
 func (set *MetricsSet) GetRegisterer() prometheus.Registerer {
 	return set.registerer
 }

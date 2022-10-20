@@ -186,6 +186,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 	}
 
 	if set.ShouldIgnore(ctx.Input.UrlPath) {
+		ctx.Output.NewCtx = ctx.Input.RequestCtx
 		return
 	}
 

@@ -34,7 +34,6 @@ var (
 // 2: Read --rkset flags and override values in map unmarshalled at above step.
 // 3: Unmarshal map into user provided struct.
 //
-//
 // [Flag]: Override boot config value with flag of rkset:
 //
 // pflag.FlagSet which contains rkset as key.
@@ -49,7 +48,7 @@ var (
 // gin:
 //   - port: 1949
 //     commonService:
-//       enabled: true
+//     enabled: true
 //
 // We can override values in example-boot.yaml file as bellow:
 //
@@ -69,7 +68,7 @@ var (
 // gin:
 //   - port: 1949
 //     commonService:
-//       enabled: true
+//     enabled: true
 //
 // We can override values in example-boot.yaml file as bellow:
 //

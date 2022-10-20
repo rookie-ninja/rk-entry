@@ -1,5 +1,5 @@
 .PHONY: all
-all: test lint fmt swag
+all: test fmt swag
 
 .PHONY: lint
 lint:
