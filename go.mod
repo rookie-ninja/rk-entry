@@ -8,7 +8,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/prometheus/common v0.32.1
-	github.com/rookie-ninja/rk-logger v1.2.11
+	github.com/rookie-ninja/rk-logger v1.2.12
 	github.com/rookie-ninja/rk-query v1.2.14
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.12.0
