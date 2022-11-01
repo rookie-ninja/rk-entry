@@ -14,7 +14,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -173,7 +173,7 @@ func (entry *SWEntry) ConfigFileHandler() http.HandlerFunc {
 			} else {
 				http.ServeContent(writer, request, "index.html", time.Now(), bytes.NewReader(file))
 			}
-		case path.Join(entry.Path, "swagger-config.json"):
+		case filepath.Join(entry.Path, "swagger-config.json"):
 			http.ServeContent(writer, request, "swagger-config.json", time.Now(), strings.NewReader(swConfigFileContents))
 		default:
 			p = strings.TrimPrefix(p, entry.Path)
@@ -218,7 +218,7 @@ func (entry *SWEntry) initSwaggerConfig() {
 		swaggerJsonFiles[key] = string(swAssetsFile)
 		swaggerUrlConfig.Urls = append(swaggerUrlConfig.Urls, &swUrl{
 			Name: key,
-			Url:  path.Join(entry.Path, key),
+			Url:  filepath.Join(entry.Path, key),
 		})
 	}
 
@@ -245,7 +245,7 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 		for i := range files {
 			file := files[i]
 			if !file.IsDir() && strings.HasSuffix(file.Name(), suffix) {
-				bytes, err := entry.embedFS.ReadFile(path.Join(jsonPath, file.Name()))
+				bytes, err := entry.embedFS.ReadFile(filepath.Join(jsonPath, file.Name()))
 				key := entry.entryName + "-" + file.Name()
 
 				if err != nil && !ignoreError {
@@ -256,7 +256,7 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 
 				urlConfig.Urls = append(urlConfig.Urls, &swUrl{
 					Name: key,
-					Url:  path.Join(entry.Path, key),
+					Url:  filepath.Join(entry.Path, key),
 				})
 			}
 		}
@@ -265,9 +265,9 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 	}
 
 	// re-path it with working directory if not absolute path
-	if !path.IsAbs(jsonPath) {
+	if !filepath.IsAbs(jsonPath) {
 		wd, _ := os.Getwd()
-		jsonPath = path.Join(wd, jsonPath)
+		jsonPath = filepath.Join(wd, jsonPath)
 	}
 
 	files, err := ioutil.ReadDir(jsonPath)
@@ -278,7 +278,7 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 	for i := range files {
 		file := files[i]
 		if !file.IsDir() && strings.HasSuffix(file.Name(), suffix) {
-			bytes, err := ioutil.ReadFile(path.Join(jsonPath, file.Name()))
+			bytes, err := os.ReadFile(filepath.Join(jsonPath, file.Name()))
 			key := entry.entryName + "-" + file.Name()
 
 			if err != nil && !ignoreError {
@@ -289,7 +289,7 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 
 			urlConfig.Urls = append(urlConfig.Urls, &swUrl{
 				Name: key,
-				Url:  path.Join(entry.Path, key),
+				Url:  filepath.Join(entry.Path, key),
 			})
 		}
 	}

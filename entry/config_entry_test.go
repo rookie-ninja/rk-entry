@@ -7,9 +7,8 @@ package rkentry
 import (
 	"context"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 )
 
@@ -57,8 +56,8 @@ func TestRegisterConfigEntry(t *testing.T) {
 key: value
 `
 	// create viper config file in ut temp dir
-	tempDir := path.Join(t.TempDir(), "ut-viper.yaml")
-	assert.Nil(t, ioutil.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
+	tempDir := filepath.Join(t.TempDir(), "ut-viper.yaml")
+	assert.Nil(t, os.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
 	entries = RegisterConfigEntry(&BootConfig{
 		Config: []*BootConfigE{
 			{
@@ -105,8 +104,8 @@ func TestRegisterConfigEntry_WithDomainAndFileNotExist(t *testing.T) {
 key: value
 `
 	// create viper config file in ut temp dir
-	tempDir := path.Join(t.TempDir(), "ut-viper.yaml")
-	assert.Nil(t, ioutil.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
+	tempDir := filepath.Join(t.TempDir(), "ut-viper.yaml")
+	assert.Nil(t, os.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
 
 	// set domain to prod
 	assert.Nil(t, os.Setenv("DOMAIN", "prod"))
@@ -138,8 +137,8 @@ func TestRegisterConfigEntry_WithDomainAndFileExist(t *testing.T) {
 key: value
 `
 	// create viper config file in ut temp dir
-	tempDir := path.Join(t.TempDir(), "ut-viper.yaml")
-	assert.Nil(t, ioutil.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
+	tempDir := filepath.Join(t.TempDir(), "ut-viper.yaml")
+	assert.Nil(t, os.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
 
 	// set domain to prod
 	assert.Nil(t, os.Setenv("DOMAIN", "prod"))
@@ -173,8 +172,8 @@ func TestRegisterConfigEntry_WithDomainAndBothFileExist(t *testing.T) {
 key: beta
 `
 	// create viper config file in ut temp dir
-	tempDirBeta := path.Join(t.TempDir(), "ut-viper-beta.yaml")
-	assert.Nil(t, ioutil.WriteFile(tempDirBeta, []byte(viperConfigBeta), os.ModePerm))
+	tempDirBeta := filepath.Join(t.TempDir(), "ut-viper-beta.yaml")
+	assert.Nil(t, os.WriteFile(tempDirBeta, []byte(viperConfigBeta), os.ModePerm))
 
 	// create prod viper config file named as ut-viper-prod.yaml
 	viperConfigProd := `
@@ -182,8 +181,8 @@ key: beta
 key: prod
 `
 	// create viper config file in ut temp dir
-	tempDirProd := path.Join(path.Dir(tempDirBeta), "ut-viper-prod.yaml")
-	assert.Nil(t, ioutil.WriteFile(tempDirProd, []byte(viperConfigProd), os.ModePerm))
+	tempDirProd := filepath.Join(filepath.Dir(tempDirBeta), "ut-viper-prod.yaml")
+	assert.Nil(t, os.WriteFile(tempDirProd, []byte(viperConfigProd), os.ModePerm))
 
 	// set domain to prod
 	assert.Nil(t, os.Setenv("DOMAIN", "prod"))
@@ -223,8 +222,8 @@ func TestRegisterConfigEntriesWithConfig_WithoutDomainAndBothFileExist(t *testin
 key: value
 `
 	// create viper config file in ut temp dir
-	tempDir := path.Join(t.TempDir(), "ut-viper.yaml")
-	assert.Nil(t, ioutil.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
+	tempDir := filepath.Join(t.TempDir(), "ut-viper.yaml")
+	assert.Nil(t, os.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
 
 	// create prod viper config file named as ut-viper-prod.yaml
 	viperConfigProd := `
@@ -232,8 +231,8 @@ key: value
 key: prod
 `
 	// create viper config file in ut temp dir
-	tempDirProd := path.Join(path.Dir(tempDir), "ut-viper-prod.yaml")
-	assert.Nil(t, ioutil.WriteFile(tempDirProd, []byte(viperConfigProd), os.ModePerm))
+	tempDirProd := filepath.Join(filepath.Dir(tempDir), "ut-viper-prod.yaml")
+	assert.Nil(t, os.WriteFile(tempDirProd, []byte(viperConfigProd), os.ModePerm))
 
 	entries := RegisterConfigEntry(&BootConfig{
 		Config: []*BootConfigE{

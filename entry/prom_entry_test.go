@@ -5,9 +5,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -67,12 +66,12 @@ func TestPromEntry_Bootstrap(t *testing.T) {
 	// assign certs
 	caPem, _ := generateCerts(t)
 	certPem, keyPem := generateCerts(t)
-	caDir := path.Join(t.TempDir(), "ca.pem")
-	certPemDir := path.Join(t.TempDir(), "cert.pem")
-	keyPemDir := path.Join(t.TempDir(), "key.pem")
-	assert.Nil(t, ioutil.WriteFile(caDir, caPem, os.ModePerm))
-	assert.Nil(t, ioutil.WriteFile(certPemDir, certPem, os.ModePerm))
-	assert.Nil(t, ioutil.WriteFile(keyPemDir, keyPem, os.ModePerm))
+	caDir := filepath.Join(t.TempDir(), "ca.pem")
+	certPemDir := filepath.Join(t.TempDir(), "cert.pem")
+	keyPemDir := filepath.Join(t.TempDir(), "key.pem")
+	assert.Nil(t, os.WriteFile(caDir, caPem, os.ModePerm))
+	assert.Nil(t, os.WriteFile(certPemDir, certPem, os.ModePerm))
+	assert.Nil(t, os.WriteFile(keyPemDir, keyPem, os.ModePerm))
 	RegisterCertEntry(&BootCert{
 		Cert: []*BootCertE{
 			{

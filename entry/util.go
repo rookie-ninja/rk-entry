@@ -10,9 +10,8 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -149,11 +148,11 @@ func readFile(filePath string, fs *embed.FS, shouldPanic bool) []byte {
 
 	wd, _ := os.Getwd()
 
-	if !path.IsAbs(filePath) {
-		filePath = path.Join(wd, filePath)
+	if !filepath.IsAbs(filePath) {
+		filePath = filepath.Join(wd, filePath)
 	}
 
-	data, err := ioutil.ReadFile(filePath)
+	data, err := os.ReadFile(filePath)
 	if err != nil && shouldPanic {
 		ShutdownWithError(err)
 	}

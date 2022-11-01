@@ -3,7 +3,7 @@ package rkentry
 import (
 	"context"
 	"encoding/json"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -86,7 +86,7 @@ func RegisterPProfEntry(boot *BootPProf, opts ...PProfEntryOption) *PProfEntry {
 		entry.Path = "/pprof"
 	}
 
-	entry.Path = path.Join("/", entry.Path)
+	entry.Path = filepath.Join("/", entry.Path)
 	if !strings.HasSuffix(entry.Path, "/") {
 		entry.Path = entry.Path + "/"
 	}

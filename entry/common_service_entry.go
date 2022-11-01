@@ -12,7 +12,7 @@ import (
 	"github.com/rookie-ninja/rk-entry/v2"
 	"github.com/rookie-ninja/rk-entry/v2/os"
 	"net/http"
-	"path"
+	"path/filepath"
 	"runtime"
 )
 
@@ -86,10 +86,10 @@ func RegisterCommonServiceEntry(boot *BootCommonService, opts ...CommonServiceEn
 		}
 
 		// append prefix
-		entry.ReadyPath = path.Join("/", entry.pathPrefix, entry.ReadyPath)
-		entry.AlivePath = path.Join("/", entry.pathPrefix, entry.AlivePath)
-		entry.GcPath = path.Join("/", entry.pathPrefix, entry.GcPath)
-		entry.InfoPath = path.Join("/", entry.pathPrefix, entry.InfoPath)
+		entry.ReadyPath = filepath.Join("/", entry.pathPrefix, entry.ReadyPath)
+		entry.AlivePath = filepath.Join("/", entry.pathPrefix, entry.AlivePath)
+		entry.GcPath = filepath.Join("/", entry.pathPrefix, entry.GcPath)
+		entry.InfoPath = filepath.Join("/", entry.pathPrefix, entry.InfoPath)
 
 		// change swagger config file
 		oldSwAssets := readFile("assets/sw/config/swagger.json", &rkembed.AssetsFS, true)

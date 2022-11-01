@@ -8,10 +8,9 @@ import (
 	"crypto/x509/pkix"
 	"encoding/pem"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"math/big"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -68,13 +67,13 @@ func TestCertEntry_Bootstrap(t *testing.T) {
 	caPem, _ := generateCerts(t)
 	certPem, keyPem := generateCerts(t)
 
-	caDir := path.Join(t.TempDir(), "ca.pem")
-	certPemDir := path.Join(t.TempDir(), "cert.pem")
-	keyPemDir := path.Join(t.TempDir(), "key.pem")
+	caDir := filepath.Join(t.TempDir(), "ca.pem")
+	certPemDir := filepath.Join(t.TempDir(), "cert.pem")
+	keyPemDir := filepath.Join(t.TempDir(), "key.pem")
 
-	assert.Nil(t, ioutil.WriteFile(caDir, caPem, os.ModePerm))
-	assert.Nil(t, ioutil.WriteFile(certPemDir, certPem, os.ModePerm))
-	assert.Nil(t, ioutil.WriteFile(keyPemDir, keyPem, os.ModePerm))
+	assert.Nil(t, os.WriteFile(caDir, caPem, os.ModePerm))
+	assert.Nil(t, os.WriteFile(certPemDir, certPem, os.ModePerm))
+	assert.Nil(t, os.WriteFile(keyPemDir, keyPem, os.ModePerm))
 
 	entries := RegisterCertEntry(&BootCert{
 		Cert: []*BootCertE{

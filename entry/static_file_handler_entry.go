@@ -18,7 +18,6 @@ import (
 	"math"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -119,7 +118,7 @@ func RegisterStaticFileHandlerEntry(boot *BootStaticFileHandler, opts ...StaticF
 	case "local":
 		if !filepath.IsAbs(boot.SourcePath) {
 			wd, _ := os.Getwd()
-			boot.SourcePath = path.Join(wd, boot.SourcePath)
+			boot.SourcePath = filepath.Join(wd, boot.SourcePath)
 		}
 		entry.httpFS = http.Dir(boot.SourcePath)
 	}
@@ -205,7 +204,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 		if len(p) < 1 {
 			p = "/"
 		}
-		p = path.Join("/", p)
+		p = filepath.Join("/", p)
 
 		var file http.File
 		var err error
@@ -234,8 +233,8 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 			for _, v := range infos {
 				files = append(files, &fileResp{
 					isDir:    v.IsDir(),
-					Icon:     base64.StdEncoding.EncodeToString(readFile(path.Join("assets/static/icons", entry.getIconPath(v)), &rkembed.AssetsFS, false)),
-					FileUrl:  path.Join(entry.Path, p, v.Name()),
+					Icon:     base64.StdEncoding.EncodeToString(readFile(filepath.Join("assets/static/icons", entry.getIconPath(v)), &rkembed.AssetsFS, false)),
+					FileUrl:  filepath.Join(entry.Path, p, v.Name()),
 					FileName: v.Name(),
 					Size:     v.Size(),
 					ModTime:  v.ModTime(),
@@ -244,8 +243,8 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 
 			entry.sortFiles(files)
 			resp := &resp{
-				PrevPath: path.Join(entry.Path, path.Dir(p)),
-				PrevIcon: base64.StdEncoding.EncodeToString(readFile(path.Join("assets/static/icons/folder.png"), &rkembed.AssetsFS, false)),
+				PrevPath: filepath.Join(entry.Path, filepath.Dir(p)),
+				PrevIcon: base64.StdEncoding.EncodeToString(readFile(filepath.Join("assets/static/icons/folder.png"), &rkembed.AssetsFS, false)),
 				Path:     p,
 				Files:    files,
 			}
@@ -264,7 +263,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 			// make browser download file
 			writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileInfo.Name()))
 			writer.Header().Set("Content-Type", "application/octet-stream")
-			http.ServeContent(writer, request, path.Base(p), time.Now(), file)
+			http.ServeContent(writer, request, filepath.Base(p), time.Now(), file)
 		}
 	}
 }

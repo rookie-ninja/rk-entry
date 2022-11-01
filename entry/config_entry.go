@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"os"
-	"path"
+	"path/filepath"
 )
 
 // RegisterConfigEntry create ConfigEntry with BootConfigConfig.
@@ -58,11 +58,11 @@ func RegisterConfigEntry(boot *BootConfig) []*ConfigEntry {
 
 		// if file path was provided
 		if len(entry.Path) > 0 {
-			if !path.IsAbs(entry.Path) {
+			if !filepath.IsAbs(entry.Path) {
 				if wd, err := os.Getwd(); err != nil {
 					ShutdownWithError(err)
 				} else {
-					entry.Path = path.Join(wd, entry.Path)
+					entry.Path = filepath.Join(wd, entry.Path)
 				}
 			}
 

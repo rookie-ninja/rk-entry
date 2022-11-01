@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 )
 
@@ -52,8 +52,8 @@ func TestStaticFileHandlerEntry_EntryFunctions(t *testing.T) {
 
 func TestStaticFileHandlerEntry_GetFileHandler(t *testing.T) {
 	currDir := t.TempDir()
-	os.MkdirAll(path.Join(currDir, "ut-dir"), os.ModePerm)
-	os.WriteFile(path.Join(currDir, "ut-file"), []byte("ut content"), os.ModePerm)
+	os.MkdirAll(filepath.Join(currDir, "ut-dir"), os.ModePerm)
+	os.WriteFile(filepath.Join(currDir, "ut-file"), []byte("ut content"), os.ModePerm)
 
 	entry := RegisterStaticFileHandlerEntry(&BootStaticFileHandler{
 		Enabled: true,

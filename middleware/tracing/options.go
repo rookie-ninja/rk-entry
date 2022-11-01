@@ -27,7 +27,7 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -569,9 +569,9 @@ func NewFileExporter(outputPath string, opts ...stdouttrace.Option) sdktrace.Spa
 	} else {
 		// init lumberjack logger
 		writer := rklogger.NewLumberjackConfigDefault()
-		if !path.IsAbs(outputPath) {
+		if !filepath.IsAbs(outputPath) {
 			wd, _ := os.Getwd()
-			outputPath = path.Join(wd, outputPath)
+			outputPath = filepath.Join(wd, outputPath)
 		}
 
 		writer.Filename = outputPath

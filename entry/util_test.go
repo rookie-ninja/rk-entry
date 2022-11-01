@@ -6,9 +6,8 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
-	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
@@ -16,13 +15,13 @@ import (
 )
 
 func TestFileExists_ExpectTrue(t *testing.T) {
-	filePath := path.Join(t.TempDir(), "ui-TestFileExist-ExpectTrue")
-	assert.Nil(t, ioutil.WriteFile(filePath, []byte("unit-test"), 0777))
+	filePath := filepath.Join(t.TempDir(), "ui-TestFileExist-ExpectTrue")
+	assert.Nil(t, os.WriteFile(filePath, []byte("unit-test"), 0777))
 	assert.True(t, fileExists(filePath))
 }
 
 func TestFileExists_ExpectFalse(t *testing.T) {
-	filePath := path.Join(t.TempDir(), "ui-TestFileExist-ExpectFalse")
+	filePath := filepath.Join(t.TempDir(), "ui-TestFileExist-ExpectFalse")
 	assert.False(t, fileExists(filePath))
 	assert.False(t, fileExists(t.TempDir()))
 }

@@ -13,10 +13,9 @@ import (
 	"github.com/rookie-ninja/rk-entry/v2/entry"
 	"github.com/rookie-ninja/rk-entry/v2/error"
 	"github.com/rookie-ninja/rk-entry/v2/middleware"
-	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 )
 
@@ -358,12 +357,12 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 }
 
 func mustRead(p string) []byte {
-	if !path.IsAbs(p) {
+	if !filepath.IsAbs(p) {
 		wd, _ := os.Getwd()
-		p = path.Join(wd, p)
+		p = filepath.Join(wd, p)
 	}
 
-	res, err := ioutil.ReadFile(p)
+	res, err := os.ReadFile(p)
 	if err != nil {
 		rkentry.ShutdownWithError(err)
 	}

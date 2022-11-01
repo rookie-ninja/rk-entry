@@ -14,7 +14,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -244,7 +244,7 @@ func (entry *DocsEntry) initDocsConfig() {
 		specFiles[key] = string(swAssetsFile)
 		config.Specs = append(config.Specs, &spec{
 			Name: key,
-			Url:  path.Join(entry.Path, key),
+			Url:  filepath.Join(entry.Path, key),
 		})
 	}
 
@@ -284,7 +284,7 @@ func (entry *DocsEntry) listFilesWithSuffix(config *docsConfig, specPath string,
 		for i := range files {
 			file := files[i]
 			if !file.IsDir() && strings.HasSuffix(file.Name(), suffix) {
-				bytes, err := entry.embedFS.ReadFile(path.Join(specPath, file.Name()))
+				bytes, err := entry.embedFS.ReadFile(filepath.Join(specPath, file.Name()))
 				key := entry.entryName + "-" + file.Name()
 
 				if err != nil && !ignoreError {
@@ -295,7 +295,7 @@ func (entry *DocsEntry) listFilesWithSuffix(config *docsConfig, specPath string,
 
 				config.Specs = append(config.Specs, &spec{
 					Name: key,
-					Url:  path.Join(entry.Path, key),
+					Url:  filepath.Join(entry.Path, key),
 				})
 			}
 		}
@@ -304,9 +304,9 @@ func (entry *DocsEntry) listFilesWithSuffix(config *docsConfig, specPath string,
 	}
 
 	// re-path it with working directory if not absolute path
-	if !path.IsAbs(specPath) {
+	if !filepath.IsAbs(specPath) {
 		wd, _ := os.Getwd()
-		specPath = path.Join(wd, specPath)
+		specPath = filepath.Join(wd, specPath)
 	}
 
 	files, err := ioutil.ReadDir(specPath)
@@ -317,7 +317,7 @@ func (entry *DocsEntry) listFilesWithSuffix(config *docsConfig, specPath string,
 	for i := range files {
 		file := files[i]
 		if !file.IsDir() && strings.HasSuffix(file.Name(), suffix) {
-			bytes, err := ioutil.ReadFile(path.Join(specPath, file.Name()))
+			bytes, err := os.ReadFile(filepath.Join(specPath, file.Name()))
 			key := entry.entryName + "-" + file.Name()
 
 			if err != nil && !ignoreError {
@@ -328,7 +328,7 @@ func (entry *DocsEntry) listFilesWithSuffix(config *docsConfig, specPath string,
 
 			config.Specs = append(config.Specs, &spec{
 				Name: key,
-				Url:  path.Join(entry.Path, key),
+				Url:  filepath.Join(entry.Path, key),
 			})
 		}
 	}
