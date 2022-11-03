@@ -472,6 +472,14 @@ func toAbsPath(p ...string) []string {
 	res := make([]string, 0)
 
 	for i := range p {
+		// get file name
+		_, fileName := filepath.Split(p[i])
+
+		// empty file name, ignore
+		if len(fileName) < 1 {
+			continue
+		}
+
 		if filepath.IsAbs(p[i]) || p[i] == "stdout" || p[i] == "stderr" {
 			res = append(res, p[i])
 			continue
