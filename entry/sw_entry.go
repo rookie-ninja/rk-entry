@@ -11,6 +11,7 @@ import (
 	"embed"
 	"encoding/json"
 	"github.com/rookie-ninja/rk-entry/v2"
+	rkmid "github.com/rookie-ninja/rk-entry/v2/middleware"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -167,14 +168,42 @@ func (entry *SWEntry) ConfigFileHandler() http.HandlerFunc {
 		}
 
 		switch p {
+		// request index.html file
 		case strings.TrimSuffix(entry.Path, "/"):
 			if file := readFile("assets/sw/index.html", &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
 				http.ServeContent(writer, request, "index.html", time.Now(), bytes.NewReader(file))
 			}
+		// css files
+		case filepath.Join(entry.Path, "swagger-ui.css"):
+			if file := readFile("assets/sw/css/swagger-ui.css", &rkembed.AssetsFS, false); len(file) < 1 {
+				http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			} else {
+				http.ServeContent(writer, request, "swagger-ui.css", time.Now(), bytes.NewReader(file))
+			}
+		// favicon files
+		case filepath.Join(entry.Path, "favicon-32x32.png"),
+			filepath.Join(entry.Path, "favicon-16x16.png"):
+			base := filepath.Base(p)
+			if file := readFile(filepath.Join("assets/sw/favicon", base), &rkembed.AssetsFS, false); len(file) < 1 {
+				http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			} else {
+				http.ServeContent(writer, request, base, time.Now(), bytes.NewReader(file))
+			}
+		// js files
+		case filepath.Join(entry.Path, "swagger-ui-bundle.js"),
+			filepath.Join(entry.Path, "swagger-ui-standalone-preset.js"):
+			base := filepath.Base(p)
+			if file := readFile(filepath.Join("assets/sw/js", base), &rkembed.AssetsFS, false); len(file) < 1 {
+				http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			} else {
+				http.ServeContent(writer, request, base, time.Now(), bytes.NewReader(file))
+			}
+		// request config.json
 		case filepath.Join(entry.Path, "swagger-config.json"):
 			http.ServeContent(writer, request, "swagger-config.json", time.Now(), strings.NewReader(swConfigFileContents))
+		// swagger spec config
 		default:
 			p = strings.TrimPrefix(p, entry.Path)
 			value, ok := swaggerJsonFiles[p]
@@ -229,6 +258,9 @@ func (entry *SWEntry) initSwaggerConfig() {
 	}
 
 	swConfigFileContents = string(bytes)
+
+	// 4: ignore swagger assets for middleware
+	rkmid.AddPathToIgnoreGlobal(entry.Path)
 }
 
 // List files with .json suffix and store them into swaggerJsonFiles variable.
