@@ -347,9 +347,9 @@ func parseEnvOverrides(prefix string) (map[interface{}]interface{}, error) {
 			}
 
 			if err != nil {
-				LoggerEntryStdout.Warn("Found ENV to override, but failed to parse, ignoring...", zapFields...)
+				LoggerEntryStdout.Debug("Found ENV to override, but failed to parse, ignoring...", zapFields...)
 			} else {
-				LoggerEntryStdout.Info("Found ENV to override, applying...", zapFields...)
+				LoggerEntryStdout.Debug("Found ENV to override, applying...", zapFields...)
 			}
 		}
 	})
@@ -380,9 +380,9 @@ func parseFlagOverrides(set *pflag.FlagSet) (map[interface{}]interface{}, error)
 			}
 
 			if err != nil {
-				LoggerEntryStdout.Warn("Found flag to override, but failed to parse, ignoring...", zapFields...)
+				LoggerEntryStdout.Debug("Found flag to override, but failed to parse, ignoring...", zapFields...)
 			} else {
-				LoggerEntryStdout.Info("Found flag to override, applying...", zapFields...)
+				LoggerEntryStdout.Debug("Found flag to override, applying...", zapFields...)
 			}
 		}
 	})
