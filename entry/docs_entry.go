@@ -13,7 +13,6 @@ import (
 	"github.com/rookie-ninja/rk-entry/v2"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -246,8 +245,8 @@ func (entry *DocsEntry) initDocsConfig() {
 		specFiles[key] = string(swAssetsFile)
 		e := &spec{
 			Name: key,
+			Url:  path.Join(entry.Path, key),
 		}
-		e.Url, _ = url.JoinPath(entry.Path, key)
 		config.Specs = append(config.Specs, e)
 	}
 

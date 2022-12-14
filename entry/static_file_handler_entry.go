@@ -17,7 +17,6 @@ import (
 	"io/fs"
 	"math"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -206,7 +205,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 		if len(p) < 1 {
 			p = "/"
 		}
-		p, _ = url.JoinPath("/", p)
+		p = path.Join("/", p)
 
 		var file http.File
 		var err error

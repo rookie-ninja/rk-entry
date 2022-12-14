@@ -14,7 +14,6 @@ import (
 	rkmid "github.com/rookie-ninja/rk-entry/v2/middleware"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -249,8 +248,8 @@ func (entry *SWEntry) initSwaggerConfig() {
 		swaggerJsonFiles[key] = string(swAssetsFile)
 		e := &swUrl{
 			Name: key,
+			Url:  path.Join(entry.Path, key),
 		}
-		e.Url, _ = url.JoinPath(entry.Path, key)
 		swaggerUrlConfig.Urls = append(swaggerUrlConfig.Urls, e)
 	}
 
