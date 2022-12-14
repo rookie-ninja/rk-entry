@@ -14,7 +14,9 @@ import (
 	rkmid "github.com/rookie-ninja/rk-entry/v2/middleware"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -176,32 +178,32 @@ func (entry *SWEntry) ConfigFileHandler() http.HandlerFunc {
 				http.ServeContent(writer, request, "index.html", time.Now(), bytes.NewReader(file))
 			}
 		// css files
-		case filepath.Join(entry.Path, "swagger-ui.css"):
+		case path.Join(entry.Path, "swagger-ui.css"):
 			if file := readFile("assets/sw/css/swagger-ui.css", &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
 				http.ServeContent(writer, request, "swagger-ui.css", time.Now(), bytes.NewReader(file))
 			}
 		// favicon files
-		case filepath.Join(entry.Path, "favicon-32x32.png"),
-			filepath.Join(entry.Path, "favicon-16x16.png"):
-			base := filepath.Base(p)
+		case path.Join(entry.Path, "favicon-32x32.png"),
+			path.Join(entry.Path, "favicon-16x16.png"):
+			base := path.Base(p)
 			if file := readFile(filepath.Join("assets/sw/favicon", base), &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
 				http.ServeContent(writer, request, base, time.Now(), bytes.NewReader(file))
 			}
 		// js files
-		case filepath.Join(entry.Path, "swagger-ui-bundle.js"),
-			filepath.Join(entry.Path, "swagger-ui-standalone-preset.js"):
-			base := filepath.Base(p)
+		case path.Join(entry.Path, "swagger-ui-bundle.js"),
+			path.Join(entry.Path, "swagger-ui-standalone-preset.js"):
+			base := path.Base(p)
 			if file := readFile(filepath.Join("assets/sw/js", base), &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
 				http.ServeContent(writer, request, base, time.Now(), bytes.NewReader(file))
 			}
 		// request config.json
-		case filepath.Join(entry.Path, "swagger-config.json"):
+		case path.Join(entry.Path, "swagger-config.json"):
 			http.ServeContent(writer, request, "swagger-config.json", time.Now(), strings.NewReader(swConfigFileContents))
 		// swagger spec config
 		default:
@@ -245,10 +247,11 @@ func (entry *SWEntry) initSwaggerConfig() {
 		key := entry.entryName + "-rk-common.swagger.json"
 		// add common service json file
 		swaggerJsonFiles[key] = string(swAssetsFile)
-		swaggerUrlConfig.Urls = append(swaggerUrlConfig.Urls, &swUrl{
+		e := &swUrl{
 			Name: key,
-			Url:  filepath.Join(entry.Path, key),
-		})
+		}
+		e.Url, _ = url.JoinPath(entry.Path, key)
+		swaggerUrlConfig.Urls = append(swaggerUrlConfig.Urls, e)
 	}
 
 	// 3: Marshal to swagger-config.json and write to pkger
@@ -288,7 +291,7 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 
 				urlConfig.Urls = append(urlConfig.Urls, &swUrl{
 					Name: key,
-					Url:  filepath.Join(entry.Path, key),
+					Url:  path.Join(entry.Path, key),
 				})
 			}
 		}
@@ -321,7 +324,7 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 
 			urlConfig.Urls = append(urlConfig.Urls, &swUrl{
 				Name: key,
-				Url:  filepath.Join(entry.Path, key),
+				Url:  path.Join(entry.Path, key),
 			})
 		}
 	}

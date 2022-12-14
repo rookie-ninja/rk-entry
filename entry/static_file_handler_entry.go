@@ -17,7 +17,9 @@ import (
 	"io/fs"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -204,7 +206,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 		if len(p) < 1 {
 			p = "/"
 		}
-		p = filepath.Join("/", p)
+		p, _ = url.JoinPath("/", p)
 
 		var file http.File
 		var err error
@@ -234,7 +236,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 				files = append(files, &fileResp{
 					isDir:    v.IsDir(),
 					Icon:     base64.StdEncoding.EncodeToString(readFile(filepath.Join("assets/static/icons", entry.getIconPath(v)), &rkembed.AssetsFS, false)),
-					FileUrl:  filepath.Join(entry.Path, p, v.Name()),
+					FileUrl:  path.Join(entry.Path, p, v.Name()),
 					FileName: v.Name(),
 					Size:     v.Size(),
 					ModTime:  v.ModTime(),
@@ -243,7 +245,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 
 			entry.sortFiles(files)
 			resp := &resp{
-				PrevPath: filepath.Join(entry.Path, filepath.Dir(p)),
+				PrevPath: path.Join(entry.Path, filepath.Dir(p)),
 				PrevIcon: base64.StdEncoding.EncodeToString(readFile(filepath.Join("assets/static/icons/folder.png"), &rkembed.AssetsFS, false)),
 				Path:     p,
 				Files:    files,

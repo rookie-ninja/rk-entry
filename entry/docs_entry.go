@@ -13,7 +13,9 @@ import (
 	"github.com/rookie-ninja/rk-entry/v2"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -242,10 +244,11 @@ func (entry *DocsEntry) initDocsConfig() {
 		key := entry.entryName + "-rk-common.swagger.json"
 		// add common service json file
 		specFiles[key] = string(swAssetsFile)
-		config.Specs = append(config.Specs, &spec{
+		e := &spec{
 			Name: key,
-			Url:  filepath.Join(entry.Path, key),
-		})
+		}
+		e.Url, _ = url.JoinPath(entry.Path, key)
+		config.Specs = append(config.Specs, e)
 	}
 
 	// 3: Assign style
@@ -295,7 +298,7 @@ func (entry *DocsEntry) listFilesWithSuffix(config *docsConfig, specPath string,
 
 				config.Specs = append(config.Specs, &spec{
 					Name: key,
-					Url:  filepath.Join(entry.Path, key),
+					Url:  path.Join(entry.Path, key),
 				})
 			}
 		}
@@ -328,7 +331,7 @@ func (entry *DocsEntry) listFilesWithSuffix(config *docsConfig, specPath string,
 
 			config.Specs = append(config.Specs, &spec{
 				Name: key,
-				Url:  filepath.Join(entry.Path, key),
+				Url:  path.Join(entry.Path, key),
 			})
 		}
 	}

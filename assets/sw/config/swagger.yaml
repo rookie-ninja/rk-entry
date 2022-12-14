@@ -269,9 +269,6 @@ paths:
       - BasicAuth: []
       - JWT: []
       summary: Get application readiness status
-schemes:
-- http
-- https
 securityDefinitions:
   ApiKeyAuth:
     in: header

@@ -1,8 +1,4 @@
 {
-    "schemes": [
-        "http",
-        "https"
-    ],
     "swagger": "2.0",
     "info": {
         "description": "## Description\nBuiltin APIs supported via [rk-entry](https://github.com/rookie-ninja/rk-entry).\n\n## APIs\n\n| Name   | Description                               |\n|--------|-------------------------------------------|\n| /alive | Designed for liveness prob of Kubernetes  |\n| /ready | Designed for readiness prob of Kubernetes |\n| /gc    | Trigger GC                                |\n| /info  | Returns application, process, OS info     |\n\n",
