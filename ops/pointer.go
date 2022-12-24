@@ -45,11 +45,12 @@ func (c *Pointer) PrintError(err error) {
 
 	var builder bytes.Buffer
 	builder.WriteString(err.Error())
-	builder.WriteString(fmt.Sprintf("\nStackTrace:"))
 
 	conv, ok := err.(stackTracer)
 
 	if ok {
+		builder.WriteString(fmt.Sprintf("\nStackTrace:"))
+
 		st := conv.StackTrace()
 
 		ss := errors.StackTrace{}
@@ -74,7 +75,15 @@ func (c *Pointer) ObserveError(err error) error {
 		return nil
 	}
 
-	c.err = err
+	type stackTracer interface {
+		StackTrace() errors.StackTrace
+	}
+
+	_, ok := err.(stackTracer)
+
+	if !ok {
+		err = errors.WithStack(err)
+	}
 
 	if c.event != nil {
 		c.event.IncCounter(strings.Join([]string{c.operation, "ERROR"}, "."), 1)
