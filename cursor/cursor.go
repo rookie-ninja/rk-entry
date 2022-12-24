@@ -77,6 +77,10 @@ func SummaryVec() *prometheus.SummaryVec {
 	return summaryVec
 }
 
+func PromLabels() *promLabel {
+	return label
+}
+
 func Click() *pointer {
 	return &pointer{
 		start:     time.Now(),
@@ -115,8 +119,8 @@ type Option func(c *Cursor)
 
 func WithEntryNameAndType(entryName, entryType string) Option {
 	return func(c *Cursor) {
-		c.entryName = entryName
-		c.entryType = entryType
+		c.EntryName = entryName
+		c.EntryType = entryType
 	}
 }
 
@@ -140,9 +144,10 @@ func NewCursor(opts ...Option) *Cursor {
 	c := &Cursor{
 		Logger:    rkentry.LoggerEntryStdout.Logger,
 		Event:     rkentry.EventEntryNoop.CreateEventNoop(),
-		entryName: "",
-		entryType: "",
+		EntryName: "",
+		EntryType: "",
 		Now:       time.Now(),
+		Creator:   rkPointerGenerator,
 	}
 
 	for i := range opts {
@@ -152,30 +157,48 @@ func NewCursor(opts ...Option) *Cursor {
 	return c
 }
 
-type Cursor struct {
+type CursorPayload struct {
 	Logger    *zap.Logger
 	Event     rkquery.Event
-	Now       time.Time
-	entryName string
-	entryType string
+	StartTime time.Time
+
+	EntryName  string
+	EntryType  string
+	Operation  string
+	ParentFunc string
 }
 
-func (c *Cursor) Click() *pointer {
+type PointerCreator func(payload *CursorPayload) Pointer
+
+type Cursor struct {
+	Logger *zap.Logger
+	Event  rkquery.Event
+	Now    time.Time
+
+	EntryName string
+	EntryType string
+
+	Creator PointerCreator
+}
+
+func (c *Cursor) Click() Pointer {
 	operation := operationName()
 
 	if c.Event != nil {
 		c.Event.StartTimer(operation)
 	}
 
-	return &pointer{
-		entryName: c.entryName,
-		entryType: c.entryType,
-		start:     time.Now(),
-		operation: operation,
-		parent:    parentName(),
-		logger:    c.Logger,
-		event:     c.Event,
+	payload := &CursorPayload{
+		Logger:     c.Logger,
+		Event:      c.Event,
+		StartTime:  time.Now(),
+		EntryName:  c.EntryName,
+		EntryType:  c.EntryType,
+		Operation:  operation,
+		ParentFunc: parentName(),
 	}
+
+	return c.Creator(payload)
 }
 
 func (c *Cursor) Error(err error) {
@@ -211,12 +234,12 @@ type promLabel struct {
 	values []string
 }
 
-func (l *promLabel) getValues(parent, op, entryName, entryType string, err error) []string {
+func (l *promLabel) GetValues(parent, op, entryName, entryType string, success bool) []string {
 	label.mutex.Lock()
 	defer label.mutex.Unlock()
 
 	status := "OK"
-	if err != nil {
+	if !success {
 		status = "ERROR"
 	}
 
@@ -229,6 +252,28 @@ func (l *promLabel) getValues(parent, op, entryName, entryType string, err error
 
 // ************* Cursor *************
 
+type Pointer interface {
+	PrintError(err error)
+
+	ObserveError(err error) error
+
+	Release()
+}
+
+// ************* Default pointer *************
+
+func rkPointerGenerator(payload *CursorPayload) Pointer {
+	return &pointer{
+		start:     payload.StartTime,
+		parent:    payload.ParentFunc,
+		operation: payload.Operation,
+		event:     payload.Event,
+		logger:    payload.Logger,
+		entryName: payload.EntryName,
+		entryType: payload.EntryType,
+	}
+}
+
 type pointer struct {
 	start     time.Time
 	parent    string
@@ -240,13 +285,7 @@ type pointer struct {
 	entryType string
 }
 
-func (c *pointer) ObserveError(err error) error {
-	if err == nil {
-		return nil
-	}
-
-	c.err = err
-
+func (c *pointer) PrintError(err error) {
 	stack := stacks()
 
 	var builder bytes.Buffer
@@ -264,6 +303,14 @@ func (c *pointer) ObserveError(err error) error {
 	} else {
 		logger.WithOptions(zap.AddCallerSkip(1)).Error(builder.String())
 	}
+}
+
+func (c *pointer) ObserveError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	c.err = err
 
 	if c.event != nil {
 		c.event.IncCounter(strings.Join([]string{c.operation, "ERROR"}, "."), 1)
@@ -275,8 +322,13 @@ func (c *pointer) ObserveError(err error) error {
 func (c *pointer) Release() {
 	elapsedNano := time.Now().Sub(c.start).Nanoseconds()
 
+	success := true
+	if c.err != nil {
+		success = false
+	}
+
 	observer, _ := summaryVec.GetMetricWithLabelValues(
-		label.getValues(c.parent, c.operation, c.entryName, c.entryType, c.err)...)
+		label.GetValues(c.parent, c.operation, c.entryName, c.entryType, success)...)
 	if observer == nil {
 		return
 	}
