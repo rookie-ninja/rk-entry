@@ -181,6 +181,7 @@ func (entry *SWEntry) ConfigFileHandler() http.HandlerFunc {
 			if file := readFile("assets/sw/css/swagger-ui.css", &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
+				writer.Header().Set("Content-Type", "text/css; charset=utf-8")
 				http.ServeContent(writer, request, "swagger-ui.css", time.Now(), bytes.NewReader(file))
 			}
 		// favicon files
@@ -190,6 +191,7 @@ func (entry *SWEntry) ConfigFileHandler() http.HandlerFunc {
 			if file := readFile(filepath.Join("assets/sw/favicon", base), &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
+				writer.Header().Set("Content-Type", "image/png")
 				http.ServeContent(writer, request, base, time.Now(), bytes.NewReader(file))
 			}
 		// js files
@@ -199,10 +201,12 @@ func (entry *SWEntry) ConfigFileHandler() http.HandlerFunc {
 			if file := readFile(filepath.Join("assets/sw/js", base), &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
+				writer.Header().Set("Content-Type", "application/javascript")
 				http.ServeContent(writer, request, base, time.Now(), bytes.NewReader(file))
 			}
 		// request config.json
 		case path.Join(entry.Path, "swagger-config.json"):
+			writer.Header().Set("Content-Type", "application/json")
 			http.ServeContent(writer, request, "swagger-config.json", time.Now(), strings.NewReader(swConfigFileContents))
 		// swagger spec config
 		default:
