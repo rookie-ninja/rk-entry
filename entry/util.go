@@ -240,6 +240,8 @@ func overrideMap(src map[interface{}]interface{}, override map[interface{}]inter
 			default:
 				src[k] = overrideItem
 			}
+		} else {
+			src[k] = overrideItem
 		}
 	}
 }

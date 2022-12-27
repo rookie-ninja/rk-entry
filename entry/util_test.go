@@ -359,13 +359,10 @@ func TestOverrideMap_WithUnMatchedType(t *testing.T) {
 
 	overrideMap(src, override)
 
-	// source map should keep the same
-	assert.Equal(t, 1, len(src))
+	// source map should be extended
+	assert.Equal(t, 2, len(src))
 	assert.Equal(t, "ut-src-value", src["ut-src-key"])
-
-	// override map should never change
-	assert.Equal(t, 1, len(override))
-	assert.Equal(t, false, override["ut-override-key"])
+	assert.Equal(t, false, src["ut-override-key"])
 }
 
 func TestOverrideMap_WithMixedType(t *testing.T) {
@@ -390,13 +387,9 @@ func TestOverrideMap_WithMixedType(t *testing.T) {
 	overrideMap(src, override)
 
 	// source map should be changed
-	assert.Equal(t, 1, len(src))
+	assert.Equal(t, 2, len(src))
 	assert.Equal(t, "ut-override-value", src["ut-src-key"])
-
-	// override map should never change
-	assert.Equal(t, 2, len(override))
-	assert.Equal(t, false, override["ut-override-key"])
-	assert.Equal(t, "ut-override-value", src["ut-src-key"])
+	assert.Equal(t, false, src["ut-override-key"])
 }
 
 func TestOverrideMap_WithHappyCase(t *testing.T) {
