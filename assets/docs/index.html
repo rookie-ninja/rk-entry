@@ -2,9 +2,9 @@
 <html>
 <head>
     <meta charset="utf-8"> <!-- Important: rapi-doc uses utf8 characters -->
-    <link rel="shortcut icon" type="image/png" href="https://cdn.jsdelivr.net/npm/rapidoc@4.2.1/logo.png">
+    <link rel="shortcut icon" type="image/png" href="https://cdn.jsdelivr.net/npm/rapidoc@9.3.4/logo.png">
     <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
-    <script type="module" src="https://cdn.jsdelivr.net/npm/rapidoc@9.2.0/dist/rapidoc-min.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/rapidoc@9.3.4/dist/rapidoc-min.js"></script>
 </head>
 <body>
 <rapi-doc id="repi"
@@ -18,8 +18,13 @@
         allow-try = "true"
         default-schema-tab = "example"
         font-size = "largest"
-        use-path-in-nav-bar = "true"
+        show-method-in-nav-bar = "as-colored-block"
+        use-path-in-nav-bar = "false"
         nav-item-spacing = "relaxed"
+        on-nav-tag-click = "expand-collapse"
+        nav-bg-color = "#1E2630FF"
+        nav-text-color = "#fff"
+        sort-tags = "true"
         layout = "row"
         bg-color = "#FAFAFA"
 >
@@ -89,6 +94,7 @@
             e.target.__Theme = specConfig.style.theme
             e.target.__renderStyle = specConfig.style.renderStyle
             e.target.__allowTry = specConfig.style.allowTry
+            e.target.__usePathInNavBar = specConfig.style.usePathInNavBar
 
             if (specConfig.style.bgColor.length > 0) {
                 e.target.__bgColor = specConfig.style.bgColor
@@ -112,7 +118,7 @@
     .root {
         padding: 8px 8px 8px 8px;
         color: var(--header-fg);
-        background-color: var(--header-bg);
+        background-color: #2986cc;
         display: flex;
         align-items:center;
         flex-direction: row;
@@ -122,6 +128,7 @@
         font-size: 16px;
         text-align: right;
         padding: 0px 10px;
+        background-color: #2986cc;
     }
 
     .list {
@@ -133,7 +140,7 @@
         flex: 2 1 0%;
         border-width: 2px;
         border-style: solid;
-        border-color: rgb(98, 160, 63);
+        border-color: #2986cc;
         border-image: initial;
         outline: none;
     }

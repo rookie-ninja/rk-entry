@@ -29,10 +29,11 @@ var (
 type docsConfig struct {
 	Specs []*spec `json:"specs" yaml:"specs"`
 	Style struct {
-		Theme       string `yaml:"theme" json:"theme"`
-		RenderStyle string `yaml:"renderStyle" json:"renderStyle"`
-		AllowTry    bool   `yaml:"allowTry" json:"allowTry"`
-		BgColor     string `yaml:"bgColor" json:"bgColor"`
+		Theme           string `yaml:"theme" json:"theme"`
+		RenderStyle     string `yaml:"renderStyle" json:"renderStyle"`
+		AllowTry        bool   `yaml:"allowTry" json:"allowTry"`
+		BgColor         string `yaml:"bgColor" json:"bgColor"`
+		UsePathInNavBar bool   `yaml:"usePathInNavBar" json:"usePathInNavBar"`
 	} `json:"style" yaml:"style"`
 }
 
@@ -68,7 +69,8 @@ type DocsEntry struct {
 	Headers          map[string]string `json:"-" yaml:"-"`
 	Debug            bool              `yaml:"-" json:"-"`
 	Style            struct {
-		Theme string `yaml:"-" json:"-"`
+		Theme           string `yaml:"-" json:"-"`
+		UsePathInNavBar bool   `yaml:"-" json:"-"`
 	} `yaml:"-" json:"-"`
 	embedFS *embed.FS `json:"-" yaml:"-"`
 }
@@ -257,6 +259,7 @@ func (entry *DocsEntry) initDocsConfig() {
 	if config.Style.Theme == "light" {
 		config.Style.BgColor = "#FAFAFA"
 	}
+	config.Style.UsePathInNavBar = entry.Style.UsePathInNavBar
 
 	if entry.Debug {
 		config.Style.RenderStyle = "focused"
