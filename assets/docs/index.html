@@ -2,9 +2,9 @@
 <html>
 <head>
     <meta charset="utf-8"> <!-- Important: rapi-doc uses utf8 characters -->
-    <link rel="shortcut icon" type="image/png" href="https://cdn.jsdelivr.net/npm/rapidoc@9.3.4/logo.png">
+    <link rel="shortcut icon" type="image/png" href="logo.png">
     <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
-    <script type="module" src="https://cdn.jsdelivr.net/npm/rapidoc@9.3.4/dist/rapidoc-min.js"></script>
+    <script type="module" src="rapidoc-min.js"></script>
 </head>
 <body>
 <rapi-doc id="repi"
@@ -13,10 +13,13 @@
         allow-spec-url-load = "false"
         allow-spec-file-load = "false"
         allow-spec-file-download = "false"
+        allow-authentication = "true"
         theme = "light"
         render-style = "view"
         allow-try = "true"
+        persist-auth = "true"
         default-schema-tab = "example"
+        fetch-credentials = "include"
         font-size = "largest"
         show-method-in-nav-bar = "as-colored-block"
         use-path-in-nav-bar = "false"

@@ -186,9 +186,7 @@ func (entry *DocsEntry) UnmarshalJSON([]byte) error {
 // ConfigFileHandler handler for swagger config files.
 func (entry *DocsEntry) ConfigFileHandler() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		p := strings.TrimPrefix(strings.TrimSuffix(request.URL.Path, "/"), strings.TrimSuffix(entry.Path, "/"))
-		p = strings.TrimSuffix(p, "/")
-		p = strings.TrimPrefix(p, "/")
+		p := strings.TrimSuffix(request.URL.Path, "/")
 
 		writer.Header().Set("cache-control", "no-cache")
 
@@ -197,22 +195,41 @@ func (entry *DocsEntry) ConfigFileHandler() http.HandlerFunc {
 		}
 
 		switch p {
-		case "":
+		case strings.TrimSuffix(entry.Path, "/"):
 			if file := readFile("assets/docs/index.html", &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
 				http.ServeContent(writer, request, "index.html", time.Now(), bytes.NewReader(file))
 			}
-		case "specs":
+		// favicon files
+		case path.Join(entry.Path, "logo.png"):
+			base := path.Base(p)
+			if file := readFile(filepath.Join("assets/docs/favicon", base), &rkembed.AssetsFS, false); len(file) < 1 {
+				http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			} else {
+				writer.Header().Set("Content-Type", "image/png")
+				http.ServeContent(writer, request, base, time.Now(), bytes.NewReader(file))
+			}
+		// js files
+		case path.Join(entry.Path, "rapidoc-min.js"):
+			base := path.Base(p)
+			if file := readFile(filepath.Join("assets/docs/js", base), &rkembed.AssetsFS, false); len(file) < 1 {
+				http.Error(writer, "Internal server error", http.StatusInternalServerError)
+			} else {
+				writer.Header().Set("Content-Type", "application/javascript")
+				http.ServeContent(writer, request, base, time.Now(), bytes.NewReader(file))
+			}
+		case path.Join(entry.Path, "specs"):
 			http.ServeContent(writer, request, "specs", time.Now(), strings.NewReader(specFileContents))
 		default:
+			p = strings.TrimPrefix(p, entry.Path)
 			value, ok := swaggerJsonFiles[p]
+
 			if ok {
 				http.ServeContent(writer, request, p, time.Now(), strings.NewReader(value))
-				return
+			} else {
+				http.NotFound(writer, request)
 			}
-
-			http.NotFound(writer, request)
 		}
 	}
 }
