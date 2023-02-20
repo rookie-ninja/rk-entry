@@ -1,14 +1,15 @@
 package rkmid
 
 import (
-	"github.com/google/uuid"
-	rkerror "github.com/rookie-ninja/rk-entry/v2/error"
-	"go.uber.org/zap"
 	"net"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/google/uuid"
+	rkerror "github.com/rookie-ninja/rk-entry/v2/error"
+	"go.uber.org/zap"
 )
 
 const (
@@ -190,17 +191,37 @@ func ShouldIgnoreGlobal(urlPath string) bool {
 // GenerateRequestId generate request id based on google/uuid.
 // UUIDs are based on RFC 4122 and DCE 1.1: Authentication and Security Services.
 //
+// Fetch request id from request header if it exists, otherwise generate a new one.
+// request id header is defined as constant HeaderRequestId.
+//
+// Case 1: request id exists in request header
+//   - If request id exists, we will return it with nil error
+//
+// Case 2: request id does not exist in request header, or header key exists but the value is empty
+//   - If request id does not exist, we will generate a new one and return it with nil error
+//
+// Case 3: error occurs when generating a new request id
+//   - If error occurs, we will return empty string with error
+//   - Error handling is not required since we will return empty string if error occurs
+//
 // A UUID is a 16 byte (128 bit) array. UUIDs may be used as keys to maps or compared directly.
-func GenerateRequestId() string {
-	// do not use uuid.New() since it would panic if any error occurs
-	requestId, err := uuid.NewRandom()
+func GenerateRequestId(req *http.Request) (requestId string) {
 
-	// currently, we will return empty string if error occurs
-	if err != nil {
-		return ""
+	if req != nil {
+		requestId = req.Header.Get(HeaderRequestId)
 	}
 
-	return requestId.String()
+	if len(requestId) == 0 {
+		// Do not use uuid.New() since it would panic if any error occurs
+		if randId, err := uuid.NewRandom(); err != nil {
+			// Currently, we will return empty string if error occurs
+			requestId = ""
+		} else {
+			requestId = randId.String()
+		}
+	}
+
+	return
 }
 
 // GenerateRequestIdWithPrefix generate request id based on google/uuid.

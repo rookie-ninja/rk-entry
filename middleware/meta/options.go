@@ -8,12 +8,13 @@ package rkmidmeta
 
 import (
 	"fmt"
-	"github.com/rookie-ninja/rk-entry/v2/entry"
-	"github.com/rookie-ninja/rk-entry/v2/middleware"
-	"github.com/rookie-ninja/rk-query"
 	"net/http"
 	"strings"
 	"time"
+
+	rkentry "github.com/rookie-ninja/rk-entry/v2/entry"
+	rkmid "github.com/rookie-ninja/rk-entry/v2/middleware"
+	rkquery "github.com/rookie-ninja/rk-query"
 )
 
 // ***************** OptionSet Interface *****************
@@ -110,7 +111,7 @@ func (set *optionSet) Before(ctx *BeforeCtx) {
 		return
 	}
 
-	reqId := rkmid.GenerateRequestId()
+	reqId := rkmid.GenerateRequestId(ctx.Input.Request)
 	now := time.Now().Format(time.RFC3339Nano)
 
 	if ctx.Input.Event != nil {
