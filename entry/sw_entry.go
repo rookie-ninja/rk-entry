@@ -43,10 +43,10 @@ type swUrl struct {
 // 3: JsonPath: The path of where swagger JSON file was located.
 // 4: Headers: The headers that would added into each API response.
 type BootSW struct {
-	Enabled  bool     `yaml:"enabled" json:"enabled"`
-	Path     string   `yaml:"path" json:"path"`
-	JsonPath string   `yaml:"jsonPath" json:"jsonPath"`
-	Headers  []string `yaml:"headers" json:"headers"`
+	Enabled   bool     `yaml:"enabled" json:"enabled"`
+	Path      string   `yaml:"path" json:"path"`
+	JsonPaths []string `yaml:"jsonPaths" json:"jsonPaths"`
+	Headers   []string `yaml:"headers" json:"headers"`
 }
 
 // SWEntry implements rke.Entry interface.
@@ -54,7 +54,7 @@ type SWEntry struct {
 	entryName        string            `json:"-" yaml:"-"`
 	entryType        string            `json:"-" yaml:"-"`
 	entryDescription string            `json:"-" yaml:"-"`
-	JsonPath         string            `json:"-" yaml:"-"`
+	JsonPaths        []string          `json:"-" yaml:"-"`
 	Path             string            `json:"-" yaml:"-"`
 	Headers          map[string]string `json:"-" yaml:"-"`
 	embedFS          *embed.FS         `json:"-" yaml:"-"`
@@ -86,7 +86,7 @@ func RegisterSWEntry(boot *BootSW, opts ...SWEntryOption) *SWEntry {
 			entryType:        SWEntryType,
 			entryDescription: "Internal RK entry for swagger UI.",
 			Path:             boot.Path,
-			JsonPath:         boot.JsonPath,
+			JsonPaths:        boot.JsonPaths,
 			Headers:          headers,
 		}
 
@@ -144,7 +144,7 @@ func (entry *SWEntry) MarshalJSON() ([]byte, error) {
 		"name":        entry.GetName(),
 		"type":        entry.GetType(),
 		"description": entry.GetDescription(),
-		"jsonPath":    entry.JsonPath,
+		"jsonPaths":   entry.JsonPaths,
 		"path":        entry.Path,
 		"Headers":     entry.Headers,
 	}
@@ -232,9 +232,11 @@ func (entry *SWEntry) initSwaggerConfig() {
 		Urls: make([]*swUrl, 0),
 	}
 
-	if len(entry.JsonPath) > 0 {
+	if len(entry.JsonPaths) > 0 {
 		// 1: Add user API swagger JSON
-		entry.listFilesWithSuffix(swaggerUrlConfig, entry.JsonPath, false)
+		for _, jsonPath := range entry.JsonPaths {
+			entry.listFilesWithSuffix(swaggerUrlConfig, jsonPath, false)
+		}
 	} else {
 		// try to read from default directories
 		// - docs

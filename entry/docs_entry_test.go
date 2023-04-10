@@ -15,14 +15,14 @@ import (
 
 func TestRegisterDocsEntry(t *testing.T) {
 	entry := RegisterDocsEntry(&BootDocs{
-		Enabled:  true,
-		Path:     "ut-path",
-		SpecPath: "ut-spec-path",
-		Headers:  []string{"a:b"},
+		Enabled:   true,
+		Path:      "ut-path",
+		SpecPaths: []string{"ut-spec-path"},
+		Headers:   []string{"a:b"},
 	})
 
 	assert.Equal(t, "/ut-path/", entry.Path)
-	assert.Equal(t, "ut-spec-path", entry.SpecPath)
+	assert.Equal(t, []string{"ut-spec-path"}, entry.SpecPaths)
 	assert.Len(t, entry.Headers, 1)
 	assert.NotEmpty(t, entry.GetName())
 	assert.NotEmpty(t, entry.GetType())
@@ -34,10 +34,10 @@ func TestDocsEntry_Bootstrap_Interrupt(t *testing.T) {
 	defer assertNotPanic(t)
 
 	entry := RegisterDocsEntry(&BootDocs{
-		Enabled:  true,
-		Path:     "ut-path",
-		SpecPath: "ut-spec-path",
-		Headers:  []string{"a:b"},
+		Enabled:   true,
+		Path:      "ut-path",
+		SpecPaths: []string{"ut-spec-path"},
+		Headers:   []string{"a:b"},
 	})
 
 	entry.Bootstrap(context.TODO())
@@ -46,10 +46,10 @@ func TestDocsEntry_Bootstrap_Interrupt(t *testing.T) {
 
 func TestDocsEntry_UnmarshalJSON(t *testing.T) {
 	entry := RegisterDocsEntry(&BootDocs{
-		Enabled:  true,
-		Path:     "ut-path",
-		SpecPath: "ut-spec-path",
-		Headers:  []string{"a:b"},
+		Enabled:   true,
+		Path:      "ut-path",
+		SpecPaths: []string{"ut-spec-path"},
+		Headers:   []string{"a:b"},
 	})
 	assert.Nil(t, entry.UnmarshalJSON(nil))
 }
@@ -57,10 +57,10 @@ func TestDocsEntry_UnmarshalJSON(t *testing.T) {
 func TestDocsEntry_ConfigFileHandler(t *testing.T) {
 	defer assertNotPanic(t)
 	entry := RegisterDocsEntry(&BootDocs{
-		Enabled:  true,
-		Path:     "ut-path",
-		SpecPath: "ut-spec-path",
-		Headers:  []string{"a:b"},
+		Enabled:   true,
+		Path:      "ut-path",
+		SpecPaths: []string{"ut-spec-path"},
+		Headers:   []string{"a:b"},
 	})
 
 	writer := httptest.NewRecorder()

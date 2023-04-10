@@ -15,14 +15,14 @@ import (
 
 func TestRegisterSWEntry(t *testing.T) {
 	entry := RegisterSWEntry(&BootSW{
-		Enabled:  true,
-		Path:     "ut-path",
-		JsonPath: "ut-json-path",
-		Headers:  []string{"a:b"},
+		Enabled:   true,
+		Path:      "ut-path",
+		JsonPaths: []string{"ut-json-path"},
+		Headers:   []string{"a:b"},
 	})
 
 	assert.Equal(t, "/ut-path/", entry.Path)
-	assert.Equal(t, "ut-json-path", entry.JsonPath)
+	assert.Equal(t, "ut-json-path", entry.JsonPaths)
 	assert.Len(t, entry.Headers, 1)
 	assert.NotEmpty(t, entry.GetName())
 	assert.NotEmpty(t, entry.GetType())
@@ -34,10 +34,10 @@ func TestSwEntry_Bootstrap_Interrupt(t *testing.T) {
 	defer assertNotPanic(t)
 
 	entry := RegisterSWEntry(&BootSW{
-		Enabled:  true,
-		Path:     "ut-path",
-		JsonPath: "ut-json-path",
-		Headers:  []string{"a:b"},
+		Enabled:   true,
+		Path:      "ut-path",
+		JsonPaths: []string{"ut-json-path"},
+		Headers:   []string{"a:b"},
 	})
 
 	entry.Bootstrap(context.TODO())
@@ -46,10 +46,10 @@ func TestSwEntry_Bootstrap_Interrupt(t *testing.T) {
 
 func TestSWEntry_UnmarshalJSON(t *testing.T) {
 	entry := RegisterSWEntry(&BootSW{
-		Enabled:  true,
-		Path:     "ut-path",
-		JsonPath: "ut-json-path",
-		Headers:  []string{"a:b"},
+		Enabled:   true,
+		Path:      "ut-path",
+		JsonPaths: []string{"ut-json-path"},
+		Headers:   []string{"a:b"},
 	})
 	assert.Nil(t, entry.UnmarshalJSON(nil))
 }
@@ -57,10 +57,10 @@ func TestSWEntry_UnmarshalJSON(t *testing.T) {
 func TestSWEntry_ConfigFileHandler(t *testing.T) {
 	defer assertNotPanic(t)
 	entry := RegisterSWEntry(&BootSW{
-		Enabled:  true,
-		Path:     "ut-path",
-		JsonPath: "ut-json-path",
-		Headers:  []string{"a:b"},
+		Enabled:   true,
+		Path:      "ut-path",
+		JsonPaths: []string{"ut-json-path"},
+		Headers:   []string{"a:b"},
 	})
 
 	writer := httptest.NewRecorder()
