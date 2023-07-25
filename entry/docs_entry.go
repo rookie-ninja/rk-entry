@@ -49,11 +49,11 @@ type spec struct {
 // 3: SpecPath: The path of where swagger or open API spec file was located.
 // 4: Headers: The headers that would be added into each API response.
 type BootDocs struct {
-	Enabled  bool     `yaml:"enabled" json:"enabled"`
-	Path     string   `yaml:"path" json:"path"`
-	SpecPath string   `yaml:"specPath" json:"specPath"`
-	Headers  []string `yaml:"headers" json:"headers"`
-	Style    struct {
+	Enabled   bool     `yaml:"enabled" json:"enabled"`
+	Path      string   `yaml:"path" json:"path"`
+	SpecPaths []string `yaml:"specPaths" json:"specPaths"`
+	Headers   []string `yaml:"headers" json:"headers"`
+	Style     struct {
 		Theme string `yaml:"theme" json:"theme"`
 	} `yaml:"style" json:"style"`
 	Debug bool `yaml:"debug" json:"debug"`
@@ -64,7 +64,7 @@ type DocsEntry struct {
 	entryName        string            `json:"-" yaml:"-"`
 	entryType        string            `json:"-" yaml:"-"`
 	entryDescription string            `json:"-" yaml:"-"`
-	SpecPath         string            `json:"-" yaml:"-"`
+	SpecPaths        []string          `json:"-" yaml:"-"`
 	Path             string            `json:"-" yaml:"-"`
 	Headers          map[string]string `json:"-" yaml:"-"`
 	Debug            bool              `yaml:"-" json:"-"`
@@ -101,7 +101,7 @@ func RegisterDocsEntry(boot *BootDocs, opts ...DocsEntryOption) *DocsEntry {
 			entryType:        DocsEntryType,
 			entryDescription: "Internal RK entry for documentation UI.",
 			Path:             boot.Path,
-			SpecPath:         boot.SpecPath,
+			SpecPaths:        boot.SpecPaths,
 			Headers:          headers,
 		}
 
@@ -169,7 +169,7 @@ func (entry *DocsEntry) MarshalJSON() ([]byte, error) {
 		"name":        entry.GetName(),
 		"type":        entry.GetType(),
 		"description": entry.GetDescription(),
-		"specPath":    entry.SpecPath,
+		"specPaths":   entry.SpecPaths,
 		"path":        entry.Path,
 		"Headers":     entry.Headers,
 		"debug":       entry.Debug,
@@ -244,9 +244,11 @@ func (entry *DocsEntry) initDocsConfig() {
 		Specs: []*spec{},
 	}
 
-	if len(entry.SpecPath) > 0 {
+	if len(entry.SpecPaths) > 0 {
 		// 1: Add user API swagger JSON
-		entry.listFilesWithSuffix(config, entry.SpecPath, false)
+		for _, specPath := range entry.SpecPaths {
+			entry.listFilesWithSuffix(config, specPath, false)
+		}
 	} else {
 		// try to read from default directories
 		// - docs
