@@ -188,7 +188,7 @@ func (entry *SWEntry) ConfigFileHandler() http.HandlerFunc {
 		case path.Join(entry.Path, "favicon-32x32.png"),
 			path.Join(entry.Path, "favicon-16x16.png"):
 			base := path.Base(p)
-			if file := readFile(filepath.Join("assets/sw/favicon", base), &rkembed.AssetsFS, false); len(file) < 1 {
+			if file := readFile(path.Join("assets/sw/favicon", base), &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
 				writer.Header().Set("Content-Type", "image/png")
@@ -198,7 +198,7 @@ func (entry *SWEntry) ConfigFileHandler() http.HandlerFunc {
 		case path.Join(entry.Path, "swagger-ui-bundle.js"),
 			path.Join(entry.Path, "swagger-ui-standalone-preset.js"):
 			base := path.Base(p)
-			if file := readFile(filepath.Join("assets/sw/js", base), &rkembed.AssetsFS, false); len(file) < 1 {
+			if file := readFile(path.Join("assets/sw/js", base), &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
 				writer.Header().Set("Content-Type", "application/javascript")
