@@ -22,7 +22,7 @@ func TestRegisterSWEntry(t *testing.T) {
 	})
 
 	assert.Equal(t, "/ut-path/", entry.Path)
-	assert.Equal(t, "ut-json-path", entry.JsonPaths)
+	assert.Equal(t, []string{"ut-json-path"}, entry.JsonPaths)
 	assert.Len(t, entry.Headers, 1)
 	assert.NotEmpty(t, entry.GetName())
 	assert.NotEmpty(t, entry.GetType())
