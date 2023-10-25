@@ -6,7 +6,6 @@ package rkmidtrace
 
 import (
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -68,19 +67,6 @@ func TestNoopExporter_Shutdown(t *testing.T) {
 func TestCreateNoopExporter(t *testing.T) {
 	assert.NotNil(t, NewNoopExporter())
 }
-
-func TestCreateJaegerExporter(t *testing.T) {
-	defer assertNotPanic(t)
-
-	// without endpoint
-	exporter := NewJaegerExporter(nil)
-	assert.NotNil(t, exporter)
-
-	// with default jaeger agent
-	exporter = NewJaegerExporter(jaeger.WithAgentEndpoint())
-	assert.NotNil(t, exporter)
-}
-
 func TestCreateOtlpExporter(t *testing.T) {
 	defer assertNotPanic(t)
 
@@ -137,20 +123,6 @@ func TestToOptions(t *testing.T) {
 	config.Enabled = true
 	config.Exporter.File.Enabled = true
 	config.Exporter.File.OutputPath = "output"
-	NewOptionSet(ToOptions(config, "", "")...)
-
-	// with jaeger agent
-	config = &BootConfig{
-		Enabled: true,
-	}
-	config.Exporter.Jaeger.Agent.Enabled = true
-	NewOptionSet(ToOptions(config, "", "")...)
-
-	// with jaeger collector
-	config = &BootConfig{
-		Enabled: true,
-	}
-	config.Exporter.Jaeger.Collector.Enabled = true
 	NewOptionSet(ToOptions(config, "", "")...)
 
 	// with otlp collector
