@@ -8,14 +8,12 @@ package rkmidtrace
 
 import (
 	"context"
-	"fmt"
 	"github.com/rookie-ninja/rk-entry/v2/entry"
 	"github.com/rookie-ninja/rk-entry/v2/middleware"
 	"github.com/rookie-ninja/rk-logger"
 	"go.opentelemetry.io/contrib"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/exporters/jaeger"
 	otexporterotlp "go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -388,19 +386,6 @@ type BootConfig struct {
 			Enabled  bool   `yaml:"enabled" json:"enabled"`
 			Endpoint string `yaml:"endpoint" json:"endpoint"`
 		} `yaml:"zipkin" json:"zipkin"`
-		Jaeger struct {
-			Agent struct {
-				Enabled bool   `yaml:"enabled" json:"enabled"`
-				Host    string `yaml:"host" json:"host"`
-				Port    int    `yaml:"port" json:"port"`
-			} `yaml:"agent" json:"agent"`
-			Collector struct {
-				Enabled  bool   `yaml:"enabled" json:"enabled"`
-				Endpoint string `yaml:"endpoint" json:"endpoint"`
-				Username string `yaml:"username" json:"username"`
-				Password string `yaml:"password" json:"password"`
-			} `yaml:"collector" json:"collector"`
-		} `yaml:"jaeger" json:"jaeger"`
 	} `yaml:"exporter" json:"exporter"`
 }
 
@@ -436,32 +421,6 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 
 			exporter = NewZipkinExporter(url)
 		}
-		if config.Exporter.Jaeger.Agent.Enabled {
-			opts := make([]jaeger.AgentEndpointOption, 0)
-			if len(config.Exporter.Jaeger.Agent.Host) > 0 {
-				opts = append(opts,
-					jaeger.WithAgentHost(config.Exporter.Jaeger.Agent.Host))
-			}
-			if config.Exporter.Jaeger.Agent.Port > 0 {
-				opts = append(opts, jaeger.WithAgentPort(fmt.Sprintf("%d", config.Exporter.Jaeger.Agent.Port)))
-			}
-
-			exporter = NewJaegerExporter(jaeger.WithAgentEndpoint(opts...))
-		}
-
-		if config.Exporter.Jaeger.Collector.Enabled {
-			opts := []jaeger.CollectorEndpointOption{
-				jaeger.WithUsername(config.Exporter.Jaeger.Collector.Username),
-				jaeger.WithPassword(config.Exporter.Jaeger.Collector.Password),
-			}
-
-			if len(config.Exporter.Jaeger.Collector.Endpoint) > 0 {
-				opts = append(opts, jaeger.WithEndpoint(config.Exporter.Jaeger.Collector.Endpoint))
-			}
-
-			exporter = NewJaegerExporter(jaeger.WithCollectorEndpoint(opts...))
-		}
-
 		opts = append(opts,
 			WithEntryNameAndType(entryName, entryType),
 			WithExporter(exporter),
@@ -580,32 +539,6 @@ func NewFileExporter(outputPath string, opts ...stdouttrace.Option) sdktrace.Spa
 	}
 
 	exporter, _ := stdouttrace.New(opts...)
-
-	return exporter
-}
-
-// NewJaegerExporter Create jaeger exporter with bellow condition.
-//
-// 1: If no option provided, then export to jaeger agent at localhost:6831
-// 2: Jaeger agent
-//
-//	If no jaeger agent host was provided, then use localhost
-//	If no jaeger agent port was provided, then use 6831
-//
-// 3: Jaeger collector
-//
-//	If no jaeger collector endpoint was provided, then use http://localhost:14268/api/traces
-func NewJaegerExporter(opt jaeger.EndpointOption) sdktrace.SpanExporter {
-	// Assign default jaeger agent endpoint which is localhost:6831
-	if opt == nil {
-		opt = jaeger.WithAgentEndpoint()
-	}
-
-	exporter, err := jaeger.New(opt)
-
-	if err != nil {
-		rkentry.ShutdownWithError(err)
-	}
 
 	return exporter
 }
