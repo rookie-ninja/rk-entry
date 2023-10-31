@@ -52,8 +52,8 @@ func TestStaticFileHandlerEntry_EntryFunctions(t *testing.T) {
 
 func TestStaticFileHandlerEntry_GetFileHandler(t *testing.T) {
 	currDir := t.TempDir()
-	os.MkdirAll(filepath.Join(currDir, "ut-dir"), os.ModePerm)
-	os.WriteFile(filepath.Join(currDir, "ut-file"), []byte("ut content"), os.ModePerm)
+	os.MkdirAll(filepath.ToSlash(filepath.Join(currDir, "ut-dir")), os.ModePerm)
+	os.WriteFile(filepath.ToSlash(filepath.Join(currDir, "ut-file")), []byte("ut content"), os.ModePerm)
 
 	entry := RegisterStaticFileHandlerEntry(&BootStaticFileHandler{
 		Enabled: true,

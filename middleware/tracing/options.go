@@ -530,7 +530,7 @@ func NewFileExporter(outputPath string, opts ...stdouttrace.Option) sdktrace.Spa
 		writer := rklogger.NewLumberjackConfigDefault()
 		if !filepath.IsAbs(outputPath) {
 			wd, _ := os.Getwd()
-			outputPath = filepath.Join(wd, outputPath)
+			outputPath = filepath.ToSlash(filepath.Join(wd, outputPath))
 		}
 
 		writer.Filename = outputPath

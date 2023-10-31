@@ -204,7 +204,7 @@ func (entry *DocsEntry) ConfigFileHandler() http.HandlerFunc {
 		// favicon files
 		case path.Join(entry.Path, "logo.png"):
 			base := path.Base(p)
-			if file := readFile(filepath.Join("assets/docs/favicon", base), &rkembed.AssetsFS, false); len(file) < 1 {
+			if file := readFile(filepath.ToSlash(filepath.Join("assets/docs/favicon", base)), &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
 				writer.Header().Set("Content-Type", "image/png")
@@ -213,7 +213,7 @@ func (entry *DocsEntry) ConfigFileHandler() http.HandlerFunc {
 		// js files
 		case path.Join(entry.Path, "rapidoc-min.js"):
 			base := path.Base(p)
-			if file := readFile(filepath.Join("assets/docs/js", base), &rkembed.AssetsFS, false); len(file) < 1 {
+			if file := readFile(filepath.ToSlash(filepath.Join("assets/docs/js", base)), &rkembed.AssetsFS, false); len(file) < 1 {
 				http.Error(writer, "Internal server error", http.StatusInternalServerError)
 			} else {
 				writer.Header().Set("Content-Type", "application/javascript")
@@ -308,7 +308,7 @@ func (entry *DocsEntry) listFilesWithSuffix(config *docsConfig, specPath string,
 		for i := range files {
 			file := files[i]
 			if !file.IsDir() && strings.HasSuffix(file.Name(), suffix) {
-				bytes, err := entry.embedFS.ReadFile(filepath.Join(specPath, file.Name()))
+				bytes, err := entry.embedFS.ReadFile(filepath.ToSlash(filepath.Join(specPath, file.Name())))
 				key := entry.entryName + "-" + file.Name()
 
 				if err != nil && !ignoreError {
@@ -330,7 +330,7 @@ func (entry *DocsEntry) listFilesWithSuffix(config *docsConfig, specPath string,
 	// re-path it with working directory if not absolute path
 	if !filepath.IsAbs(specPath) {
 		wd, _ := os.Getwd()
-		specPath = filepath.Join(wd, specPath)
+		specPath = filepath.ToSlash(filepath.Join(wd, specPath))
 	}
 
 	files, err := ioutil.ReadDir(specPath)
@@ -341,7 +341,7 @@ func (entry *DocsEntry) listFilesWithSuffix(config *docsConfig, specPath string,
 	for i := range files {
 		file := files[i]
 		if !file.IsDir() && strings.HasSuffix(file.Name(), suffix) {
-			bytes, err := os.ReadFile(filepath.Join(specPath, file.Name()))
+			bytes, err := os.ReadFile(filepath.ToSlash(filepath.Join(specPath, file.Name())))
 			key := entry.entryName + "-" + file.Name()
 
 			if err != nil && !ignoreError {

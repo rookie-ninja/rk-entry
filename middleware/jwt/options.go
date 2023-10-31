@@ -359,7 +359,7 @@ func ToOptions(config *BootConfig, entryName, entryType string) []Option {
 func mustRead(p string) []byte {
 	if !filepath.IsAbs(p) {
 		wd, _ := os.Getwd()
-		p = filepath.Join(wd, p)
+		p = filepath.ToSlash(filepath.Join(wd, p))
 	}
 
 	res, err := os.ReadFile(p)

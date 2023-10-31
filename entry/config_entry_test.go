@@ -56,7 +56,7 @@ func TestRegisterConfigEntry(t *testing.T) {
 key: value
 `
 	// create viper config file in ut temp dir
-	tempDir := filepath.Join(t.TempDir(), "ut-viper.yaml")
+	tempDir := filepath.ToSlash(filepath.Join(t.TempDir(), "ut-viper.yaml"))
 	assert.Nil(t, os.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
 	entries = RegisterConfigEntry(&BootConfig{
 		Config: []*BootConfigE{
@@ -104,7 +104,7 @@ func TestRegisterConfigEntry_WithDomainAndFileNotExist(t *testing.T) {
 key: value
 `
 	// create viper config file in ut temp dir
-	tempDir := filepath.Join(t.TempDir(), "ut-viper.yaml")
+	tempDir := filepath.ToSlash(filepath.Join(t.TempDir(), "ut-viper.yaml"))
 	assert.Nil(t, os.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
 
 	// set domain to prod
@@ -137,7 +137,7 @@ func TestRegisterConfigEntry_WithDomainAndFileExist(t *testing.T) {
 key: value
 `
 	// create viper config file in ut temp dir
-	tempDir := filepath.Join(t.TempDir(), "ut-viper.yaml")
+	tempDir := filepath.ToSlash(filepath.Join(t.TempDir(), "ut-viper.yaml"))
 	assert.Nil(t, os.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
 
 	// set domain to prod
@@ -172,7 +172,7 @@ func TestRegisterConfigEntry_WithDomainAndBothFileExist(t *testing.T) {
 key: beta
 `
 	// create viper config file in ut temp dir
-	tempDirBeta := filepath.Join(t.TempDir(), "ut-viper-beta.yaml")
+	tempDirBeta := filepath.ToSlash(filepath.Join(t.TempDir(), "ut-viper-beta.yaml"))
 	assert.Nil(t, os.WriteFile(tempDirBeta, []byte(viperConfigBeta), os.ModePerm))
 
 	// create prod viper config file named as ut-viper-prod.yaml
@@ -181,7 +181,7 @@ key: beta
 key: prod
 `
 	// create viper config file in ut temp dir
-	tempDirProd := filepath.Join(filepath.Dir(tempDirBeta), "ut-viper-prod.yaml")
+	tempDirProd := filepath.ToSlash(filepath.Join(filepath.Dir(tempDirBeta), "ut-viper-prod.yaml"))
 	assert.Nil(t, os.WriteFile(tempDirProd, []byte(viperConfigProd), os.ModePerm))
 
 	// set domain to prod
@@ -222,7 +222,7 @@ func TestRegisterConfigEntriesWithConfig_WithoutDomainAndBothFileExist(t *testin
 key: value
 `
 	// create viper config file in ut temp dir
-	tempDir := filepath.Join(t.TempDir(), "ut-viper.yaml")
+	tempDir := filepath.ToSlash(filepath.Join(t.TempDir(), "ut-viper.yaml"))
 	assert.Nil(t, os.WriteFile(tempDir, []byte(viperConfig), os.ModePerm))
 
 	// create prod viper config file named as ut-viper-prod.yaml
@@ -231,7 +231,7 @@ key: value
 key: prod
 `
 	// create viper config file in ut temp dir
-	tempDirProd := filepath.Join(filepath.Dir(tempDir), "ut-viper-prod.yaml")
+	tempDirProd := filepath.ToSlash(filepath.Join(filepath.Dir(tempDir), "ut-viper-prod.yaml"))
 	assert.Nil(t, os.WriteFile(tempDirProd, []byte(viperConfigProd), os.ModePerm))
 
 	entries := RegisterConfigEntry(&BootConfig{

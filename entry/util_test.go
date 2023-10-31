@@ -15,13 +15,13 @@ import (
 )
 
 func TestFileExists_ExpectTrue(t *testing.T) {
-	filePath := filepath.Join(t.TempDir(), "ui-TestFileExist-ExpectTrue")
+	filePath := filepath.ToSlash(filepath.Join(t.TempDir(), "ui-TestFileExist-ExpectTrue"))
 	assert.Nil(t, os.WriteFile(filePath, []byte("unit-test"), 0777))
 	assert.True(t, fileExists(filePath))
 }
 
 func TestFileExists_ExpectFalse(t *testing.T) {
-	filePath := filepath.Join(t.TempDir(), "ui-TestFileExist-ExpectFalse")
+	filePath := filepath.ToSlash(filepath.Join(t.TempDir(), "ui-TestFileExist-ExpectFalse"))
 	assert.False(t, fileExists(filePath))
 	assert.False(t, fileExists(t.TempDir()))
 }

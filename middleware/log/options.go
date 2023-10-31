@@ -485,7 +485,7 @@ func toAbsPath(p ...string) []string {
 			continue
 		}
 		wd, _ := os.Getwd()
-		res = append(res, filepath.Join(wd, p[i]))
+		res = append(res, filepath.ToSlash(filepath.Join(wd, p[i])))
 	}
 
 	return res

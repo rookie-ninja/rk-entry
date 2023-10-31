@@ -62,7 +62,7 @@ func RegisterConfigEntry(boot *BootConfig) []*ConfigEntry {
 				if wd, err := os.Getwd(); err != nil {
 					ShutdownWithError(err)
 				} else {
-					entry.Path = filepath.Join(wd, entry.Path)
+					entry.Path = filepath.ToSlash(filepath.Join(wd, entry.Path))
 				}
 			}
 

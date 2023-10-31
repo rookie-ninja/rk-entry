@@ -149,7 +149,7 @@ func readFile(filePath string, fs *embed.FS, shouldPanic bool) []byte {
 	wd, _ := os.Getwd()
 
 	if !filepath.IsAbs(filePath) {
-		filePath = filepath.Join(wd, filePath)
+		filePath = filepath.ToSlash(filepath.Join(wd, filePath))
 	}
 
 	data, err := os.ReadFile(filePath)

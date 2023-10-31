@@ -307,7 +307,7 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 	// re-path it with working directory if not absolute path
 	if !filepath.IsAbs(jsonPath) {
 		wd, _ := os.Getwd()
-		jsonPath = filepath.Join(wd, jsonPath)
+		jsonPath = filepath.ToSlash(filepath.Join(wd, jsonPath))
 	}
 
 	files, err := ioutil.ReadDir(jsonPath)
@@ -318,7 +318,7 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 	for i := range files {
 		file := files[i]
 		if !file.IsDir() && strings.HasSuffix(file.Name(), suffix) {
-			bytes, err := os.ReadFile(filepath.Join(jsonPath, file.Name()))
+			bytes, err := os.ReadFile(filepath.ToSlash(filepath.Join(jsonPath, file.Name())))
 			key := entry.entryName + "-" + file.Name()
 
 			if err != nil && !ignoreError {

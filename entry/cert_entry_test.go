@@ -67,9 +67,9 @@ func TestCertEntry_Bootstrap(t *testing.T) {
 	caPem, _ := generateCerts(t)
 	certPem, keyPem := generateCerts(t)
 
-	caDir := filepath.Join(t.TempDir(), "ca.pem")
-	certPemDir := filepath.Join(t.TempDir(), "cert.pem")
-	keyPemDir := filepath.Join(t.TempDir(), "key.pem")
+	caDir := filepath.ToSlash(filepath.Join(t.TempDir(), "ca.pem"))
+	certPemDir := filepath.ToSlash(filepath.Join(t.TempDir(), "cert.pem"))
+	keyPemDir := filepath.ToSlash(filepath.Join(t.TempDir(), "key.pem"))
 
 	assert.Nil(t, os.WriteFile(caDir, caPem, os.ModePerm))
 	assert.Nil(t, os.WriteFile(certPemDir, certPem, os.ModePerm))

@@ -119,7 +119,7 @@ func RegisterStaticFileHandlerEntry(boot *BootStaticFileHandler, opts ...StaticF
 	case "local":
 		if !filepath.IsAbs(boot.SourcePath) {
 			wd, _ := os.Getwd()
-			boot.SourcePath = filepath.Join(wd, boot.SourcePath)
+			boot.SourcePath = filepath.ToSlash(filepath.Join(wd, boot.SourcePath))
 		}
 		entry.httpFS = http.Dir(boot.SourcePath)
 	}
@@ -234,7 +234,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 			for _, v := range infos {
 				files = append(files, &fileResp{
 					isDir:    v.IsDir(),
-					Icon:     base64.StdEncoding.EncodeToString(readFile(filepath.Join("assets/static/icons", entry.getIconPath(v)), &rkembed.AssetsFS, false)),
+					Icon:     base64.StdEncoding.EncodeToString(readFile(filepath.ToSlash(filepath.Join("assets/static/icons", entry.getIconPath(v))), &rkembed.AssetsFS, false)),
 					FileUrl:  path.Join(entry.Path, p, v.Name()),
 					FileName: v.Name(),
 					Size:     v.Size(),
@@ -245,7 +245,7 @@ func (entry *StaticFileHandlerEntry) GetFileHandler() http.HandlerFunc {
 			entry.sortFiles(files)
 			resp := &resp{
 				PrevPath: path.Join(entry.Path, filepath.Dir(p)),
-				PrevIcon: base64.StdEncoding.EncodeToString(readFile(filepath.Join("assets/static/icons/folder.png"), &rkembed.AssetsFS, false)),
+				PrevIcon: base64.StdEncoding.EncodeToString(readFile(filepath.ToSlash(filepath.Join("assets/static/icons/folder.png")), &rkembed.AssetsFS, false)),
 				Path:     p,
 				Files:    files,
 			}
