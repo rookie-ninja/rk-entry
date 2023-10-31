@@ -285,7 +285,7 @@ func (entry *SWEntry) listFilesWithSuffix(urlConfig *swUrlConfig, jsonPath strin
 		for i := range files {
 			file := files[i]
 			if !file.IsDir() && strings.HasSuffix(file.Name(), suffix) {
-				bytes, err := entry.embedFS.ReadFile(filepath.Join(jsonPath, file.Name()))
+				bytes, err := entry.embedFS.ReadFile(filepath.ToSlash(filepath.Join(jsonPath, file.Name())))
 				key := entry.entryName + "-" + file.Name()
 
 				if err != nil && !ignoreError {
