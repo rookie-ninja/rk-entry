@@ -513,3 +513,15 @@ func csrfTokenFromQuery(param string) csrfHttpExtractor {
 		return token, nil
 	}
 }
+
+// csrfTokenFromCookie returns a `csrfTokenExtractor` that extracts token from the
+// provided cookie.
+func csrfTokenFromCookie(param string) csrfHttpExtractor {
+	return func(req *http.Request) (string, error) {
+		cookie, err := req.Cookie(param)
+		if cookie == nil || err != nil {
+			return "", errors.New("missing csrf token in the cookie")
+		}
+		return cookie.Value, nil
+	}
+}
