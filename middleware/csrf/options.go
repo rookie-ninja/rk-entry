@@ -127,6 +127,8 @@ func NewOptionSet(opts ...Option) OptionSetInterface {
 	parts := strings.Split(set.tokenLookup, ":")
 	set.extractor = csrfTokenFromHeader(parts[1])
 	switch parts[0] {
+	case "cookie":
+		set.extractor = csrfTokenFromCookie(parts[1])
 	case "form":
 		set.extractor = csrfTokenFromForm(parts[1])
 	case "query":
